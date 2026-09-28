@@ -304,4 +304,41 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
     expect(unsafeResult.canLaunch).toBe(false);
     expect(unsafeResult.issues.length).toBe(2);
   });
+
+  // Strict Pedagogical Rule: No Level Passes Without Active Student Interaction & Tuning!
+  it('Anti-Spoil Audit: verifies that ALL 8 levels fail validation in their initial/unconfigured state', () => {
+    // Level 1 initial state (empty name, 0 power, false shield) -> FAILS
+    expect(level1.validate({ variables: level1.initialVariables }).pass).toBe(false);
+
+    // Level 2 initial state (150 fuel, 30 burn, 3 thrust, 2 speed => distance 6 < 24) -> FAILS
+    const l2Res = level2.validate({ params: level2.initialParams });
+    expect(l2Res.pass).toBe(false);
+    expect(l2Res.error).toContain('推力不足');
+
+    // Level 3 initial state (dangerously rushed condition thresholds) -> FAILS
+    const l3Res = level3.validate({ rules: { rule1Threshold: 2, rule1Action: 'FULL_SPEED', rule2Threshold: 8, rule2Action: 'STOP', fallbackAction: 'SLOW_DOWN' } });
+    expect(l3Res.pass).toBe(false);
+
+    // Level 4 initial state (loopCount 3 < 5) -> FAILS
+    const l4Res = level4.validate({ loopConfig: level4.initialLoopConfig });
+    expect(l4Res.pass).toBe(false);
+    expect(l4Res.error).toContain('採集數量不足');
+
+    // Level 5 initial state (basic-sensor, range 10 < 18) -> FAILS
+    const l5Res = level5.validate({ moduleConfig: { moduleId: 'basic-sensor', range: 10, mode: 'NORMAL', isMethodInvoked: true } });
+    expect(l5Res.pass).toBe(false);
+
+    // Level 6 initial state (disarmed false, airlockOpen false) -> FAILS
+    const l6Res = level6.validate({ domState: { bindings: { disarmEvent: 'mouseover', airlockEvent: 'dblclick' }, disarmed: false, airlockOpen: false } });
+    expect(l6Res.pass).toBe(false);
+
+    // Level 7 initial state (threshold 10% causes low battery drone to crash) -> FAILS
+    const l7Res = level7.validate({ fleetConfig: { batteryThreshold: 10, lowBatteryAction: 'PATROL', normalBatteryAction: 'RETURN_BASE', dispatched: true } });
+    expect(l7Res.pass).toBe(false);
+    expect(l7Res.error).toContain('墜毀');
+
+    // Level 8 initial state (no weather data fetched) -> FAILS
+    const l8Res = level8.validate({ weatherSession: { weatherData: null, conditions: { maxWindSpeed: 10, maxPrecipitation: 10 }, launched: false } });
+    expect(l8Res.pass).toBe(false);
+  });
 });

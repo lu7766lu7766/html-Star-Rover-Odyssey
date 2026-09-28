@@ -17,7 +17,8 @@ export const useLevelStore = defineStore('level', {
     isSuccessModalOpen: false,
     successModalTimer: null,
     isCodePeekOpen: false, // JavaScript peek toggle
-    isHintModalOpen: false
+    isHintModalOpen: false,
+    resetNonce: 0
   }),
 
   getters: {
@@ -63,8 +64,11 @@ export const useLevelStore = defineStore('level', {
     },
 
     resetCurrentLevel() {
+      const progressStore = useProgressStore();
       soundManager.playClick();
       this.clearLogs();
+      progressStore.clearSavedOperation(this.currentLevel.id);
+      this.resetNonce++;
       if (this.sceneActionTrigger) {
         this.sceneActionTrigger('RESET', { levelId: this.currentLevel.id });
       }

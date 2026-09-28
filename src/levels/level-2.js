@@ -18,10 +18,10 @@ export default {
   ],
   controlType: 'parameter-adjuster',
   initialParams: {
-    initialFuel: 300,
-    burnPerThrust: 25,
-    thrustCount: 6,
-    speed: 4
+    initialFuel: 150,
+    burnPerThrust: 30,
+    thrustCount: 3,
+    speed: 2
   },
   paramRanges: {
     initialFuel: { min: 100, max: 500, step: 20, unit: '單位' },

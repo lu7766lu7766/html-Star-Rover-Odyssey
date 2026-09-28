@@ -1,5 +1,5 @@
 <template>
-  <div class="control-deck-wrapper">
+  <div class="control-deck-wrapper" :key="level.id + '-' + levelStore.resetNonce">
     <VariableDeclarationControl v-if="level.controlType === 'variable-declaration'" />
     <CommandSequenceControl v-else-if="level.controlType === 'command-sequence'" />
     <ParamAdjusterControl v-else-if="level.controlType === 'parameter-adjuster'" />

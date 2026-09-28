@@ -67,6 +67,13 @@ export const useProgressStore = defineStore('progress', {
       }, 400);
     },
 
+    clearSavedOperation(levelId) {
+      if (this.savedOperations[levelId]) {
+        delete this.savedOperations[levelId];
+        this.persist();
+      }
+    },
+
     markLevelCompleted(levelId) {
       if (!this.completedLevels.includes(levelId)) {
         this.completedLevels.push(levelId);

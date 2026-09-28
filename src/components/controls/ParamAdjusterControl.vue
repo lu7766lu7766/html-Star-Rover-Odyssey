@@ -135,18 +135,18 @@ import { useProgressStore } from '../../stores/progressStore.js';
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-const initialFuel = ref(300);
-const burnPerThrust = ref(25);
-const thrustCount = ref(8);
-const speed = ref(3);
+const initialFuel = ref(150);
+const burnPerThrust = ref(30);
+const thrustCount = ref(3);
+const speed = ref(2);
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(2);
   if (saved && saved.params) {
-    initialFuel.value = saved.params.initialFuel ?? 300;
-    burnPerThrust.value = saved.params.burnPerThrust ?? 25;
-    thrustCount.value = saved.params.thrustCount ?? 8;
-    speed.value = saved.params.speed ?? 3;
+    initialFuel.value = saved.params.initialFuel ?? 150;
+    burnPerThrust.value = saved.params.burnPerThrust ?? 30;
+    thrustCount.value = saved.params.thrustCount ?? 3;
+    speed.value = saved.params.speed ?? 2;
   }
 });
 
@@ -155,10 +155,10 @@ const totalBurn = computed(() => thrustCount.value * burnPerThrust.value);
 const remainingFuel = computed(() => initialFuel.value - totalBurn.value);
 
 function resetDefaults() {
-  initialFuel.value = 300;
-  burnPerThrust.value = 25;
-  thrustCount.value = 6;
-  speed.value = 4;
+  initialFuel.value = 150;
+  burnPerThrust.value = 30;
+  thrustCount.value = 3;
+  speed.value = 2;
 }
 
 function runExecution() {
