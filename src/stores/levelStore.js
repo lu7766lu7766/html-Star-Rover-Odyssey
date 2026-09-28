@@ -80,7 +80,11 @@ export const useLevelStore = defineStore('level', {
 
       this.isExecuting = true;
       this.clearLogs();
-      soundManager.playLaunch();
+      try {
+        soundManager.playLaunch();
+      } catch (e) {
+        console.warn('[Sound] Audio playback ignored:', e);
+      }
 
       this.appendLog({
         type: 'info',
@@ -95,8 +99,26 @@ export const useLevelStore = defineStore('level', {
         this.sceneActionTrigger('EXECUTE_START', { levelId: currentLevel.id, payload });
       }
 
-      // Allow a brief animation duration for student to observe 3D response
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Calculate realistic animation duration for each level
+      let animDuration = 600;
+      if (currentLevel.id === 1 && payload.sequence) {
+        animDuration = Math.max(800, payload.sequence.length * 520);
+      } else if (currentLevel.id === 2) {
+        animDuration = 1600;
+      } else if (currentLevel.id === 3) {
+        animDuration = 2000;
+      } else if (currentLevel.id === 4) {
+        animDuration = Math.max(1000, (payload.loopConfig?.loopCount || 3) * 550);
+      } else if (currentLevel.id === 5) {
+        animDuration = 1500;
+      } else if (currentLevel.id === 7) {
+        animDuration = 1800;
+      } else if (currentLevel.id === 8) {
+        animDuration = 2000;
+      }
+
+      // Allow 3D animation to play out
+      await new Promise(resolve => setTimeout(resolve, animDuration));
 
       try {
         const evaluation = currentLevel.validate(payload);
@@ -114,14 +136,18 @@ export const useLevelStore = defineStore('level', {
             message: `🌟 [任務通關] ${evaluation.feedback}`
           });
 
-          // Delay success modal to let user watch 3D animation
+          // Delay success modal to let user enjoy the final victory animation
           if (this.successModalTimer) clearTimeout(this.successModalTimer);
           this.successModalTimer = setTimeout(() => {
-            soundManager.playSuccess();
+            try {
+              soundManager.playSuccess();
+            } catch (e) {}
             this.isSuccessModalOpen = true;
-          }, 1400);
+          }, 800);
         } else {
-          soundManager.playError();
+          try {
+            soundManager.playError();
+          } catch (e) {}
           this.appendLog({
             type: 'error',
             message: `⚠️ [未通過] ${evaluation.error}`
@@ -134,7 +160,9 @@ export const useLevelStore = defineStore('level', {
 
         return evaluation;
       } catch (err) {
-        soundManager.playError();
+        try {
+          soundManager.playError();
+        } catch (e) {}
         const errResult = {
           pass: false,
           error: `執行期異常: ${err.message || String(err)}`
@@ -151,3 +179,4 @@ export const useLevelStore = defineStore('level', {
     }
   }
 });
+

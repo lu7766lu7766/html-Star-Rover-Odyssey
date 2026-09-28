@@ -38,15 +38,27 @@ export class Level6Scene extends BaseGameScene {
     }
   }
 
-  handleAction(actionType, payload) {
-    if (actionType === 'LEVEL_SUCCESS') {
+  handleAction(actionType, payload = {}) {
+    if (actionType === 'EXECUTE_START') {
+      const domState = payload.payload?.domState || payload.domState || {};
+      if (domState.isAlarmActive === false && domState.isAirlockOpen) {
+        this.isUnlocked = true;
+        try { soundManager.playDoorOpen(); } catch (e) {}
+        const { statusLight } = this.doors.userData;
+        if (statusLight) {
+          statusLight.material.color.setHex(0x10b981); // green unlocked
+        }
+      }
+    } else if (actionType === 'LEVEL_SUCCESS') {
       this.isUnlocked = true;
-      soundManager.playDoorOpen();
+      try { soundManager.playDoorOpen(); } catch (e) {}
 
       const { statusLight } = this.doors.userData;
       if (statusLight) {
         statusLight.material.color.setHex(0x10b981); // green unlocked
       }
+    } else if (actionType === 'RESET') {
+      this.reset();
     }
   }
 

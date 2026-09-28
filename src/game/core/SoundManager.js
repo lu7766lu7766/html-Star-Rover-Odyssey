@@ -135,6 +135,16 @@ class SoundManager {
     noise.stop(now + 1.5);
   }
 
+  /** Alias for playThruster */
+  playLaunch() {
+    this.playThruster();
+  }
+
+  /** Alias for playThruster */
+  playThrust() {
+    this.playThruster();
+  }
+
   /** Level 3: Radar Ping */
   playRadarPing() {
     if (this.muted) return;

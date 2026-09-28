@@ -45,33 +45,47 @@ export class Level5Scene extends BaseGameScene {
     if (this.rover) {
       const { nameLabel } = this.rover.userData;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture('SLOT: EMPTY', '#0d1322', '#64748b');
+        nameLabel.material.map = createTextTexture('SLOT: EMPTY', '#ffffff', '#64748b');
+        nameLabel.material.needsUpdate = true;
       }
     }
   }
 
-  handleAction(actionType, payload) {
-    if (actionType === 'API_INVOKED' && payload.api === 'rover.installModule') {
-      const mod = payload.args?.[0];
-      if (mod) {
-        this.isInstalled = true;
-        this.scanRadius = mod.range || 30;
-        this.scannerDish.visible = true;
-        soundManager.playModuleInstall();
+  handleAction(actionType, payload = {}) {
+    if (actionType === 'EXECUTE_START') {
+      const moduleConfig = payload.payload?.moduleConfig || payload.moduleConfig || {};
+      const range = moduleConfig.range || 20;
+      this.isInstalled = true;
+      this.scanRadius = range;
+      this.scannerDish.visible = true;
+      try { soundManager.playModuleInstall(); } catch (e) {}
 
-        const { nameLabel } = this.rover.userData;
-        if (nameLabel) {
-          nameLabel.material.map = createTextTexture(
-            `${mod.name || 'MODULE'} [R:${this.scanRadius}]`,
-            '#0d1322',
-            '#00f2fe'
-          );
-        }
+      const { nameLabel } = this.rover.userData;
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture(
+          `QUANTUM SCANNER [R:${this.scanRadius}]`,
+          '#ffffff',
+          '#00f2fe'
+        );
+        nameLabel.material.needsUpdate = true;
       }
     } else if (actionType === 'LEVEL_SUCCESS') {
       this.isInstalled = true;
       this.scannerDish.visible = true;
       this.scannerDish.position.y = 1.45;
+      const { nameLabel } = this.rover.userData;
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture('RADAR LOCK: 100%', '#ffffff', '#10b981');
+        nameLabel.material.needsUpdate = true;
+      }
+    } else if (actionType === 'LEVEL_FAIL') {
+      const { nameLabel } = this.rover.userData;
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture('SCAN INCOMPLETE', '#ffffff', '#ef4444');
+        nameLabel.material.needsUpdate = true;
+      }
+    } else if (actionType === 'RESET') {
+      this.reset();
     }
   }
 

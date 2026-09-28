@@ -162,11 +162,11 @@ export class SceneManager {
 
     this.activeGameScene = gameSceneInstance;
     if (this.activeGameScene) {
+      this.cameraController.reset();
       this.activeGameScene.init(this);
       if (this.activeGameScene.group) {
         this.scene.add(this.activeGameScene.group);
       }
-      this.cameraController.reset();
     }
   }
 

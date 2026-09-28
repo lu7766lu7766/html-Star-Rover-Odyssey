@@ -24,7 +24,6 @@ export class Level1Scene extends BaseGameScene {
 
     // Grid coordinates: 1 unit in logic = 3.0 units in 3D space
     this.stepSize = 3.0;
-    this.gridPos = { x: 0, y: 0 };
     this.roverFacing = 0; // 0: +Z (forward), 1: +X (right), 2: -Z (backward), 3: -X (left)
   }
 
@@ -50,13 +49,27 @@ export class Level1Scene extends BaseGameScene {
     this.reset();
   }
 
+  resetCamera() {
+    if (this.sceneManager && this.sceneManager.cameraController) {
+      this.sceneManager.cameraController.reset(
+        new THREE.Vector3(0, 10, -6),
+        new THREE.Vector3(0, 1, 5)
+      );
+    }
+  }
+
+  init(sceneManager) {
+    this.sceneManager = sceneManager;
+    this.build();
+    this.resetCamera();
+  }
+
   reset() {
     this.isPowered = false;
     this.isAnimating = false;
     this.animationQueue = [];
     this.currentStep = null;
     this.stepProgress = 0;
-    this.gridPos = { x: 0, y: 0 };
     this.roverFacing = 0;
 
     if (this.rover) {
@@ -67,13 +80,14 @@ export class Level1Scene extends BaseGameScene {
       if (batteryBar) batteryBar.scale.x = 0.01;
       if (nameLabel) {
         nameLabel.material.map = createTextTexture('OFFLINE', '#ffffff', '#64748b');
+        nameLabel.material.needsUpdate = true;
       }
     }
   }
 
   handleAction(actionType, payload = {}) {
     if (actionType === 'EXECUTE_START') {
-      const sequence = payload.payload?.sequence || [];
+      const sequence = payload.payload?.sequence || payload.sequence || [];
       this.startSequenceAnimation(sequence);
     } else if (actionType === 'LEVEL_SUCCESS') {
       if (this.rover) {
@@ -81,15 +95,27 @@ export class Level1Scene extends BaseGameScene {
         if (flame) flame.material.opacity = 0.85;
         if (nameLabel) {
           nameLabel.material.map = createTextTexture('MISSION COMPLETE', '#ffffff', '#10b981');
+          nameLabel.material.needsUpdate = true;
+        }
+      }
+    } else if (actionType === 'LEVEL_FAIL') {
+      if (this.rover) {
+        const { flame, nameLabel } = this.rover.userData;
+        if (flame) flame.material.opacity = 0.2;
+        if (nameLabel) {
+          nameLabel.material.map = createTextTexture('MISSION HALTED', '#ffffff', '#ef4444');
+          nameLabel.material.needsUpdate = true;
         }
       }
     } else if (actionType === 'RESET') {
       this.reset();
+      this.resetCamera();
     }
   }
 
   startSequenceAnimation(sequence) {
     this.reset();
+    if (!sequence || sequence.length === 0) return;
     this.animationQueue = [...sequence];
     this.isAnimating = true;
     this.prepareNextStep();
@@ -107,28 +133,40 @@ export class Level1Scene extends BaseGameScene {
 
     if (cmd === 'START_ENGINE') {
       this.isPowered = true;
-      soundManager.playPowerUp();
+      try { soundManager.playPowerUp(); } catch (e) {}
       const { flame, batteryBar, nameLabel } = this.rover.userData;
       if (flame) flame.material.opacity = 0.6;
       if (batteryBar) batteryBar.scale.x = 1.0;
       if (nameLabel) {
         nameLabel.material.map = createTextTexture('ONLINE', '#ffffff', '#2563eb');
+        nameLabel.material.needsUpdate = true;
       }
-      this.currentStep = { type: 'START_ENGINE', duration: 0.5 };
-    } else if (cmd === 'TURN_LEFT') {
-      soundManager.playThrust();
-      const startRot = this.rover.rotation.y;
-      const targetRot = startRot + Math.PI / 2;
-      this.roverFacing = (this.roverFacing + 3) % 4;
-      this.currentStep = { type: 'ROTATE', startRot, targetRot, duration: 0.4 };
+      this.currentStep = { type: 'START_ENGINE', duration: 0.45 };
+    } else if (!this.isPowered) {
+      // Cannot move or turn without powering on first!
+      const { nameLabel } = this.rover.userData;
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture('NO POWER!', '#ffffff', '#ef4444');
+        nameLabel.material.needsUpdate = true;
+      }
+      try { soundManager.playError(); } catch (e) {}
+      this.isAnimating = false;
+      this.currentStep = null;
+      return;
     } else if (cmd === 'TURN_RIGHT') {
-      soundManager.playThrust();
+      try { soundManager.playThrust(); } catch (e) {}
       const startRot = this.rover.rotation.y;
-      const targetRot = startRot - Math.PI / 2;
+      const targetRot = startRot + Math.PI / 2; // +PI/2 rotates towards +X (Right on screen)
       this.roverFacing = (this.roverFacing + 1) % 4;
       this.currentStep = { type: 'ROTATE', startRot, targetRot, duration: 0.4 };
+    } else if (cmd === 'TURN_LEFT') {
+      try { soundManager.playThrust(); } catch (e) {}
+      const startRot = this.rover.rotation.y;
+      const targetRot = startRot - Math.PI / 2; // -PI/2 rotates towards -X (Left on screen)
+      this.roverFacing = (this.roverFacing + 3) % 4;
+      this.currentStep = { type: 'ROTATE', startRot, targetRot, duration: 0.4 };
     } else if (cmd === 'MOVE_FORWARD') {
-      soundManager.playThrust();
+      try { soundManager.playThrust(); } catch (e) {}
       const startX = this.rover.position.x;
       const startZ = this.rover.position.z;
       let dx = 0;
@@ -144,13 +182,15 @@ export class Level1Scene extends BaseGameScene {
         startZ,
         targetX: startX + dx,
         targetZ: startZ + dz,
-        duration: 0.6
+        duration: 0.5
       };
     } else if (cmd === 'STOP') {
-      soundManager.playClick();
+      try { soundManager.playClick(); } catch (e) {}
       const { flame } = this.rover.userData;
       if (flame) flame.material.opacity = 0.1;
-      this.currentStep = { type: 'STOP', duration: 0.4 };
+      this.currentStep = { type: 'STOP', duration: 0.35 };
+    } else {
+      this.currentStep = { type: 'NOOP', duration: 0.2 };
     }
   }
 
@@ -170,6 +210,32 @@ export class Level1Scene extends BaseGameScene {
         const t = Math.min(this.stepProgress, 1.0);
         this.rover.position.x = THREE.MathUtils.lerp(this.currentStep.startX, this.currentStep.targetX, t);
         this.rover.position.z = THREE.MathUtils.lerp(this.currentStep.startZ, this.currentStep.targetZ, t);
+
+        // Rotate wheels during movement
+        if (this.rover.userData.wheels) {
+          this.rover.userData.wheels.forEach(w => {
+            w.children.forEach(c => c.rotation.x += delta * 12);
+          });
+        }
+
+        // Thruster flame flicker
+        if (this.rover.userData.flame) {
+          this.rover.userData.flame.scale.y = 0.9 + Math.random() * 0.5;
+        }
+
+        // Check obstacle collision
+        if (Math.abs(this.rover.position.x) < 0.8 && (Math.abs(this.rover.position.z - 3.0) < 0.9 || Math.abs(this.rover.position.z - 6.0) < 0.9)) {
+          this.isAnimating = false;
+          this.currentStep = null;
+          const { nameLabel, flame } = this.rover.userData;
+          if (nameLabel) {
+            nameLabel.material.map = createTextTexture('CRASH!', '#ffffff', '#ef4444');
+            nameLabel.material.needsUpdate = true;
+          }
+          if (flame) flame.material.opacity = 0;
+          try { soundManager.playError(); } catch (e) {}
+          return;
+        }
       }
 
       if (this.stepProgress >= 1.0) {

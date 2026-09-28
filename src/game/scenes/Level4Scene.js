@@ -15,6 +15,9 @@ export class Level4Scene extends BaseGameScene {
     this.mineGroup = null;
     this.drillArm = null;
     this.collectedCount = 0;
+    this.targetHarvest = 0;
+    this.isHarvesting = false;
+    this.harvestTimer = 0;
   }
 
   build() {
@@ -44,6 +47,10 @@ export class Level4Scene extends BaseGameScene {
 
   reset() {
     this.collectedCount = 0;
+    this.targetHarvest = 0;
+    this.isHarvesting = false;
+    this.harvestTimer = 0;
+
     if (this.crystals) {
       this.crystals.forEach((c) => {
         c.visible = true;
@@ -53,39 +60,37 @@ export class Level4Scene extends BaseGameScene {
     if (this.rover) {
       const { nameLabel } = this.rover.userData;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture('CRYSTALS: 0/5', '#0d1322', '#10b981');
+        nameLabel.material.map = createTextTexture('CRYSTALS: 0/5', '#ffffff', '#2563eb');
+        nameLabel.material.needsUpdate = true;
       }
     }
   }
 
-  handleAction(actionType, payload) {
-    if (actionType === 'API_INVOKED' && payload.api === 'drill.dig') {
-      const [depth] = payload.args;
-      if (typeof depth === 'number' && depth >= 0 && depth < this.crystals.length) {
-        const targetCrystal = this.crystals[depth];
-        if (targetCrystal && targetCrystal.visible) {
-          targetCrystal.visible = false;
-          this.collectedCount++;
-          soundManager.playDrill();
-          soundManager.playCrystalCollect();
-
-          const { nameLabel } = this.rover.userData;
-          if (nameLabel) {
-            nameLabel.material.map = createTextTexture(
-              `CRYSTALS: ${this.collectedCount}/5`,
-              '#0d1322',
-              this.collectedCount === 5 ? '#10b981' : '#f59e0b'
-            );
-          }
-        }
-      }
+  handleAction(actionType, payload = {}) {
+    if (actionType === 'EXECUTE_START') {
+      const loopConfig = payload.payload?.loopConfig || payload.loopConfig || {};
+      const count = Math.min(loopConfig.loopCount || 3, 5);
+      this.targetHarvest = count;
+      this.collectedCount = 0;
+      this.isHarvesting = true;
+      this.harvestTimer = 0;
+      try { soundManager.playDrill(); } catch (e) {}
     } else if (actionType === 'LEVEL_SUCCESS') {
       this.collectedCount = 5;
       this.crystals.forEach(c => c.visible = false);
       const { nameLabel } = this.rover.userData;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture('ALL 5 COLLECTED!', '#0d1322', '#10b981');
+        nameLabel.material.map = createTextTexture('ALL 5 COLLECTED!', '#ffffff', '#10b981');
+        nameLabel.material.needsUpdate = true;
       }
+    } else if (actionType === 'LEVEL_FAIL') {
+      const { nameLabel } = this.rover.userData;
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture(`HARVEST: ${this.collectedCount}/5`, '#ffffff', '#ef4444');
+        nameLabel.material.needsUpdate = true;
+      }
+    } else if (actionType === 'RESET') {
+      this.reset();
     }
   }
 
@@ -101,7 +106,35 @@ export class Level4Scene extends BaseGameScene {
     }
 
     if (this.drillArm) {
-      this.drillArm.rotation.y += delta * 4;
+      this.drillArm.rotation.y += delta * (this.isHarvesting ? 12 : 2);
+    }
+
+    // Step-by-step crystal harvesting animation
+    if (this.isHarvesting) {
+      this.harvestTimer += delta;
+      if (this.harvestTimer >= 0.35 && this.collectedCount < this.targetHarvest) {
+        this.harvestTimer = 0;
+        const crystalToCollect = this.crystals[this.collectedCount];
+        if (crystalToCollect) {
+          crystalToCollect.visible = false;
+        }
+        this.collectedCount++;
+        try { soundManager.playCrystalCollect(); } catch (e) {}
+
+        const { nameLabel } = this.rover.userData;
+        if (nameLabel) {
+          nameLabel.material.map = createTextTexture(
+            `CRYSTALS: ${this.collectedCount}/5`,
+            '#ffffff',
+            this.collectedCount === 5 ? '#10b981' : '#2563eb'
+          );
+          nameLabel.material.needsUpdate = true;
+        }
+
+        if (this.collectedCount >= this.targetHarvest) {
+          this.isHarvesting = false;
+        }
+      }
     }
   }
 }

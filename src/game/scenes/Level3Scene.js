@@ -56,7 +56,8 @@ export class Level3Scene extends BaseGameScene {
       this.rover.position.set(0, 0, -12);
       const { nameLabel, flame } = this.rover.userData;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture('RADAR: STANDBY', '#0d1322', '#38bdf8');
+        nameLabel.material.map = createTextTexture('RADAR: STANDBY', '#ffffff', '#2563eb');
+        nameLabel.material.needsUpdate = true;
       }
       if (flame) flame.material.opacity = 0.5;
     }
@@ -67,17 +68,29 @@ export class Level3Scene extends BaseGameScene {
     }
   }
 
-  handleAction(actionType, payload) {
-    if (actionType === 'LEVEL_SUCCESS') {
+  handleAction(actionType, payload = {}) {
+    if (actionType === 'EXECUTE_START') {
       this.simulating = true;
       this.simStep = 1;
       this.stepTimer = 0;
-      soundManager.playRadarPing();
+      try { soundManager.playRadarPing(); } catch (e) {}
+    } else if (actionType === 'LEVEL_SUCCESS') {
+      this.simulating = true;
+      if (this.simStep < 2) this.simStep = 2;
+      const { nameLabel } = this.rover.userData;
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture('AVOIDANCE VERIFIED', '#ffffff', '#10b981');
+        nameLabel.material.needsUpdate = true;
+      }
     } else if (actionType === 'LEVEL_FAIL') {
       const { nameLabel } = this.rover.userData;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture('COLLISION ALERT!', '#0d1322', '#ef4444');
+        nameLabel.material.map = createTextTexture('COLLISION ALERT!', '#ffffff', '#ef4444');
+        nameLabel.material.needsUpdate = true;
       }
+      try { soundManager.playError(); } catch (e) {}
+    } else if (actionType === 'RESET') {
+      this.reset();
     }
   }
 
@@ -99,26 +112,35 @@ export class Level3Scene extends BaseGameScene {
       // Stage 1: Full Speed (Distance > 15)
       if (this.simStep === 1) {
         this.rover.position.z += delta * 6;
-        if (nameLabel) nameLabel.material.map = createTextTexture('SPEED: FULL_SPEED', '#0d1322', '#10b981');
+        if (nameLabel) {
+          nameLabel.material.map = createTextTexture('SPEED: FULL_SPEED', '#ffffff', '#10b981');
+          nameLabel.material.needsUpdate = true;
+        }
         if (this.rover.position.z >= -4) {
           this.simStep = 2;
           this.stepTimer = 0;
-          soundManager.playRadarPing();
+          try { soundManager.playRadarPing(); } catch (e) {}
         }
       }
       // Stage 2: Slow Down (5 <= Distance <= 15)
       else if (this.simStep === 2) {
         this.rover.position.z += delta * 2.5;
-        if (nameLabel) nameLabel.material.map = createTextTexture('SPEED: SLOW_DOWN', '#0d1322', '#f59e0b');
+        if (nameLabel) {
+          nameLabel.material.map = createTextTexture('SPEED: SLOW_DOWN', '#ffffff', '#f59e0b');
+          nameLabel.material.needsUpdate = true;
+        }
         if (this.rover.position.z >= 1.5) {
           this.simStep = 3;
           this.stepTimer = 0;
-          soundManager.playRadarPing();
+          try { soundManager.playRadarPing(); } catch (e) {}
         }
       }
       // Stage 3: Stop safely before closest obstacle (Distance < 5)
       else if (this.simStep === 3) {
-        if (nameLabel) nameLabel.material.map = createTextTexture('SPEED: STOP (SAFE)', '#0d1322', '#00f2fe');
+        if (nameLabel) {
+          nameLabel.material.map = createTextTexture('SPEED: STOP (SAFE)', '#ffffff', '#2563eb');
+          nameLabel.material.needsUpdate = true;
+        }
         if (this.stepTimer > 1.5) {
           this.simulating = false;
         }

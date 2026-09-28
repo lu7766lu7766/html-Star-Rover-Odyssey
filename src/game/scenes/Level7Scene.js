@@ -50,6 +50,7 @@ export class Level7Scene extends BaseGameScene {
     this.drones.forEach((mesh, idx) => {
       const cfg = initialDrones[idx];
       mesh.position.set(cfg.x, cfg.y, cfg.z);
+      mesh.userData.baseY = cfg.y;
       mesh.userData.status = cfg.battery < 20 ? 'WARNING' : 'PATROL';
       if (mesh.userData.beaconMat) {
         mesh.userData.beaconMat.color.setHex(cfg.battery < 20 ? 0xef4444 : 0x10b981);
@@ -57,22 +58,26 @@ export class Level7Scene extends BaseGameScene {
     });
   }
 
-  handleAction(actionType, payload) {
-    if (actionType === 'LEVEL_SUCCESS') {
+  handleAction(actionType, payload = {}) {
+    if (actionType === 'EXECUTE_START') {
       this.isDeployed = true;
-      soundManager.playDroneFly();
+      try { soundManager.playDroneFly(); } catch (e) {}
 
-      const fleet = payload.data?.fleet || [];
-      fleet.forEach(fData => {
-        const mesh = this.drones.find(d => d.name === fData.id);
-        if (mesh) {
-          mesh.userData.status = fData.status;
-          const isWarn = fData.status === 'WARNING';
-          if (mesh.userData.beaconMat) {
-            mesh.userData.beaconMat.color.setHex(isWarn ? 0xef4444 : 0x10b981);
-          }
+      const fleetConfig = payload.payload?.fleetConfig || payload.fleetConfig || {};
+      const threshold = fleetConfig.batteryThreshold || 20;
+
+      this.drones.forEach(mesh => {
+        const isLow = mesh.userData.battery < threshold;
+        mesh.userData.status = isLow ? 'WARNING' : 'PATROL';
+        if (mesh.userData.beaconMat) {
+          mesh.userData.beaconMat.color.setHex(isLow ? 0xef4444 : 0x10b981);
         }
       });
+    } else if (actionType === 'LEVEL_SUCCESS') {
+      this.isDeployed = true;
+      try { soundManager.playDroneFly(); } catch (e) {}
+    } else if (actionType === 'RESET') {
+      this.reset();
     }
   }
 
