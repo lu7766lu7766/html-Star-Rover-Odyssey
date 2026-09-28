@@ -7,10 +7,6 @@
         <h3 class="deck-title">迷宮拼圖路徑規劃 · Maze Path Puzzle & Loops</h3>
       </div>
       <div class="header-actions">
-        <button class="btn btn-ghost btn-sm" @click="loadOptimalDemo" title="載入最優解 5 塊示範">
-          <Lightbulb :size="14" />
-          <span>最優解示範</span>
-        </button>
         <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="重置為初始狀態">
           <RotateCcw :size="14" />
           <span>重置</span>
@@ -323,7 +319,6 @@ import {
   CornerUpLeft,
   CornerUpRight,
   Trash2,
-  Lightbulb,
   Play,
   Info,
   Compass,
@@ -393,16 +388,6 @@ function clearAllBlocks() {
 function resetDefaults() {
   blocks.value = [
     { id: 'b-init-1', type: 'FORWARD' }
-  ];
-}
-
-function loadOptimalDemo() {
-  blocks.value = [
-    { id: `b-${++uid}`, type: 'LOOP', count: 2, action: 'FORWARD' },
-    { id: `b-${++uid}`, type: 'TURN_RIGHT' },
-    { id: `b-${++uid}`, type: 'LOOP', count: 3, action: 'FORWARD' },
-    { id: `b-${++uid}`, type: 'TURN_LEFT' },
-    { id: `b-${++uid}`, type: 'LOOP', count: 2, action: 'FORWARD' }
   ];
 }
 
