@@ -7,9 +7,9 @@
         <h3 class="deck-title">變數宣告與記憶體配置 · Variable Declaration</h3>
       </div>
       <div class="deck-actions">
-        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="還原探測船整備台狀態">
+        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="還原 3D 場景與探測船整備狀態">
           <RotateCcw :size="14" />
-          <span>車輛還原</span>
+          <span>場景還原</span>
         </button>
         <button class="btn btn-ghost btn-sm" @click="loadDemoSafely" title="自動填入符合規範的安全變數值">
           <Sparkles :size="14" class="text-brand" />

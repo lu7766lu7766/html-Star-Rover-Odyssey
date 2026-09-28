@@ -122,7 +122,7 @@ export class Level1Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
-    if (actionType === 'RESET_POSITION' || actionType === 'RESET') {
+    if (actionType === 'RESET_SCENE' || actionType === 'RESET_POSITION' || actionType === 'RESET') {
       this.reset();
       this.resetCamera();
       return;

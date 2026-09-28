@@ -62,16 +62,23 @@ export const useLevelStore = defineStore('level', {
       }
     },
 
-    restoreVehiclePosition() {
-      soundManager.playClick();
+    restoreScene() {
+      try {
+        soundManager.playClick();
+      } catch (e) {}
       this.isFailModalOpen = false;
       if (this.sceneActionTrigger) {
+        this.sceneActionTrigger('RESET_SCENE', { levelId: this.currentLevel.id });
         this.sceneActionTrigger('RESET_POSITION', { levelId: this.currentLevel.id });
       }
       this.appendLog({
         type: 'info',
-        message: '探測船已還原至發射起跑點。'
+        message: '3D 場景實體與機器已還原至初始整備點。'
       });
+    },
+
+    restoreVehiclePosition() {
+      this.restoreScene();
     },
 
     appendLog(logEntry) {

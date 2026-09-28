@@ -7,6 +7,14 @@
       </div>
       <div class="deck-header-actions">
         <button
+          class="btn btn-secondary btn-xs"
+          @click="restoreScene"
+          title="將氣象探測機還原至發射整備台"
+        >
+          <RotateCcw :size="13" />
+          <span>場景還原</span>
+        </button>
+        <button
           class="btn btn-outline btn-xs"
           @click="loadSimulationPreset"
           title="切換為晴朗教學模擬數據"
@@ -159,7 +167,7 @@
 import { ref, computed, onMounted } from 'vue';
 import {
   CloudSun, DownloadCloud, Loader2, Thermometer, Wind, CloudRain,
-  Compass, CheckCircle2, AlertTriangle, Send
+  Compass, CheckCircle2, AlertTriangle, Send, RotateCcw
 } from 'lucide-vue-next';
 import {
   WEATHER_STATIONS,
@@ -235,6 +243,11 @@ function loadSimulationPreset() {
     timestamp: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     rawSource: '內建晴朗微風模擬組 (教學專用)'
   };
+  restoreScene();
+}
+
+function restoreScene() {
+  levelStore.restoreScene();
 }
 
 function runExecution() {

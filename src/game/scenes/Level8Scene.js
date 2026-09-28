@@ -84,13 +84,25 @@ export class Level8Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
+    if (actionType === 'RESET_SCENE' || actionType === 'RESET_POSITION' || actionType === 'RESET') {
+      this.reset();
+      return;
+    }
+
     if (actionType === 'EXECUTE_START') {
-      soundManager.playThrust();
+      this.reset();
+      try { soundManager.playThrust(); } catch (e) {}
     } else if (actionType === 'LEVEL_SUCCESS') {
       this.isLaunching = true;
-      soundManager.playLaunch();
-    } else if (actionType === 'RESET') {
-      this.reset();
+      try { soundManager.playLaunch(); } catch (e) {}
+    } else if (actionType === 'LEVEL_FAIL') {
+      this.isLaunching = false;
+      this.launchHeight = 0;
+      if (this.drone) {
+        this.drone.position.set(4, 0.6, 0);
+        this.drone.rotation.set(0, 0, 0);
+      }
+      try { soundManager.playError(); } catch (e) {}
     }
   }
 

@@ -21,9 +21,9 @@
         <Compass :size="14" class="icon-hud" />
         <span>視角復位</span>
       </button>
-      <button class="btn btn-sm hud-btn btn-action-restore" @click="restoreVehicle" title="將探測船還原至發射起跑點">
+      <button class="btn btn-sm hud-btn btn-action-restore" @click="restoreScene" title="將當前關卡 3D 場景與機器實體還原至出發整備點">
         <RotateCcw :size="14" class="icon-hud" />
-        <span>車輛位置還原</span>
+        <span>場景還原</span>
       </button>
       <button class="btn btn-sm hud-btn" @click="resetScene" title="重設 3D 場景物理狀態">
         <RefreshCw :size="14" class="icon-hud" />
@@ -125,7 +125,7 @@
           </button>
           <button class="btn btn-primary" @click="restoreAndTune">
             <RotateCcw :size="15" />
-            <span>還原車輛並調整</span>
+            <span>場景還原並調整</span>
           </button>
         </div>
       </div>
@@ -241,8 +241,13 @@ function resetCamera() {
   }
 }
 
-function restoreVehicle() {
+function restoreScene() {
+  emit('restore-scene');
   emit('restore-vehicle');
+}
+
+function restoreVehicle() {
+  restoreScene();
 }
 
 function resetScene() {
@@ -269,7 +274,7 @@ function closeFail() {
 
 function restoreAndTune() {
   emit('close-fail');
-  emit('restore-vehicle');
+  restoreScene();
 }
 
 function openHint() {

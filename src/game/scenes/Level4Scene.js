@@ -67,7 +67,7 @@ export class Level4Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
-    if (actionType === 'RESET_POSITION' || actionType === 'RESET') {
+    if (actionType === 'RESET_SCENE' || actionType === 'RESET_POSITION' || actionType === 'RESET') {
       this.reset();
       return;
     }

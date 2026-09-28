@@ -6,9 +6,9 @@
         <h3 class="deck-title">飛行變數與推力參數調節 · Flight Parameters</h3>
       </div>
       <div class="deck-actions">
-        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="將探測船還原至發射起跑點">
+        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="還原 3D 場景跑道與探測船位置">
           <RotateCcw :size="14" />
-          <span>車輛還原</span>
+          <span>場景還原</span>
         </button>
         <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="恢復預設參數">
           <RefreshCw :size="14" />

@@ -39,7 +39,13 @@ export class Level6Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
+    if (actionType === 'RESET_SCENE' || actionType === 'RESET_POSITION' || actionType === 'RESET') {
+      this.reset();
+      return;
+    }
+
     if (actionType === 'EXECUTE_START') {
+      this.reset();
       const domState = payload.payload?.domState || payload.domState || {};
       if (domState.isAlarmActive === false && domState.isAirlockOpen) {
         this.isUnlocked = true;
@@ -57,8 +63,6 @@ export class Level6Scene extends BaseGameScene {
       if (statusLight) {
         statusLight.material.color.setHex(0x10b981); // green unlocked
       }
-    } else if (actionType === 'RESET') {
-      this.reset();
     }
   }
 

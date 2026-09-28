@@ -5,6 +5,7 @@ import { useProgressStore } from '../src/stores/progressStore.js';
 import { Level2Scene } from '../src/game/scenes/Level2Scene.js';
 import { Level1Scene } from '../src/game/scenes/Level1Scene.js';
 import { Level3Scene } from '../src/game/scenes/Level3Scene.js';
+import { Level8Scene } from '../src/game/scenes/Level8Scene.js';
 
 const mockStorage = {};
 globalThis.localStorage = {
@@ -133,5 +134,35 @@ describe('Star Rover Odyssey 2.0 - Failure Alert Modal & Vehicle Restore Suite',
     scene.rover.position.set(0, 0, 1.5);
     scene.handleAction('EXECUTE_START');
     expect(scene.rover.position.z).toBe(-12);
+  });
+
+  it('Level8Scene: properly restores weather probe drone (機器) to launch pad on RESET_SCENE and RESET_POSITION', () => {
+    const scene = new Level8Scene();
+    scene.build();
+
+    // Simulate probe drone launched into high altitude
+    scene.isLaunching = true;
+    scene.launchHeight = 25;
+    scene.drone.position.y = 25.6;
+
+    // Dispatch RESET_SCENE
+    scene.handleAction('RESET_SCENE');
+
+    expect(scene.isLaunching).toBe(false);
+    expect(scene.launchHeight).toBe(0);
+    expect(scene.drone.position.x).toBe(4);
+    expect(scene.drone.position.y).toBeCloseTo(0.6);
+    expect(scene.drone.position.z).toBe(0);
+
+    // Simulate retry launch
+    scene.isLaunching = true;
+    scene.launchHeight = 12;
+    scene.drone.position.y = 12.6;
+
+    // Retry should also reset to launch pad
+    scene.handleAction('EXECUTE_START');
+    expect(scene.isLaunching).toBe(false);
+    expect(scene.launchHeight).toBe(0);
+    expect(scene.drone.position.y).toBeCloseTo(0.6);
   });
 });

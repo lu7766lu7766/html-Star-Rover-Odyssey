@@ -18,7 +18,8 @@
             @next-level="handleNextLevel"
             @close-success="levelStore.closeSuccessModal"
             @close-fail="levelStore.closeFailModal"
-            @restore-vehicle="levelStore.restoreVehiclePosition"
+            @restore-scene="levelStore.restoreScene"
+            @restore-vehicle="levelStore.restoreScene"
             @open-hint="levelStore.toggleHintModal(true)"
             @register-trigger="handleRegisterSceneTrigger"
           />
