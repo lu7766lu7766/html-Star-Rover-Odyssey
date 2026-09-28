@@ -139,10 +139,10 @@ import { soundManager } from '../../game/core/SoundManager.js';
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-const disarmEvent = ref('click');
+const disarmEvent = ref('mouseover');
 const disarmAction = ref('DISARM_ALARM');
 
-const airlockEvent = ref('click');
+const airlockEvent = ref('dblclick');
 const airlockAction = ref('OPEN_AIRLOCK');
 
 const isDisarmed = ref(false);
@@ -153,9 +153,9 @@ const noticeType = ref('text-muted');
 onMounted(() => {
   const saved = progressStore.getSavedOperation(6);
   if (saved && saved.domState) {
-    disarmEvent.value = saved.domState.bindings?.disarmEvent ?? 'click';
+    disarmEvent.value = saved.domState.bindings?.disarmEvent ?? 'mouseover';
     disarmAction.value = saved.domState.bindings?.disarmAction ?? 'DISARM_ALARM';
-    airlockEvent.value = saved.domState.bindings?.airlockEvent ?? 'click';
+    airlockEvent.value = saved.domState.bindings?.airlockEvent ?? 'dblclick';
     airlockAction.value = saved.domState.bindings?.airlockAction ?? 'OPEN_AIRLOCK';
     isDisarmed.value = saved.domState.disarmed ?? false;
     isAirlockOpen.value = saved.domState.airlockOpen ?? false;
@@ -202,9 +202,9 @@ function handleAirlockClick() {
 }
 
 function resetDefaults() {
-  disarmEvent.value = 'click';
+  disarmEvent.value = 'mouseover';
   disarmAction.value = 'DISARM_ALARM';
-  airlockEvent.value = 'click';
+  airlockEvent.value = 'dblclick';
   airlockAction.value = 'OPEN_AIRLOCK';
   isDisarmed.value = false;
   isAirlockOpen.value = false;

@@ -10,38 +10,62 @@ import level8 from '../src/levels/level-8.js';
 import { evaluateFlightSafety } from '../src/services/weatherService.js';
 
 describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
-  // Level 1: Command sequence
-  it('Level 1: validates correct navigation around obstacle to target with stop', () => {
-    // Valid path: Start -> Turn Right -> Forward -> Turn Left -> Forward x3 -> Turn Left -> Forward -> Stop
+  // Level 1: Variable Declaration & Data Types
+  it('Level 1: validates rover variable declaration (string, number, boolean)', () => {
+    // Valid configuration
     const passRes = level1.validate({
-      sequence: [
-        'START_ENGINE',
-        'TURN_RIGHT',
-        'MOVE_FORWARD',
-        'TURN_LEFT',
-        'MOVE_FORWARD',
-        'MOVE_FORWARD',
-        'MOVE_FORWARD',
-        'TURN_LEFT',
-        'MOVE_FORWARD',
-        'STOP'
-      ]
+      variables: {
+        roverName: '奧德賽號',
+        powerLevel: 100,
+        shieldActive: true
+      }
     });
     expect(passRes.pass).toBe(true);
+    expect(passRes.feedback).toContain('通電自檢全部通過');
 
-    // Missing engine start
-    const noStart = level1.validate({
-      sequence: ['MOVE_FORWARD', 'STOP']
+    // Missing / empty name (String)
+    const emptyName = level1.validate({
+      variables: {
+        roverName: '',
+        powerLevel: 100,
+        shieldActive: true
+      }
     });
-    expect(noStart.pass).toBe(false);
-    expect(noStart.error).toContain('啟動引擎');
+    expect(emptyName.pass).toBe(false);
+    expect(emptyName.error).toContain('未命名');
 
-    // Crash directly into obstacle at (0, 1)
-    const crashRes = level1.validate({
-      sequence: ['START_ENGINE', 'MOVE_FORWARD', 'STOP'] // (0, 1) is obstacle
+    // Insufficient power (< 80)
+    const lowPower = level1.validate({
+      variables: {
+        roverName: '星馳號',
+        powerLevel: 60,
+        shieldActive: true
+      }
     });
-    expect(crashRes.pass).toBe(false);
-    expect(crashRes.error).toContain('撞上');
+    expect(lowPower.pass).toBe(false);
+    expect(lowPower.error).toContain('能源不足');
+
+    // Overload power (> 100)
+    const overPower = level1.validate({
+      variables: {
+        roverName: '星馳號',
+        powerLevel: 110,
+        shieldActive: true
+      }
+    });
+    expect(overPower.pass).toBe(false);
+    expect(overPower.error).toContain('電壓超載');
+
+    // Inactive shield (Boolean false)
+    const noShield = level1.validate({
+      variables: {
+        roverName: '星馳號',
+        powerLevel: 90,
+        shieldActive: false
+      }
+    });
+    expect(noShield.pass).toBe(false);
+    expect(noShield.error).toContain('防護力場未啟動');
   });
 
   // Level 2: Variables & Parameters

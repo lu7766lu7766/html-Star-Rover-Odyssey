@@ -178,16 +178,16 @@ const selectedStationId = ref('station-tpe');
 const isLoading = ref(false);
 const weatherData = ref(null);
 
-const maxWindSpeed = ref(25);
-const maxPrecipitation = ref(30);
+const maxWindSpeed = ref(10);
+const maxPrecipitation = ref(10);
 
 onMounted(async () => {
   const saved = progressStore.getSavedOperation(8);
   if (saved && saved.weatherSession) {
     weatherData.value = saved.weatherSession.weatherData || null;
     if (saved.weatherSession.conditions) {
-      maxWindSpeed.value = saved.weatherSession.conditions.maxWindSpeed ?? 25;
-      maxPrecipitation.value = saved.weatherSession.conditions.maxPrecipitation ?? 30;
+      maxWindSpeed.value = saved.weatherSession.conditions.maxWindSpeed ?? 10;
+      maxPrecipitation.value = saved.weatherSession.conditions.maxPrecipitation ?? 10;
     }
   } else {
     // Automatically perform initial fetch for seamless first impression

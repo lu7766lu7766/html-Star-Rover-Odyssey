@@ -1,6 +1,7 @@
 <template>
   <div class="control-deck-wrapper">
-    <CommandSequenceControl v-if="level.controlType === 'command-sequence'" />
+    <VariableDeclarationControl v-if="level.controlType === 'variable-declaration'" />
+    <CommandSequenceControl v-else-if="level.controlType === 'command-sequence'" />
     <ParamAdjusterControl v-else-if="level.controlType === 'parameter-adjuster'" />
     <ConditionBuilderControl v-else-if="level.controlType === 'condition-builder'" />
     <LoopBlocksControl v-else-if="level.controlType === 'loop-blocks'" />
@@ -17,6 +18,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useLevelStore } from '../../stores/levelStore.js';
+import VariableDeclarationControl from './VariableDeclarationControl.vue';
 import CommandSequenceControl from './CommandSequenceControl.vue';
 import ParamAdjusterControl from './ParamAdjusterControl.vue';
 import ConditionBuilderControl from './ConditionBuilderControl.vue';

@@ -1,122 +1,91 @@
 /**
- * Level 1: 探測船啟航
- * 核心概念：指令與執行順序 (Sequencing & Commands)
+ * Level 1: 探測船通電自檢
+ * 核心概念：變數宣告與基礎資料型態 (Variables & Data Types: String, Number, Boolean)
  */
 
 export default {
   id: 1,
-  title: '探測船啟航',
-  subtitle: '指令與執行順序',
-  conceptTitle: '程式的本質：依序執行的指令序列',
-  concepts: ['指令調用', '執行順序', '演算法步驟'],
-  description: `歡迎來到奧德賽基地！探測船目前靜止在停機坪上。請從指令庫中挑選合適的指令，依照正確的步驟順序排入執行隊列，操作探測船啟動引擎、避開前方障礙物並安全抵達目標站點。`,
+  title: '探測船通電自檢',
+  subtitle: '變數宣告與資料型態',
+  conceptTitle: '變數是儲存資料的容器：let 與三大基礎型態',
+  concepts: ['變數宣告 (let)', '字串 (String)', '數值 (Number)', '布林值 (Boolean)'],
+  description: `歡迎來到奧德賽基地！全新出廠的探測船目前靜止在整備台，系統記憶體處於未配置狀態。請為探測船宣告並初始化 3 個核心狀態變數：設定探測船代號 (字串 String)、調整主系統輸出功率 (數值 Number) 並啟動量子防護力場 (布林值 Boolean)，完成全艦開機通電自檢！`,
   targetRequirements: [
-    '第一步必須「啟動引擎」讓動力上線',
-    '規劃路徑避開中途碎石屏障',
-    '順利抵達發光的目標停機坪',
-    '最後呼叫「停止」以鎖定泊位'
+    '宣告 roverName (字串)：為探測船命名 (不可留空或為預設值)',
+    '宣告 powerLevel (數值)：調校系統輸出功率至安全標準 (80% ~ 100%)',
+    '宣告 shieldActive (布林值)：啟動防護力場開關 (必須為 true)',
+    '確認三大變數型態正確，點擊「執行通電自檢」喚醒探測船'
   ],
-  controlType: 'command-sequence',
-  availableCommands: [
-    { id: 'START_ENGINE', label: '啟動引擎', icon: 'Power', description: '激活主發電機與推進器' },
-    { id: 'MOVE_FORWARD', label: '前進一格', icon: 'ArrowUp', description: '沿當前朝向前進一個座標單位' },
-    { id: 'TURN_LEFT', label: '向左轉', icon: 'RotateCcw', description: '逆時針旋轉 90 度' },
-    { id: 'TURN_RIGHT', label: '向右轉', icon: 'RotateCw', description: '順時針旋轉 90 度' },
-    { id: 'STOP', label: '停止', icon: 'Square', description: '切斷動力煞停在泊位' }
-  ],
+  controlType: 'variable-declaration',
+  initialVariables: {
+    roverName: '',
+    powerLevel: 0,
+    shieldActive: false
+  },
   hints: [
-    '提示 1：任何機械運作前，都必須先「啟動引擎」！若未啟動就下達移動指令，探測船將無法動彈。',
-    '提示 2：正前方 (0, 1) 有巨大隕石！起跑後不要直接前進，請先「向右轉」再前進以繞行。',
-    '提示 3：一組標準通關序列：啟動引擎 ➔ 向右轉 ➔ 前進 ➔ 向左轉 ➔ 前進 ➔ 前進 ➔ 前進 ➔ 向左轉 ➔ 前進 ➔ 停止。',
-    '提示 4：抵達終點 (0, 3) 後，務必加上「停止」指令才能穩固停靠！'
+    '提示 1【觀念引導】：變數就像貼有標籤的收納盒。宣告變數使用 let，例如 let roverName = "奧德賽號"。',
+    '提示 2【型態觀察】：JavaScript 的資料型態包括文字字串 (用引號包覆)、數值 (直接寫數字) 與布林值 (true 或 false)。',
+    '提示 3【任務重點】：探測船需要足夠的能源 (至少 80%)，且在深空航行時必須開啟防護罩 (shieldActive 設為 true) 才能通過安全檢測！'
   ],
-  jsCodeExample: `// 💡 JavaScript 對照：函式呼叫順序
-// 每一行程式碼都會由上而下依序執行
+  jsCodeExample: `// 💡 JavaScript 對照：宣告變數並賦予初始值
+// 使用 let 關鍵字建立變數，等號 = 表示賦值
 
-engine.start();       // 1. 啟動引擎
-rover.turnRight();    // 2. 向右轉 (避開前方障礙)
-rover.moveForward();  // 3. 前進到旁道
-rover.turnLeft();     // 4. 向左轉 (面朝目標方向)
-rover.moveForward();  // 5. 前進
-rover.moveForward();  // 6. 前進
-rover.moveForward();  // 7. 前進到目標同緯度
-rover.turnLeft();     // 8. 向左轉 (面朝目標)
-rover.moveForward();  // 9. 切入目標泊位
-rover.stop();         // 10. 停靠目的地`,
-  conceptExplanation: `在電腦科學中，**演算法 (Algorithm)** 是一系列明確且有順序的運算步驟。電腦非常嚴謹，會忠實地由上而下「依序」執行我們給它的每一個指令。如果順序顛倒（例如還沒開引擎就踩油門），程式便無法如期運作。`,
+let roverName = "奧德賽號";   // 1. 字串 (String)：用引號包裹的文字
+let powerLevel = 100;         // 2. 數值 (Number)：數值計算與計量
+let shieldActive = true;      // 3. 布林值 (Boolean)：只有 true 或 false
+
+// 將變數傳入探測船自檢系統
+rover.systemCheck({ roverName, powerLevel, shieldActive });`,
+  conceptExplanation: `**變數 (Variable)** 是程式設計中最基礎也最重要的觀念。它就像電腦記憶體中的「有名字的抽屜」，讓我們可以把字串（文字）、數值（數字）、布林（真/假開關）等資料存起來，隨時在後續的程式邏輯中使用與修改。`,
   validate: (runResult) => {
-    const sequence = runResult.sequence || [];
-    if (!sequence || sequence.length === 0) {
-      return { pass: false, error: '執行隊列中沒有任何指令，請點擊或拖曳指令卡排入隊列！' };
-    }
+    const vars = runResult.variables || runResult || {};
+    const { roverName = '', powerLevel = 0, shieldActive = false } = vars;
 
-    if (sequence[0] !== 'START_ENGINE') {
-      return { pass: false, error: '探測船未開機！第一個指令必須是「啟動引擎」。' };
-    }
-
-    // Grid simulation
-    let x = 0;
-    let y = 0;
-    let dir = 0; // 0: +Y (forward), 1: +X (right), 2: -Y (backward), 3: -X (left)
-    const obstacles = [{ x: 0, y: 1 }, { x: 0, y: 2 }];
-    const target = { x: 0, y: 3 };
-
-    let crashed = false;
-    let crashPos = null;
-
-    for (let i = 1; i < sequence.length; i++) {
-      const cmd = sequence[i];
-      if (cmd === 'TURN_LEFT') {
-        dir = (dir + 3) % 4;
-      } else if (cmd === 'TURN_RIGHT') {
-        dir = (dir + 1) % 4;
-      } else if (cmd === 'MOVE_FORWARD') {
-        if (dir === 0) y += 1;
-        else if (dir === 1) x += 1;
-        else if (dir === 2) y -= 1;
-        else if (dir === 3) x -= 1;
-
-        if (obstacles.some(o => o.x === x && o.y === y)) {
-          crashed = true;
-          crashPos = { x, y };
-          break;
-        }
-      } else if (cmd === 'STOP') {
-        break;
-      }
-    }
-
-    if (crashed) {
+    // 1. Check roverName (String)
+    const trimmedName = String(roverName).trim();
+    if (!trimmedName || trimmedName === '未命名' || trimmedName === 'UNKNOWN') {
       return {
         pass: false,
-        error: `撞上碎石障礙區 (座標: ${crashPos.x}, ${crashPos.y})！請及早轉彎繞行。`,
-        details: { finalPos: crashPos, crashed: true }
+        error: '探測船未命名！請在 roverName 輸入有效的船艦代號 (例如 "奧德賽號"、"星馳號")。',
+        details: { field: 'roverName', current: trimmedName }
       };
     }
 
-    const reachedTarget = (x === target.x && y === target.y);
-    const hasStop = sequence.includes('STOP');
-
-    if (!reachedTarget) {
+    // 2. Check powerLevel (Number)
+    const numPower = Number(powerLevel);
+    if (isNaN(numPower) || numPower < 80) {
       return {
         pass: false,
-        error: `探測船停在座標 (${x}, ${y})，尚未抵達目標停機坪 (座標: ${target.x}, ${target.y})。請檢查路徑步數！`,
-        details: { finalPos: { x, y }, reachedTarget: false }
+        error: `能源不足！目前 powerLevel 僅為 ${numPower}%，系統最低啟動門檻為 80%。請調高功率數值！`,
+        details: { field: 'powerLevel', current: numPower, minRequired: 80 }
       };
     }
 
-    if (!hasStop) {
+    if (numPower > 100) {
       return {
         pass: false,
-        error: '已抵達停機坪，但隊列末尾缺少「停止」指令，探測船無法鎖定泊位！',
-        details: { finalPos: { x, y }, reachedTarget: true }
+        error: `電壓超載！目前 powerLevel 為 ${numPower}%，超過反應爐額定上限 (100%)。請避免設備過熱！`,
+        details: { field: 'powerLevel', current: numPower, maxLimit: 100 }
+      };
+    }
+
+    // 3. Check shieldActive (Boolean)
+    if (shieldActive !== true) {
+      return {
+        pass: false,
+        error: '防護力場未啟動！深空充滿宇宙射線，shieldActive 必須設定為 true (布林值) 才能通過安全驗證。',
+        details: { field: 'shieldActive', current: shieldActive }
       };
     }
 
     return {
       pass: true,
-      data: { finalPos: { x, y }, steps: sequence.length },
-      feedback: `啟航任務大成功！探測船順利避開障礙物，精準停靠目標泊位 (${x}, ${y})！`
+      feedback: `通電自檢全部通過！探測船「${trimmedName}」系統功率已達 ${numPower}%，電漿防護罩成功激活，全艦進入啟航就緒狀態！`,
+      data: {
+        roverName: trimmedName,
+        powerLevel: numPower,
+        shieldActive: true
+      }
     };
   }
 };

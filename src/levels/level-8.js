@@ -23,9 +23,9 @@ export default {
     maxPrecipitation: 30
   },
   hints: [
-    '提示 1：API (Application Programming Interface) 是程式用來向外部伺服器索取資料的管道。點擊「發送 API 請求」按鈕體驗真實資料傳輸！',
-    '提示 2：若你選擇的城市今天剛好刮大風或下暴雨，你可以嘗試切換到其他氣候晴朗的站點，或是切換至「晴朗模擬數據」。',
-    '提示 3：如果當前站點風速是 12 km/h，只要你的風速容許上限設為 20 km/h（大於等於 12），無人機就能通過安全檢核！'
+    '提示 1【API 觀念】：API 是程式與外部網路服務交換資料的標準管道。使用 async/await 與 fetch() 可以在不卡死畫面的情況下等待資料回傳。',
+    '提示 2【資料流向觀察】：從選定站點發送 API 請求後，檢查回傳的 JSON 物件中包含哪些大氣數值（如風速、降雨機率）。',
+    '提示 3【引導式思考】：無人機的耐受上限必須高於實際觀測到的風雨量才能安全執勤。試著調整容許上限，或切換到天氣更穩定的觀測站！'
   ],
   jsCodeExample: `// 💡 JavaScript 對照：使用 fetch() 發送 API 請求並解析 JSON
 async function assessWeatherAndLaunch() {

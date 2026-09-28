@@ -137,23 +137,23 @@ const dronesData = [
   { id: 'DRONE-04', name: '雀鷹號', battery: 12, model: 'Scout-M' }
 ];
 
-const batteryThreshold = ref(20);
-const lowBatteryAction = ref('RETURN_BASE');
-const normalBatteryAction = ref('PATROL');
+const batteryThreshold = ref(10);
+const lowBatteryAction = ref('PATROL');
+const normalBatteryAction = ref('RETURN_BASE');
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(7);
   if (saved && saved.fleetConfig) {
-    batteryThreshold.value = saved.fleetConfig.batteryThreshold ?? 20;
-    lowBatteryAction.value = saved.fleetConfig.lowBatteryAction ?? 'RETURN_BASE';
-    normalBatteryAction.value = saved.fleetConfig.normalBatteryAction ?? 'PATROL';
+    batteryThreshold.value = saved.fleetConfig.batteryThreshold ?? 10;
+    lowBatteryAction.value = saved.fleetConfig.lowBatteryAction ?? 'PATROL';
+    normalBatteryAction.value = saved.fleetConfig.normalBatteryAction ?? 'RETURN_BASE';
   }
 });
 
 function resetDefaults() {
-  batteryThreshold.value = 20;
-  lowBatteryAction.value = 'RETURN_BASE';
-  normalBatteryAction.value = 'PATROL';
+  batteryThreshold.value = 10;
+  lowBatteryAction.value = 'PATROL';
+  normalBatteryAction.value = 'RETURN_BASE';
 }
 
 function runExecution() {

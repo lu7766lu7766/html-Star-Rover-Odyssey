@@ -1,15 +1,15 @@
 <template>
   <div v-if="isOpen" class="modal-backdrop" @click.self="$emit('close')">
-    <div class="modal-dialog glass-panel">
+    <div class="modal-dialog">
       <!-- Modal Header -->
       <div class="modal-header">
         <div class="modal-title">
           <div class="icon-wrapper">
-            <Lightbulb class="icon-hint" :size="18" />
+            <Lightbulb class="icon-hint" :size="20" />
           </div>
           <div class="title-text">
-            <span class="sub-label">FLIGHT MANUAL &amp; DIAGNOSTICS</span>
-            <span class="main-title">關卡通關錦囊與技術提示</span>
+            <span class="sub-label">EXPLORATION GUIDE &amp; CONCEPT TIPS</span>
+            <h3 class="main-title">任務探索錦囊與思考引導</h3>
           </div>
         </div>
         <button class="btn-close" @click="$emit('close')" title="關閉手冊">
@@ -21,21 +21,21 @@
       <div class="modal-body">
         <div v-for="(hint, idx) in hints" :key="idx" class="hint-card">
           <div class="hint-badge">
-            <span class="beacon-dot warning"></span>
-            <span>DIAGNOSTIC ADVISORY #0{{ idx + 1 }}</span>
+            <span class="step-badge-num">STAGE 0{{ idx + 1 }}</span>
+            <span class="step-badge-text">思考提示階段</span>
           </div>
           <p class="hint-content">{{ hint }}</p>
         </div>
 
         <div v-if="hints.length === 0" class="no-hints">
-          <span class="no-hints-text">本關暫無額外特殊提示，請依照主控台之遙測目標執行！</span>
+          <span class="no-hints-text">本關暫無額外特殊提示，請依照左側主控台之目標直接操作！</span>
         </div>
       </div>
 
       <!-- Modal Footer -->
       <div class="modal-footer">
         <button class="btn btn-primary btn-sm btn-dismiss" @click="$emit('close')">
-          <span>確認指引，返回飛行操作台</span>
+          <span>明白指引，返回操作台</span>
         </button>
       </div>
     </div>
@@ -66,8 +66,8 @@ defineEmits(['close']);
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(3, 6, 12, 0.8);
-  backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,19 +77,19 @@ defineEmits(['close']);
 
 .modal-dialog {
   width: 100%;
-  max-width: 520px;
-  background: #0b1120;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(245, 158, 11, 0.15);
+  max-width: 540px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15), 0 0 1px rgba(0, 0, 0, 0.1);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  animation: modalEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes modalEnter {
   from {
     opacity: 0;
-    transform: scale(0.94) translateY(10px);
+    transform: scale(0.96) translateY(8px);
   }
   to {
     opacity: 1;
@@ -101,51 +101,51 @@ defineEmits(['close']);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: #10182b;
+  padding: 1.1rem 1.5rem;
+  background: #f8fafc;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .modal-title {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .icon-wrapper {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: #fef3c7;
+  border: 1px solid #fde68a;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .icon-hint {
-  color: var(--warning-amber);
+  color: #d97706;
 }
 
 .title-text {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
 }
 
 .sub-label {
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  color: var(--warning-amber);
-  letter-spacing: 0.08em;
+  color: #d97706;
+  letter-spacing: 0.06em;
 }
 
 .main-title {
-  font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-main);
+  margin: 0;
 }
 
 .btn-close {
@@ -153,71 +153,85 @@ defineEmits(['close']);
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 0.35rem;
+  padding: 0.4rem;
   display: flex;
   align-items: center;
-  border-radius: 4px;
-  transition: all var(--transition-fast);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
 }
 
 .btn-close:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  background: #e2e8f0;
 }
 
 .modal-body {
-  padding: 1.25rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
   max-height: 60vh;
   overflow-y: auto;
+  background: #ffffff;
 }
 
 .hint-card {
-  background: #060911;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-left: 3px solid var(--warning-amber);
-  padding: 0.85rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid #f97316;
+  padding: 0.9rem 1.1rem;
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .hint-badge {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
+}
+
+.step-badge-num {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  color: var(--warning-amber);
-  letter-spacing: 0.05em;
+  background: #ffedd5;
+  color: #c2410c;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.step-badge-text {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9a3412;
 }
 
 .hint-content {
-  font-size: 0.86rem;
-  color: #e2e8f0;
+  font-size: 0.88rem;
+  color: #334155;
   line-height: 1.6;
+  margin: 0;
 }
 
 .no-hints {
-  padding: 1rem;
+  padding: 1.5rem;
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .modal-footer {
-  padding: 0.85rem 1.25rem;
-  background: #090e1a;
+  padding: 0.9rem 1.5rem;
+  background: #f8fafc;
   border-top: 1px solid var(--border-subtle);
   display: flex;
   justify-content: flex-end;
 }
 
 .btn-dismiss {
-  padding: 0.45rem 1rem;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
 }
 </style>

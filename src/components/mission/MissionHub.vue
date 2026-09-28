@@ -6,14 +6,31 @@
         <Target :size="18" class="text-brand" />
         <h2 class="hub-title">任務簡報 · Mission Brief</h2>
       </div>
-      <span class="badge badge-blue">LEVEL {{ level.id }}</span>
+      <div class="header-actions">
+        <button class="btn btn-ghost btn-xs hint-nav-btn" @click="openHints" title="查看任務導引提示">
+          <Lightbulb :size="14" class="text-warning" />
+          <span>提示</span>
+        </button>
+        <span class="badge badge-blue">LEVEL 0{{ level.id }}</span>
+      </div>
     </div>
 
     <!-- Scrollable Content -->
     <div class="hub-content">
       <!-- Mission Objective Box -->
       <section class="info-card card">
-        <h3 class="card-title">{{ level.title }}</h3>
+        <div class="card-top-title">
+          <h3 class="card-title">{{ level.title }}</h3>
+          <span class="card-subtitle">{{ level.subtitle }}</span>
+        </div>
+
+        <!-- Concept Badges -->
+        <div v-if="level.concepts" class="concept-tags-row">
+          <span v-for="tag in level.concepts" :key="tag" class="concept-pill">
+            {{ tag }}
+          </span>
+        </div>
+
         <p class="mission-story">{{ level.description }}</p>
 
         <div class="requirements-box">
@@ -31,13 +48,45 @@
       <!-- Execution Status & Diagnostic Feedback -->
       <section v-if="lastRunResult" class="feedback-card card" :class="lastRunResult.pass ? 'feedback-pass' : 'feedback-fail'">
         <div class="feedback-header">
-          <CheckCircle2 v-if="lastRunResult.pass" :size="20" class="text-success" />
-          <AlertCircle v-else :size="20" class="text-danger" />
-          <strong class="feedback-title">{{ lastRunResult.pass ? '任務驗證成功！' : '遙測檢驗未通過' }}</strong>
+          <CheckCircle2 v-if="lastRunResult.pass" :size="18" class="text-success" />
+          <AlertCircle v-else :size="18" class="text-danger" />
+          <strong class="feedback-title">{{ lastRunResult.pass ? '通關遙測驗證通過！' : '遙測自檢未通過' }}</strong>
         </div>
         <p class="feedback-body">
           {{ lastRunResult.pass ? lastRunResult.feedback : lastRunResult.error }}
         </p>
+      </section>
+
+      <!-- Live Scope & Variable Inspector (Pedagogical Enhancement) -->
+      <section class="inspector-card card">
+        <div class="inspector-header">
+          <div class="inspector-title">
+            <Eye :size="15" class="text-brand" />
+            <span>即時記憶體變數監視器 (Scope Watch)</span>
+          </div>
+          <span class="live-pulse">LIVE</span>
+        </div>
+
+        <div class="inspector-table-wrapper">
+          <table class="inspector-table">
+            <thead>
+              <tr>
+                <th>變數名稱</th>
+                <th>型態 (typeof)</th>
+                <th>當前數值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="v in activeScopeVariables" :key="v.name">
+                <td class="col-name font-mono">{{ v.name }}</td>
+                <td class="col-type">
+                  <span class="type-pill" :class="'type-' + v.type">{{ v.type }}</span>
+                </td>
+                <td class="col-val font-mono" :class="'val-' + v.type">{{ v.value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <!-- Core Concept Card -->
@@ -54,12 +103,21 @@
         <div class="peek-header" @click="levelStore.toggleCodePeek">
           <div class="peek-title">
             <Code2 :size="16" class="text-brand" />
-            <span>JavaScript 程式碼對照</span>
+            <span>JavaScript 程式碼語法對照</span>
           </div>
-          <button class="btn btn-ghost btn-sm peek-toggle-btn">
-            <ChevronUp v-if="levelStore.isCodePeekOpen" :size="16" />
-            <ChevronDown v-else :size="16" />
-          </button>
+          <div class="peek-actions">
+            <button
+              v-if="levelStore.isCodePeekOpen"
+              class="btn btn-ghost btn-xs copy-btn"
+              @click.stop="copyCodeExample"
+              title="複製範例程式碼"
+            >
+              <Copy :size="13" />
+              <span>{{ copyStatusText }}</span>
+            </button>
+            <ChevronUp v-if="levelStore.isCodePeekOpen" :size="16" class="text-muted" />
+            <ChevronDown v-else :size="16" class="text-muted" />
+          </div>
         </div>
 
         <transition name="expand">
@@ -67,46 +125,30 @@
             <div class="code-box">
               <pre><code>{{ level.jsCodeExample }}</code></pre>
             </div>
-            <span class="code-tip">💡 提示：此程式碼為實際執行背後對應的 JavaScript 語法，供比對與延伸理解。</span>
+            <span class="code-tip">💡 提示：左側所有遊戲操作，背後都對應著這段簡潔嚴謹的 JavaScript 語法。</span>
           </div>
         </transition>
       </section>
     </div>
 
-    <!-- Stepwise Hints Modal -->
-    <div v-if="levelStore.isHintModalOpen" class="modal-overlay" @click.self="levelStore.toggleHintModal(false)">
-      <div class="modal-card card">
-        <div class="modal-header">
-          <div class="flex-row">
-            <HelpCircle :size="18" class="text-warning" />
-            <h3 class="modal-title">任務導引提示</h3>
-          </div>
-          <button class="btn btn-ghost btn-sm" @click="levelStore.toggleHintModal(false)">
-            <X :size="18" />
-          </button>
-        </div>
-        <div class="modal-body">
-          <div v-for="(hint, i) in level.hints" :key="i" class="hint-bubble">
-            <span class="hint-index">#{{ i + 1 }}</span>
-            <p class="hint-text">{{ hint }}</p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" @click="levelStore.toggleHintModal(false)">我知道了</button>
-        </div>
-      </div>
-    </div>
+    <!-- Socratic Hint Modal Component -->
+    <HintModal
+      :is-open="levelStore.isHintModalOpen"
+      :hints="level.hints || []"
+      @close="levelStore.toggleHintModal(false)"
+    />
   </aside>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import {
   Target, CheckCircle2, Circle, AlertCircle, BookOpen, Code2,
-  ChevronDown, ChevronUp, HelpCircle, X
+  ChevronDown, ChevronUp, Lightbulb, Eye, Copy
 } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
+import HintModal from './HintModal.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
@@ -114,6 +156,89 @@ const progressStore = useProgressStore();
 const level = computed(() => levelStore.currentLevel);
 const isCompleted = computed(() => progressStore.isLevelCompleted(level.value.id));
 const lastRunResult = computed(() => levelStore.lastRunResult);
+
+const copyStatusText = ref('複製程式碼');
+
+function openHints() {
+  levelStore.toggleHintModal(true);
+}
+
+async function copyCodeExample() {
+  if (level.value?.jsCodeExample) {
+    try {
+      await navigator.clipboard.writeText(level.value.jsCodeExample);
+      copyStatusText.value = '已複製 ✓';
+      setTimeout(() => { copyStatusText.value = '複製程式碼'; }, 2000);
+    } catch (e) {
+      copyStatusText.value = '複製失敗';
+    }
+  }
+}
+
+// Generate dynamic Live Scope variables based on current level state & saved operations
+const activeScopeVariables = computed(() => {
+  const currentId = level.value.id;
+  const saved = progressStore.getSavedOperation(currentId);
+
+  if (currentId === 1) {
+    const vars = saved?.variables || {};
+    return [
+      { name: 'roverName', type: 'string', value: vars.roverName ? `"${vars.roverName}"` : '""' },
+      { name: 'powerLevel', type: 'number', value: vars.powerLevel ?? 0 },
+      { name: 'shieldActive', type: 'boolean', value: String(vars.shieldActive ?? false) }
+    ];
+  } else if (currentId === 2) {
+    const p = saved?.params || {};
+    return [
+      { name: 'initialFuel', type: 'number', value: p.initialFuel ?? 300 },
+      { name: 'thrustCount', type: 'number', value: p.thrustCount ?? 6 },
+      { name: 'speed', type: 'number', value: p.speed ?? 4 },
+      { name: 'totalDistance', type: 'number', value: (p.thrustCount || 6) * (p.speed || 4) }
+    ];
+  } else if (currentId === 3) {
+    const r = saved?.rules || {};
+    return [
+      { name: 'threshold1', type: 'number', value: r.rule1Threshold ?? 2 },
+      { name: 'action1', type: 'string', value: `"${r.rule1Action || 'FULL_SPEED'}"` },
+      { name: 'fallback', type: 'string', value: `"${r.fallbackAction || 'SLOW_DOWN'}"` }
+    ];
+  } else if (currentId === 4) {
+    const lc = saved?.loopConfig || {};
+    return [
+      { name: 'loopCount', type: 'number', value: lc.loopCount ?? 3 },
+      { name: 'action', type: 'string', value: `"${lc.action || 'HARVEST_CRYSTAL'}"` },
+      { name: 'isLooping', type: 'boolean', value: String(levelStore.isExecuting) }
+    ];
+  } else if (currentId === 5) {
+    const mc = saved?.moduleConfig || {};
+    return [
+      { name: 'module.name', type: 'string', value: `"${mc.moduleId || 'basic-sensor'}"` },
+      { name: 'module.range', type: 'number', value: mc.range ?? 10 },
+      { name: 'module.mode', type: 'string', value: `"${mc.mode || 'NORMAL'}"` }
+    ];
+  } else if (currentId === 6) {
+    const ds = saved?.domState || {};
+    return [
+      { name: 'disarmEvent', type: 'string', value: `"${ds.bindings?.disarmEvent || 'mouseover'}"` },
+      { name: 'isAlarmActive', type: 'boolean', value: String(!ds.disarmed) },
+      { name: 'airlockOpen', type: 'boolean', value: String(ds.airlockOpen ?? false) }
+    ];
+  } else if (currentId === 7) {
+    const fc = saved?.fleetConfig || {};
+    return [
+      { name: 'fleet.length', type: 'number', value: 4 },
+      { name: 'batteryThreshold', type: 'number', value: fc.batteryThreshold ?? 10 },
+      { name: 'lowBatteryOrder', type: 'string', value: `"${fc.lowBatteryAction || 'PATROL'}"` }
+    ];
+  } else {
+    const ws = saved?.weatherSession || {};
+    return [
+      { name: 'windSpeed', type: 'number', value: ws.weatherData?.windSpeed ?? 18 },
+      { name: 'maxWindSpeed', type: 'number', value: ws.conditions?.maxWindSpeed ?? 10 },
+      { name: 'canLaunch', type: 'boolean', value: String(ws.launched ?? false) }
+    ];
+  }
+});
 </script>
 
 <style scoped>
@@ -135,7 +260,7 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   justify-content: space-between;
   padding: 0 1rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-panel-hover);
+  background: #ffffff;
 }
 
 .hub-title-row {
@@ -148,7 +273,30 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-main);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hint-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-weight: 600;
+}
+
+.hint-nav-btn:hover {
+  background: #fde68a;
 }
 
 .hub-content {
@@ -164,23 +312,53 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+}
+
+.card-top-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .card-title {
-  font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-main);
+  margin: 0;
+}
+
+.card-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.concept-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.concept-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #bfdbfe;
 }
 
 .mission-story {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
+  font-size: 0.86rem;
+  color: #475569;
   line-height: 1.55;
+  margin: 0;
 }
 
 .requirements-box {
-  background: var(--bg-panel-hover);
+  background: #f8fafc;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 0.75rem;
@@ -192,7 +370,7 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
 .req-title {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-main);
 }
 
 .req-list {
@@ -200,6 +378,8 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  padding: 0;
+  margin: 0;
 }
 
 .req-item {
@@ -207,7 +387,7 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   align-items: flex-start;
   gap: 0.45rem;
   font-size: 0.82rem;
-  color: var(--text-secondary);
+  color: #334155;
   line-height: 1.4;
 }
 
@@ -221,16 +401,19 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  padding: 0.85rem 1rem;
 }
 
 .feedback-pass {
-  background: var(--success-light);
-  border-color: var(--success-border);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
 }
 
 .feedback-fail {
-  background: var(--danger-light);
-  border-color: var(--danger-border);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
 }
 
 .feedback-header {
@@ -243,28 +426,105 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   font-size: 0.9rem;
 }
 
-.feedback-pass .feedback-title,
-.feedback-pass .feedback-body {
-  color: var(--success-dark);
-}
-
-.feedback-fail .feedback-title,
-.feedback-fail .feedback-body {
-  color: var(--danger-dark);
-}
-
 .feedback-body {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   line-height: 1.5;
+  margin: 0;
 }
+
+/* Live Scope Inspector Card */
+.inspector-card {
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inspector-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.live-pulse {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #10b981;
+  background: #ecfdf5;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.inspector-table-wrapper {
+  overflow-x: auto;
+}
+
+.inspector-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.inspector-table th {
+  text-align: left;
+  padding: 0.35rem 0.45rem;
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.inspector-table td {
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.col-name {
+  color: #334155;
+  font-weight: 600;
+}
+
+.type-pill {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+
+.type-string { background: #fdf2f8; color: #db2777; }
+.type-number { background: #eff6ff; color: #2563eb; }
+.type-boolean { background: #ecfdf5; color: #059669; }
+
+.val-string { color: #db2777; }
+.val-number { color: #2563eb; font-weight: 600; }
+.val-boolean { color: #059669; font-weight: 600; }
 
 /* Concept Card */
 .concept-card {
-  background: var(--accent-purple-light);
-  border-color: #ddd6fe;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  padding: 0.85rem 1rem;
 }
 
 .concept-header {
@@ -274,16 +534,17 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
 }
 
 .concept-name {
-  font-family: var(--font-display);
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--text-purple);
+  color: #6b21a8;
+  margin: 0;
 }
 
 .concept-text {
   font-size: 0.82rem;
-  color: #4c1d95;
+  color: #581c87;
   line-height: 1.5;
+  margin: 0;
 }
 
 /* Code Peek Card */
@@ -291,6 +552,9 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  padding: 0.75rem 1rem;
 }
 
 .peek-header {
@@ -305,117 +569,46 @@ const lastRunResult = computed(() => levelStore.lastRunResult);
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-main);
+}
+
+.peek-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--brand-600);
 }
 
 .code-box {
-  background: #0f172a;
-  border-radius: var(--radius-md);
-  padding: 0.85rem;
+  background: #f8fafc;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  margin-top: 0.5rem;
   overflow-x: auto;
 }
 
 .code-box pre {
   margin: 0;
-}
-
-.code-box code {
   font-family: var(--font-mono);
   font-size: 0.78rem;
-  color: #38bdf8;
+  color: #1e293b;
   line-height: 1.5;
 }
 
 .code-tip {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
   line-height: 1.4;
-  margin-top: 0.4rem;
-  display: block;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1.5rem;
-}
-
-.modal-card {
-  width: 100%;
-  max-width: 500px;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  box-shadow: var(--shadow-elevated);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 0.65rem;
-}
-
-.flex-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.modal-title {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.hint-bubble {
-  background: var(--warning-light);
-  border: 1px solid var(--warning-border);
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1rem;
-  display: flex;
-  gap: 0.65rem;
-  align-items: flex-start;
-}
-
-.hint-index {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--warning-dark);
-}
-
-.hint-text {
-  font-size: 0.85rem;
-  color: var(--warning-dark);
-  line-height: 1.5;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
+  margin-top: 0.35rem;
 }
 </style>

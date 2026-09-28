@@ -132,16 +132,16 @@ const availableModules = [
   }
 ];
 
-const selectedModuleId = ref('quantum-scanner');
-const scanRange = ref(20);
-const mode = ref('HIGH');
+const selectedModuleId = ref('basic-sensor');
+const scanRange = ref(10);
+const mode = ref('NORMAL');
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(5);
   if (saved && saved.moduleConfig) {
-    selectedModuleId.value = saved.moduleConfig.moduleId ?? 'quantum-scanner';
-    scanRange.value = saved.moduleConfig.range ?? 20;
-    mode.value = saved.moduleConfig.mode ?? 'HIGH';
+    selectedModuleId.value = saved.moduleConfig.moduleId ?? 'basic-sensor';
+    scanRange.value = saved.moduleConfig.range ?? 10;
+    mode.value = saved.moduleConfig.mode ?? 'NORMAL';
   }
 });
 
@@ -150,9 +150,9 @@ const currentModuleName = computed(() => {
 });
 
 function resetDefaults() {
-  selectedModuleId.value = 'quantum-scanner';
-  scanRange.value = 20;
-  mode.value = 'HIGH';
+  selectedModuleId.value = 'basic-sensor';
+  scanRange.value = 10;
+  mode.value = 'NORMAL';
 }
 
 function runExecution() {

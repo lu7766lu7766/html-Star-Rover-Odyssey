@@ -17,9 +17,9 @@ export default {
   ],
   controlType: 'condition-builder',
   conditionRules: {
-    rule1: { threshold: 5, action: 'STOP' },
-    rule2: { threshold: 15, action: 'SLOW_DOWN' },
-    fallbackAction: 'FULL_SPEED'
+    rule1: { threshold: 2, action: 'FULL_SPEED' },
+    rule2: { threshold: 8, action: 'STOP' },
+    fallbackAction: 'SLOW_DOWN'
   },
   availableActions: [
     { id: 'STOP', label: '停止避碰 (STOP)', tag: 'danger' },
@@ -28,10 +28,9 @@ export default {
   ],
   testDistances: [3, 10, 22],
   hints: [
-    '提示 1：當距離小於 5 時，隕石已經近在眼前！必須立刻「停止」否則會發生撞擊。',
-    '提示 2：當距離在 5 到 15 之間時，減速慢行是最佳避障策略。',
-    '提示 3：如果距離大於 15（進入 else 否則分支），前方視野開闊，可以放心「全速前進」。',
-    '提示 4：注意檢查小於 (<) 的數值設定是否符合題目要求！'
+    '提示 1【條件判斷觀念】：if (條件) { 行為 } 會先檢查第一個分支。如果條件成立就執行動作，後續的 else if 與 else 就不會再觸發。',
+    '提示 2【雷達分區觀察】：障礙物雷達區分三層：極度接近區 (距離 < 5)、警戒緩衝區 (距離 < 15) 與開闊航道 (距離 >= 15)。',
+    '提示 3【引導式思考】：越靠近隕石越危險。思考：在第一道防線 (距離 < 5) 應該執行什麼動作才能避免撞毀？當前方開闊遠離障礙時，最後的 else 預設分支應該保持什麼速度？'
   ],
   jsCodeExample: `// 💡 JavaScript 對照：多重條件判斷
 function autoPilotDecision(distance) {
