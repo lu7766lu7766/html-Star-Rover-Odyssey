@@ -5,6 +5,7 @@ import { useProgressStore } from '../src/stores/progressStore.js';
 import { Level2Scene } from '../src/game/scenes/Level2Scene.js';
 import { Level1Scene } from '../src/game/scenes/Level1Scene.js';
 import { Level3Scene } from '../src/game/scenes/Level3Scene.js';
+import { Level4Scene } from '../src/game/scenes/Level4Scene.js';
 import { Level8Scene } from '../src/game/scenes/Level8Scene.js';
 
 const mockStorage = {};
@@ -164,5 +165,30 @@ describe('Star Rover Odyssey 2.0 - Failure Alert Modal & Vehicle Restore Suite',
     expect(scene.isLaunching).toBe(false);
     expect(scene.launchHeight).toBe(0);
     expect(scene.drone.position.y).toBeCloseTo(0.6);
+  });
+
+  it('Level4Scene: properly restores maze rover to start pad (1, 0) on RESET_SCENE and RESET_POSITION', () => {
+    const scene = new Level4Scene();
+    scene.build();
+
+    // Start pad world coords: gx=1, gy=0 -> x = (1 - 2.5)*2.4 = -3.6, z = (2.5 - 0)*2.4 = 6.0
+    expect(scene.rover.position.x).toBeCloseTo(-3.6);
+    expect(scene.rover.position.z).toBeCloseTo(6.0);
+
+    // Simulate rover moved elsewhere
+    scene.rover.position.set(2.4, 0.1, -1.2);
+    scene.currentGrid = { x: 3, y: 3, dir: 1 };
+
+    scene.handleAction('RESET_SCENE');
+    expect(scene.currentGrid.x).toBe(1);
+    expect(scene.currentGrid.y).toBe(0);
+    expect(scene.rover.position.x).toBeCloseTo(-3.6);
+    expect(scene.rover.position.z).toBeCloseTo(6.0);
+
+    // Also verify RESET_POSITION
+    scene.rover.position.set(0, 0.1, 0);
+    scene.handleAction('RESET_POSITION');
+    expect(scene.rover.position.x).toBeCloseTo(-3.6);
+    expect(scene.rover.position.z).toBeCloseTo(6.0);
   });
 });

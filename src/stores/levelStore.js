@@ -155,7 +155,12 @@ export const useLevelStore = defineStore('level', {
       } else if (currentLevel.id === 3) {
         animDuration = 2000;
       } else if (currentLevel.id === 4) {
-        animDuration = Math.max(1000, (payload.loopConfig?.loopCount || 3) * 550);
+        const blocks = payload.loopConfig?.blocks || [];
+        let totalSteps = 0;
+        for (const b of blocks) {
+          totalSteps += (b.type === 'LOOP' ? (b.count || 2) : 1);
+        }
+        animDuration = Math.max(1200, Math.min(totalSteps * 420, 5000));
       } else if (currentLevel.id === 5) {
         animDuration = 1500;
       } else if (currentLevel.id === 7) {

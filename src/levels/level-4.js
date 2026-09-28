@@ -1,77 +1,195 @@
 /**
- * Level 4: 水晶採集
- * 核心概念：迴圈 (Loops - for)
+ * Level 4: 迷宮巡航與迴圈拼圖
+ * 核心概念：for 迴圈結構、重複路徑模組化與演算法最佳化
  */
+
+export const LEVEL_4_MAP = {
+  gridSize: { width: 6, height: 6 },
+  start: { x: 1, y: 0, dir: 0 }, // dir: 0=North(+y), 1=East(+x), 2=South(-y), 3=West(-x)
+  target: { x: 4, y: 4 },
+  obstacles: [
+    { x: 1, y: 3 },
+    { x: 2, y: 3 },
+    { x: 2, y: 1 },
+    { x: 3, y: 1 },
+    { x: 4, y: 1 },
+    { x: 0, y: 2 }
+  ],
+  optimalBlockCount: 5
+};
 
 export default {
   id: 4,
-  title: '水晶採集',
-  subtitle: '迴圈與重複執行',
-  conceptTitle: '擺脫人工重複：用迴圈掌控次數',
-  concepts: ['for 迴圈', '計數器變數 (i++)', '重複執行邏輯'],
-  description: `探測船在發光的結晶洞穴發現了能量水晶礦脈！此處有 5 顆高純度水晶需要採樣。不需要手動下達 5 次採集指令，請使用「迴圈積木」設定精確的重複次數，並把「機械臂採集」指令放入迴圈主體內，自動化完成採礦作業。`,
+  title: '迷宮巡航與迴圈拼圖',
+  subtitle: '迴圈結構與路徑最佳化',
+  conceptTitle: '擺脫人工重複：用 for 迴圈精簡拼圖路徑',
+  concepts: ['for 迴圈', '路徑規劃演算法', '積木最佳化 (Optimal Blocks)'],
+  description: `探測船進入了岩石嶙峋的峽谷迷宮！前方佈滿能量障礙物，直行將會撞毀。請使用「前進、後退、左轉、右轉」以及「迴圈積木」拼出安全路線，繞過障礙物抵達目標基地 (座標 4, 4)。只要能成功抵達即可通關；善用迴圈更可以挑戰最精簡的 5 塊拼圖最佳解！`,
   targetRequirements: [
-    '設定迴圈重複次數為 5 次',
-    '在迴圈內放入「機械臂採集水晶」指令',
-    '剛好採滿目標 5 顆能量水晶',
-    '避免採集次數過多導致機械臂空抓磨損'
+    '避開所有岩石障礙物與迷宮邊界',
+    '成功導航抵達目的地基地 (座標 4, 4)',
+    '可以自由使用前進、後退、左轉、右轉拼出路徑 (抵達即通關)',
+    '（進階挑戰）善用 for 迴圈包裝重複前進指令，挑戰最優解 5 塊積木'
   ],
   controlType: 'loop-blocks',
+  mapConfig: LEVEL_4_MAP,
   initialLoopConfig: {
-    loopCount: 3,
-    action: 'HARVEST_CRYSTAL'
+    // Initial state has only 1 forward step (stops far short of target, prevents auto-pass)
+    blocks: [
+      { id: 'b-init-1', type: 'FORWARD' }
+    ]
   },
-  availableLoopActions: [
-    { id: 'HARVEST_CRYSTAL', label: '機械臂採集水晶', icon: 'Sparkles', description: '伸出機械臂採收一顆水晶並放入貨艙' },
-    { id: 'IDLE_WAIT', label: '原地待命冷卻', icon: 'Clock', description: '不做任何動作，空轉一個循環' }
-  ],
-  targetCrystals: 5,
   hints: [
-    '提示 1【迴圈概念】：for (let i = 0; i < N; i++) 是程式自動重複的核心。大括號內的動作會依據 N 的數值循環執行。',
-    '提示 2【目標觀察】：請檢視 3D 洞穴中的水晶與任務說明：動力艙總共需要採滿多少顆能量水晶才能完成充能？',
-    '提示 3【引導式思考】：次數不足會無法啟動反應爐，次數過多則會導致機械爪抓空岩壁。請調校重複次數，使其剛好與目標採集量相等。'
+    '提示 1【觀察地圖】：從起點 (1, 0) 朝北直行 3 格會撞到 (1, 3) 障礙物。請在 (1, 2) 處向右轉朝東前進！',
+    '提示 2【路徑策略】：先向前走 2 格 ➔ 向右轉 ➔ 向前走 3 格 ➔ 向左轉 ➔ 向前走 2 格，剛好能抵達 (4, 4) 目標基地！',
+    '提示 3【迴圈最佳化】：連續前進 2 次或 3 次時，可以使用「重複執行 N 次」迴圈積木，把程式積木大幅精簡到 5 塊完成最優解！'
   ],
-  jsCodeExample: `// 💡 JavaScript 對照：使用 for 迴圈自動重複 5 次
-const targetCrystals = 5;
+  jsCodeExample: `// 💡 JavaScript 對照：利用 for 迴圈最佳化導航路徑 (只需 5 塊積木)
+for (let i = 0; i < 2; i++) {
+  rover.moveForward(); // 向前 2 格抵達轉折點
+}
 
-for (let i = 0; i < targetCrystals; i++) {
-  // 每次迴圈執行時，i 的值依序為 0, 1, 2, 3, 4
-  mechanicalArm.harvestCrystal();
-  console.log(\`已採集第 \${i + 1} 顆能量水晶！\`);
+rover.turnRight(); // 右轉朝東
+
+for (let i = 0; i < 3; i++) {
+  rover.moveForward(); // 向前 3 格穿越安全峽谷
+}
+
+rover.turnLeft(); // 左轉朝北
+
+for (let i = 0; i < 2; i++) {
+  rover.moveForward(); // 向前 2 格進駐目的地基地！
 }`,
-  conceptExplanation: `**迴圈 (Loop)** 是讓電腦處理重複繁瑣工作的強大神器。不需要複製貼上五行一模一樣的程式碼，只要用 \`for (let i = 0; i < 5; i++)\`，電腦就會自動重複執行大括號中的區塊 5 次，既簡潔又不容易出錯！`,
+  conceptExplanation: `**迴圈 (for loop)** 是程式設計中最核心的抽象能力。當我們需要讓角色連續前進 3 步或 10 步時，不需要重複寫 10 行相同程式碼，只要透過 \`for (let i = 0; i < N; i++)\` 即可高效率完成。在積木程式中，這能讓我們的拼圖數量大幅減少，達成「最優解」！`,
   validate: (runResult) => {
-    const loopConfig = runResult.loopConfig || {};
-    const { loopCount = 0, action } = loopConfig;
-    const target = 5;
+    const loopConfig = runResult.loopConfig || runResult || {};
+    const blocks = loopConfig.blocks || [];
+    const map = LEVEL_4_MAP;
 
-    if (!action || action !== 'HARVEST_CRYSTAL') {
+    if (!blocks || blocks.length === 0) {
       return {
         pass: false,
-        error: '迴圈內尚未配置正確的採集指令！請將「機械臂採集水晶」放入迴圈內。'
+        error: '拼圖序列為空！請從工具箱加入前進、轉彎或迴圈積木。'
       };
     }
 
-    if (loopCount < target) {
-      return {
-        pass: false,
-        error: `採集數量不足！目前迴圈僅執行 ${loopCount} 次，採集到 ${loopCount} 顆水晶，未達到目標 ${target} 顆！`,
-        details: { loopCount, harvested: loopCount, target }
-      };
+    // Directions: 0=North(dy=+1), 1=East(dx=+1), 2=South(dy=-1), 3=West(dx=-1)
+    const DIRS = [
+      { dx: 0, dy: 1, name: '北' },
+      { dx: 1, dy: 0, name: '東' },
+      { dx: 0, dy: -1, name: '南' },
+      { dx: -1, dy: 0, name: '西' }
+    ];
+
+    // Expand blocks (including loops) into a flat simulation step sequence
+    const flatActions = [];
+    for (const b of blocks) {
+      if (b.type === 'LOOP') {
+        const count = Math.max(1, Math.min(b.count || 2, 10));
+        const actionType = b.action || 'FORWARD';
+        for (let i = 0; i < count; i++) {
+          flatActions.push({ action: actionType, sourceBlockId: b.id });
+        }
+      } else {
+        flatActions.push({ action: b.type, sourceBlockId: b.id });
+      }
     }
 
-    if (loopCount > target) {
-      return {
-        pass: false,
-        error: `次數過多！礦脈中只有 ${target} 顆水晶，迴圈執行了 ${loopCount} 次，機械臂後續空抓岩壁發生磨損！請將次數設為剛好 ${target}。`,
-        details: { loopCount, harvested: target, extraEmptyPulls: loopCount - target }
-      };
-    }
+    let x = map.start.x;
+    let y = map.start.y;
+    let dir = map.start.dir; // 0 = North
 
-    return {
-      pass: true,
-      data: { harvested: loopCount },
-      feedback: `採礦任務圓滿達成！迴圈精確執行 ${loopCount} 次，成功採集 5 顆晶瑩剔透的能量水晶，能源庫存滿載！`
+    const isObstacle = (cx, cy) => {
+      return map.obstacles.some(ob => ob.x === cx && ob.y === cy);
     };
+
+    let stepCount = 0;
+    for (const item of flatActions) {
+      stepCount++;
+      const act = item.action;
+
+      if (act === 'TURN_LEFT') {
+        dir = (dir + 3) % 4;
+      } else if (act === 'TURN_RIGHT') {
+        dir = (dir + 1) % 4;
+      } else if (act === 'FORWARD') {
+        const nx = x + DIRS[dir].dx;
+        const ny = y + DIRS[dir].dy;
+
+        // Boundary check
+        if (nx < 0 || nx >= map.gridSize.width || ny < 0 || ny >= map.gridSize.height) {
+          return {
+            pass: false,
+            error: `超出迷宮邊界！探測船在第 ${stepCount} 步試圖前進至 (${nx}, ${ny})，掉出探勘平台邊緣！`,
+            details: { stepCount, position: { x, y }, attempted: { nx, ny } }
+          };
+        }
+
+        // Obstacle collision check
+        if (isObstacle(nx, ny)) {
+          return {
+            pass: false,
+            error: `撞擊岩石障礙物！探測船在第 ${stepCount} 步撞上了座標 (${nx}, ${ny}) 的能量岩石！請重新規劃路徑。`,
+            details: { stepCount, collisionAt: { x: nx, y: ny } }
+          };
+        }
+
+        x = nx;
+        y = ny;
+      } else if (act === 'BACKWARD') {
+        const nx = x - DIRS[dir].dx;
+        const ny = y - DIRS[dir].dy;
+
+        if (nx < 0 || nx >= map.gridSize.width || ny < 0 || ny >= map.gridSize.height) {
+          return {
+            pass: false,
+            error: `超出迷宮邊界！探測船在第 ${stepCount} 步後退至 (${nx}, ${ny})，掉出探勘平台邊緣！`,
+            details: { stepCount, position: { x, y } }
+          };
+        }
+
+        if (isObstacle(nx, ny)) {
+          return {
+            pass: false,
+            error: `後退撞擊障礙物！探測船在第 ${stepCount} 步後退撞上了座標 (${nx}, ${ny}) 的岩石！`,
+            details: { stepCount, collisionAt: { x: nx, y: ny } }
+          };
+        }
+
+        x = nx;
+        y = ny;
+      }
+    }
+
+    // Check Destination Arrival
+    if (x === map.target.x && y === map.target.y) {
+      const blockCount = blocks.length;
+      const isOptimal = blockCount <= map.optimalBlockCount;
+
+      let feedbackMsg = `🎉 導航成功！探測船成功避開所有障礙物，抵達目的地基地 (4, 4)！`;
+      if (isOptimal) {
+        feedbackMsg += `\n🌟 卓越評價：僅使用了 ${blockCount} 塊積木，完美達成最優解（${map.optimalBlockCount} 塊）！`;
+      } else {
+        feedbackMsg += `\n✓ 通關合格！目前使用 ${blockCount} 塊積木（最優解參考只需 ${map.optimalBlockCount} 塊，可嘗試用迴圈精簡重複指令）。`;
+      }
+
+      return {
+        pass: true,
+        data: {
+          finalPos: { x, y },
+          blockCount,
+          isOptimal,
+          flatActions
+        },
+        feedback: feedbackMsg
+      };
+    } else {
+      const dist = Math.abs(x - map.target.x) + Math.abs(y - map.target.y);
+      return {
+        pass: false,
+        error: `未抵達目的地！探測船目前停在座標 (${x}, ${y})，距離目標基地 (4, 4) 尚差 ${dist} 格。請繼續拼接路徑！`,
+        details: { currentPos: { x, y }, targetPos: map.target, distanceRemaining: dist }
+      };
+    }
   }
 };

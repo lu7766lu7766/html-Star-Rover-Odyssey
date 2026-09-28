@@ -1,69 +1,274 @@
 /**
- * Level 4 Scene: 地表深度鑽探
+ * Level 4 Scene: 迷宮巡航與迴圈拼圖 (Maze Navigation & Loop Puzzles)
+ * 3D 6x6 Sci-Fi Grid Platform with Start Pad, Destination Base, and Crystal Obstacles.
  */
 
 import * as THREE from 'three';
 import { BaseGameScene } from './BaseGameScene.js';
-import { createSciFiRover, createSciFiGrid, createCrystalMine, createTextTexture } from '../models/ProceduralMeshes.js';
+import { createSciFiRover, createSciFiGrid, createLandingPad, createTextTexture } from '../models/ProceduralMeshes.js';
 import { soundManager } from '../core/SoundManager.js';
+import { LEVEL_4_MAP } from '../../levels/level-4.js';
+
+const CELL_SIZE = 2.4;
 
 export class Level4Scene extends BaseGameScene {
   constructor() {
     super(4);
     this.rover = null;
-    this.crystals = [];
-    this.mineGroup = null;
-    this.drillArm = null;
-    this.collectedCount = 0;
-    this.targetHarvest = 0;
-    this.isHarvesting = false;
-    this.harvestTimer = 0;
+    this.startPad = null;
+    this.targetBase = null;
+    this.obstaclesGroup = null;
+    this.gridPlatform = null;
+
+    // Simulation & Animation state
+    this.currentGrid = { x: 1, y: 0, dir: 0 };
+    this.animQueue = [];
+    this.isAnimating = false;
+    this.stepTimer = 0;
+    this.stepDuration = 0.38;
+    this.currentStep = null;
+    this.startTransform = { x: 0, z: 0, rotY: 0 };
+    this.targetTransform = { x: 0, z: 0, rotY: 0 };
+  }
+
+  init(sceneManager) {
+    this.sceneManager = sceneManager;
+    this.build();
+    this.resetCamera();
+  }
+
+  resetCamera() {
+    if (this.sceneManager && this.sceneManager.cameraController) {
+      // Perspective: Elevated angled isometric view overlooking 6x6 grid
+      this.sceneManager.cameraController.reset(
+        new THREE.Vector3(0, 16.5, 14.5),
+        new THREE.Vector3(0, 0, 0)
+      );
+    }
+  }
+
+  gridToWorld(gx, gy) {
+    return {
+      x: (gx - 2.5) * CELL_SIZE,
+      z: (2.5 - gy) * CELL_SIZE
+    };
+  }
+
+  getHeadingAngle(dir) {
+    // 0=North(face -Z)=PI, 1=East(face +X)=-PI/2, 2=South(face +Z)=0, 3=West(face -X)=PI/2
+    const angles = [Math.PI, -Math.PI / 2, 0, Math.PI / 2];
+    return angles[dir] ?? Math.PI;
   }
 
   build() {
-    const grid = createSciFiGrid(60, 60, 0x10b981);
-    this.group.add(grid);
+    // 1. Surrounding sci-fi floor grid
+    const ambientGrid = createSciFiGrid(80, 80, 0x38bdf8, 0xe2e8f0);
+    ambientGrid.position.y = -0.25;
+    this.group.add(ambientGrid);
 
-    this.rover = createSciFiRover();
-    this.rover.position.set(-2.5, 0, 0);
-    this.group.add(this.rover);
+    // 2. 6x6 Elevated Sci-Fi Floating Maze Platform
+    this.buildMazePlatform();
 
-    // Drill mechanical arm attached to front
-    const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.5, 8);
-    armGeo.rotateZ(Math.PI / 4);
-    const armMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
-    this.drillArm = new THREE.Mesh(armGeo, armMat);
-    this.drillArm.position.set(1.2, 0.8, 1.0);
-    this.rover.add(this.drillArm);
+    // 3. Start Pad at (1, 0)
+    this.buildStartPad();
 
-    // Crystal mine
-    this.mineGroup = createCrystalMine();
-    this.mineGroup.position.set(0, 0, 0);
-    this.crystals = this.mineGroup.userData.crystals;
-    this.group.add(this.mineGroup);
+    // 4. Target Base at (4, 4)
+    this.buildTargetBase();
+
+    // 5. Crystal Obstacles
+    this.buildObstacles();
+
+    // 6. Sci-Fi Rover
+    this.buildRover();
 
     this.reset();
   }
 
-  reset() {
-    this.collectedCount = 0;
-    this.targetHarvest = 0;
-    this.isHarvesting = false;
-    this.harvestTimer = 0;
+  buildMazePlatform() {
+    this.gridPlatform = new THREE.Group();
 
-    if (this.crystals) {
-      this.crystals.forEach((c) => {
-        c.visible = true;
-        c.scale.set(1, 1, 1);
-      });
+    // Platform Base
+    const platGeo = new THREE.BoxGeometry(6 * CELL_SIZE + 0.6, 0.4, 6 * CELL_SIZE + 0.6);
+    const platMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.25,
+      metalness: 0.15
+    });
+    const platform = new THREE.Mesh(platGeo, platMat);
+    platform.position.y = -0.2;
+    this.gridPlatform.add(platform);
+
+    // Glowing border rim
+    const rimGeo = new THREE.BoxGeometry(6 * CELL_SIZE + 0.8, 0.08, 6 * CELL_SIZE + 0.8);
+    const rimMat = new THREE.MeshBasicMaterial({ color: 0x93c5fd });
+    const rim = new THREE.Mesh(rimGeo, rimMat);
+    rim.position.y = 0.01;
+    this.gridPlatform.add(rim);
+
+    // 6x6 Tile Grid Lines and Subtle Coordinate Tiles
+    const tileMatOdd = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
+    const tileMatEven = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.5 });
+    const tileGeo = new THREE.PlaneGeometry(CELL_SIZE - 0.08, CELL_SIZE - 0.08);
+    tileGeo.rotateX(-Math.PI / 2);
+
+    for (let gx = 0; gx < 6; gx++) {
+      for (let gy = 0; gy < 6; gy++) {
+        const isOdd = (gx + gy) % 2 === 1;
+        const tileMesh = new THREE.Mesh(tileGeo, isOdd ? tileMatOdd : tileMatEven);
+        const pos = this.gridToWorld(gx, gy);
+        tileMesh.position.set(pos.x, 0.02, pos.z);
+        this.gridPlatform.add(tileMesh);
+      }
     }
+
+    this.group.add(this.gridPlatform);
+  }
+
+  buildStartPad() {
+    this.startPad = new THREE.Group();
+    const pos = this.gridToWorld(LEVEL_4_MAP.start.x, LEVEL_4_MAP.start.y);
+    this.startPad.position.set(pos.x, 0.03, pos.z);
+
+    // Cyan glowing ring
+    const ringGeo = new THREE.RingGeometry(0.5, 0.9, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    this.startPad.add(ring);
+
+    // Start text disc
+    const discGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.05, 32);
+    const discMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.3 });
+    const disc = new THREE.Mesh(discGeo, discMat);
+    disc.position.y = 0.01;
+    this.startPad.add(disc);
+
+    this.group.add(this.startPad);
+  }
+
+  buildTargetBase() {
+    this.targetBase = new THREE.Group();
+    const pos = this.gridToWorld(LEVEL_4_MAP.target.x, LEVEL_4_MAP.target.y);
+    this.targetBase.position.set(pos.x, 0.03, pos.z);
+
+    // Landing pad with green beacon
+    const pad = createLandingPad(1.1, 0x10b981);
+    this.targetBase.add(pad);
+
+    // Communications Tower & Hologram Ring
+    const towerGeo = new THREE.CylinderGeometry(0.12, 0.2, 2.2, 16);
+    const towerMat = new THREE.MeshStandardMaterial({ color: 0x059669, metalness: 0.6 });
+    const tower = new THREE.Mesh(towerGeo, towerMat);
+    tower.position.y = 1.1;
+    this.targetBase.add(tower);
+
+    // Radar dish on tower
+    const dishGeo = new THREE.ConeGeometry(0.5, 0.3, 16, 1, true);
+    dishGeo.rotateX(Math.PI / 4);
+    const dishMat = new THREE.MeshStandardMaterial({ color: 0x34d399, metalness: 0.8 });
+    const dish = new THREE.Mesh(dishGeo, dishMat);
+    dish.position.set(0, 2.3, 0);
+    this.targetBase.add(dish);
+    this.targetBase.userData.dish = dish;
+
+    // Beacon glow light
+    const pointLight = new THREE.PointLight(0x10b981, 1.2, 8);
+    pointLight.position.set(0, 2.5, 0);
+    this.targetBase.add(pointLight);
+
+    this.group.add(this.targetBase);
+  }
+
+  buildObstacles() {
+    this.obstaclesGroup = new THREE.Group();
+
+    const rockMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      roughness: 0.9,
+      metalness: 0.1,
+      flatShading: true
+    });
+
+    const crystalMat = new THREE.MeshStandardMaterial({
+      color: 0xf97316,
+      emissive: 0xe11d48,
+      emissiveIntensity: 0.45,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+
+    LEVEL_4_MAP.obstacles.forEach((ob, idx) => {
+      const obGroup = new THREE.Group();
+      const pos = this.gridToWorld(ob.x, ob.y);
+      obGroup.position.set(pos.x, 0, pos.z);
+
+      // Base Rock formation
+      const baseRockGeo = new THREE.DodecahedronGeometry(0.85, 1);
+      const baseRock = new THREE.Mesh(baseRockGeo, rockMat);
+      baseRock.position.y = 0.55;
+      baseRock.scale.set(1.1, 0.8, 1.1);
+      obGroup.add(baseRock);
+
+      // 3 Glowing Crystal Spikes per obstacle
+      const spikeGeo = new THREE.ConeGeometry(0.22, 1.2, 5);
+      spikeGeo.translate(0, 0.6, 0);
+
+      const spike1 = new THREE.Mesh(spikeGeo, crystalMat);
+      spike1.position.set(-0.25, 0.7, 0.1);
+      spike1.rotation.set(0.15, idx, -0.2);
+      obGroup.add(spike1);
+
+      const spike2 = new THREE.Mesh(spikeGeo, crystalMat);
+      spike2.position.set(0.25, 0.7, -0.15);
+      spike2.rotation.set(-0.2, idx * 2, 0.25);
+      obGroup.add(spike2);
+
+      const spike3 = new THREE.Mesh(spikeGeo, crystalMat);
+      spike3.position.set(0.0, 0.85, 0.2);
+      spike3.rotation.set(0.1, idx * 3, 0.05);
+      spike3.scale.set(0.8, 0.8, 0.8);
+      obGroup.add(spike3);
+
+      this.obstaclesGroup.add(obGroup);
+    });
+
+    this.group.add(this.obstaclesGroup);
+  }
+
+  buildRover() {
+    this.rover = createSciFiRover();
+    // Scale rover so it fits gracefully within a 2.4x2.4 grid cell
+    this.rover.scale.set(0.52, 0.52, 0.52);
+    this.group.add(this.rover);
+  }
+
+  resetRoverToStart() {
+    this.currentGrid = {
+      x: LEVEL_4_MAP.start.x,
+      y: LEVEL_4_MAP.start.y,
+      dir: LEVEL_4_MAP.start.dir
+    };
+    this.animQueue = [];
+    this.isAnimating = false;
+    this.currentStep = null;
+
     if (this.rover) {
-      const { nameLabel } = this.rover.userData;
+      const pos = this.gridToWorld(this.currentGrid.x, this.currentGrid.y);
+      this.rover.position.set(pos.x, 0.1, pos.z);
+      this.rover.rotation.set(0, this.getHeadingAngle(this.currentGrid.dir), 0);
+
+      const { nameLabel, flame } = this.rover.userData;
+      if (flame) flame.material.opacity = 0;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture('CRYSTALS: 0/5', '#ffffff', '#2563eb');
+        nameLabel.material.map = createTextTexture('ROVER · 起點 (1, 0) 北', '#ffffff', '#2563eb');
         nameLabel.material.needsUpdate = true;
       }
     }
+  }
+
+  reset() {
+    this.resetRoverToStart();
+    this.resetCamera();
   }
 
   handleAction(actionType, payload = {}) {
@@ -73,70 +278,265 @@ export class Level4Scene extends BaseGameScene {
     }
 
     if (actionType === 'EXECUTE_START') {
-      this.reset();
+      this.resetRoverToStart();
+
       const loopConfig = payload.payload?.loopConfig || payload.loopConfig || {};
-      const count = Math.min(loopConfig.loopCount || 3, 5);
-      this.targetHarvest = count;
-      this.collectedCount = 0;
-      this.isHarvesting = true;
-      this.harvestTimer = 0;
-      try { soundManager.playDrill(); } catch (e) {}
+      const blocks = loopConfig.blocks || [];
+
+      // Expand blocks into flat animation steps
+      const flatActions = [];
+      for (const b of blocks) {
+        if (b.type === 'LOOP') {
+          const count = Math.max(1, Math.min(b.count || 2, 6));
+          const act = b.action || 'FORWARD';
+          for (let i = 0; i < count; i++) {
+            flatActions.push({ type: act, sourceBlock: b });
+          }
+        } else {
+          flatActions.push({ type: b.type, sourceBlock: b });
+        }
+      }
+
+      this.prepareAnimationQueue(flatActions);
+      try {
+        soundManager.playEngine();
+      } catch (e) {}
     } else if (actionType === 'LEVEL_SUCCESS') {
-      this.collectedCount = 5;
-      this.crystals.forEach(c => c.visible = false);
       const { nameLabel } = this.rover.userData;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture('ALL 5 COLLECTED!', '#ffffff', '#10b981');
+        nameLabel.material.map = createTextTexture('★ 成功抵達基地 (4, 4)！', '#ffffff', '#10b981');
         nameLabel.material.needsUpdate = true;
       }
     } else if (actionType === 'LEVEL_FAIL') {
       const { nameLabel } = this.rover.userData;
       if (nameLabel) {
-        nameLabel.material.map = createTextTexture(`HARVEST: ${this.collectedCount}/5`, '#ffffff', '#ef4444');
+        nameLabel.material.map = createTextTexture(`⚠️ 未達成目的地`, '#ffffff', '#ef4444');
         nameLabel.material.needsUpdate = true;
       }
     }
   }
 
+  prepareAnimationQueue(flatActions) {
+    const DIRS = [
+      { dx: 0, dy: 1 },
+      { dx: 1, dy: 0 },
+      { dx: 0, dy: -1 },
+      { dx: -1, dy: 0 }
+    ];
+
+    let gx = this.currentGrid.x;
+    let gy = this.currentGrid.y;
+    let dir = this.currentGrid.dir;
+
+    this.animQueue = [];
+
+    const isObstacle = (cx, cy) => {
+      return LEVEL_4_MAP.obstacles.some(ob => ob.x === cx && ob.y === cy);
+    };
+
+    for (const item of flatActions) {
+      const act = item.type;
+
+      if (act === 'TURN_LEFT') {
+        const nextDir = (dir + 3) % 4;
+        this.animQueue.push({
+          type: 'TURN',
+          fromDir: dir,
+          toDir: nextDir,
+          gx,
+          gy
+        });
+        dir = nextDir;
+      } else if (act === 'TURN_RIGHT') {
+        const nextDir = (dir + 1) % 4;
+        this.animQueue.push({
+          type: 'TURN',
+          fromDir: dir,
+          toDir: nextDir,
+          gx,
+          gy
+        });
+        dir = nextDir;
+      } else if (act === 'FORWARD') {
+        const nx = gx + DIRS[dir].dx;
+        const ny = gy + DIRS[dir].dy;
+        const collision = isObstacle(nx, ny);
+        const outOfBounds = (nx < 0 || nx >= 6 || ny < 0 || ny >= 6);
+
+        this.animQueue.push({
+          type: 'MOVE',
+          fromX: gx,
+          fromY: gy,
+          toX: nx,
+          toY: ny,
+          dir,
+          collision,
+          outOfBounds
+        });
+
+        gx = nx;
+        gy = ny;
+        if (collision || outOfBounds) {
+          break; // Stop animating on crash
+        }
+      } else if (act === 'BACKWARD') {
+        const nx = gx - DIRS[dir].dx;
+        const ny = gy - DIRS[dir].dy;
+        const collision = isObstacle(nx, ny);
+        const outOfBounds = (nx < 0 || nx >= 6 || ny < 0 || ny >= 6);
+
+        this.animQueue.push({
+          type: 'MOVE',
+          fromX: gx,
+          fromY: gy,
+          toX: nx,
+          toY: ny,
+          dir,
+          collision,
+          outOfBounds
+        });
+
+        gx = nx;
+        gy = ny;
+        if (collision || outOfBounds) {
+          break;
+        }
+      }
+    }
+
+    this.isAnimating = true;
+    this.stepTimer = 0;
+    this.currentStep = null;
+    this.advanceStep();
+  }
+
+  advanceStep() {
+    if (this.animQueue.length === 0) {
+      this.isAnimating = false;
+      this.currentStep = null;
+      return;
+    }
+
+    this.currentStep = this.animQueue.shift();
+    this.stepTimer = 0;
+
+    const { nameLabel, flame } = this.rover.userData;
+    if (flame) flame.material.opacity = 0.5;
+
+    if (this.currentStep.type === 'MOVE') {
+      const fromW = this.gridToWorld(this.currentStep.fromX, this.currentStep.fromY);
+      const toW = this.gridToWorld(this.currentStep.toX, this.currentStep.toY);
+
+      this.startTransform = {
+        x: fromW.x,
+        z: fromW.z,
+        rotY: this.getHeadingAngle(this.currentStep.dir)
+      };
+      this.targetTransform = {
+        x: toW.x,
+        z: toW.z,
+        rotY: this.getHeadingAngle(this.currentStep.dir)
+      };
+
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture(
+          `巡航至 (${this.currentStep.toX}, ${this.currentStep.toY})`,
+          '#ffffff',
+          '#0284c7'
+        );
+        nameLabel.material.needsUpdate = true;
+      }
+    } else if (this.currentStep.type === 'TURN') {
+      const curW = this.gridToWorld(this.currentStep.gx, this.currentStep.gy);
+      const fromAngle = this.getHeadingAngle(this.currentStep.fromDir);
+      let toAngle = this.getHeadingAngle(this.currentStep.toDir);
+
+      // Handle angle wrap-around smoothly
+      if (toAngle - fromAngle > Math.PI) toAngle -= Math.PI * 2;
+      if (toAngle - fromAngle < -Math.PI) toAngle += Math.PI * 2;
+
+      this.startTransform = {
+        x: curW.x,
+        z: curW.z,
+        rotY: fromAngle
+      };
+      this.targetTransform = {
+        x: curW.x,
+        z: curW.z,
+        rotY: toAngle
+      };
+
+      if (nameLabel) {
+        nameLabel.material.map = createTextTexture(
+          `轉向至 ${this.getHeadingName(this.currentStep.toDir)}`,
+          '#ffffff',
+          '#6366f1'
+        );
+        nameLabel.material.needsUpdate = true;
+      }
+    }
+  }
+
+  getHeadingName(dir) {
+    const names = ['北', '東', '南', '西'];
+    return names[dir] || '北';
+  }
+
   update(delta) {
-    // Idle rotation for remaining visible crystals
-    if (this.crystals) {
-      this.crystals.forEach(c => {
-        if (c.visible) {
-          c.rotation.y += delta * 1.5;
-          c.rotation.x += delta * 0.8;
-        }
-      });
+    // 1. Rotate Radar dish on target base
+    if (this.targetBase && this.targetBase.userData.dish) {
+      this.targetBase.userData.dish.rotation.y += delta * 1.5;
     }
 
-    if (this.drillArm) {
-      this.drillArm.rotation.y += delta * (this.isHarvesting ? 12 : 2);
+    // 2. Pulse target beacon
+    if (this.targetBase) {
+      const beacon = this.targetBase.userData.beacon;
+      if (beacon) {
+        beacon.rotation.y += delta * 0.8;
+      }
     }
 
-    // Step-by-step crystal harvesting animation
-    if (this.isHarvesting) {
-      this.harvestTimer += delta;
-      if (this.harvestTimer >= 0.35 && this.collectedCount < this.targetHarvest) {
-        this.harvestTimer = 0;
-        const crystalToCollect = this.crystals[this.collectedCount];
-        if (crystalToCollect) {
-          crystalToCollect.visible = false;
-        }
-        this.collectedCount++;
-        try { soundManager.playCrystalCollect(); } catch (e) {}
+    // 3. Step-by-step Rover Motion Interpolation
+    if (this.isAnimating && this.currentStep && this.rover) {
+      this.stepTimer += delta;
+      const progress = Math.min(1.0, this.stepTimer / this.stepDuration);
+      // Smooth easeInOutQuad interpolation
+      const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
 
-        const { nameLabel } = this.rover.userData;
-        if (nameLabel) {
-          nameLabel.material.map = createTextTexture(
-            `CRYSTALS: ${this.collectedCount}/5`,
-            '#ffffff',
-            this.collectedCount === 5 ? '#10b981' : '#2563eb'
-          );
-          nameLabel.material.needsUpdate = true;
-        }
+      const curX = THREE.MathUtils.lerp(this.startTransform.x, this.targetTransform.x, ease);
+      const curZ = THREE.MathUtils.lerp(this.startTransform.z, this.targetTransform.z, ease);
+      const curRotY = THREE.MathUtils.lerp(this.startTransform.rotY, this.targetTransform.rotY, ease);
 
-        if (this.collectedCount >= this.targetHarvest) {
-          this.isHarvesting = false;
+      this.rover.position.set(curX, 0.1, curZ);
+      this.rover.rotation.y = curRotY;
+
+      // Wheel roll animation during move
+      if (this.currentStep.type === 'MOVE' && this.rover.userData.wheels) {
+        this.rover.userData.wheels.forEach(w => {
+          w.children[0].rotation.x += delta * 10;
+        });
+      }
+
+      if (progress >= 1.0) {
+        // Step finished
+        if (this.currentStep.collision || this.currentStep.outOfBounds) {
+          // Collision stop
+          this.isAnimating = false;
+          const { flame, nameLabel } = this.rover.userData;
+          if (flame) flame.material.opacity = 0;
+          if (nameLabel) {
+            nameLabel.material.map = createTextTexture(
+              this.currentStep.collision ? '💥 撞擊岩石障礙物！' : '⚠️ 超出平台邊緣！',
+              '#ffffff',
+              '#ef4444'
+            );
+            nameLabel.material.needsUpdate = true;
+          }
+          try {
+            soundManager.playError();
+          } catch (e) {}
+        } else {
+          this.advanceStep();
         }
       }
     }

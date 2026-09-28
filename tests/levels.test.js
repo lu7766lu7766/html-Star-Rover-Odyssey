@@ -132,29 +132,63 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
     expect(failRes.pass).toBe(false);
   });
 
-  // Level 4: Loops
-  it('Level 4: validates exact 5 harvests loop count', () => {
-    const passRes = level4.validate({
+  // Level 4: Loops & Path Puzzle
+  it('Level 4: validates obstacle collision, non-optimal pass, and optimal loop solution', () => {
+    // 1. Initial state (only 1 step forward) fails
+    const initRes = level4.validate({ loopConfig: level4.initialLoopConfig });
+    expect(initRes.pass).toBe(false);
+    expect(initRes.error).toContain('未抵達目的地');
+
+    // 2. Obstacle collision: straight forward 3 steps hits obstacle at (1, 3)
+    const collideRes = level4.validate({
       loopConfig: {
-        loopCount: 5,
-        action: 'HARVEST_CRYSTAL'
+        blocks: [
+          { id: '1', type: 'FORWARD' },
+          { id: '2', type: 'FORWARD' },
+          { id: '3', type: 'FORWARD' }
+        ]
       }
     });
-    expect(passRes.pass).toBe(true);
+    expect(collideRes.pass).toBe(false);
+    expect(collideRes.error).toContain('撞擊岩石障礙物');
 
-    // Insufficient harvests
-    const underRes = level4.validate({
-      loopConfig: { loopCount: 3, action: 'HARVEST_CRYSTAL' }
+    // 3. Non-optimal pass without loops (9 individual blocks): reaches (4, 4) and PASSES
+    const nonOptimalRes = level4.validate({
+      loopConfig: {
+        blocks: [
+          { id: '1', type: 'FORWARD' },
+          { id: '2', type: 'FORWARD' },
+          { id: '3', type: 'TURN_RIGHT' },
+          { id: '4', type: 'FORWARD' },
+          { id: '5', type: 'FORWARD' },
+          { id: '6', type: 'FORWARD' },
+          { id: '7', type: 'TURN_LEFT' },
+          { id: '8', type: 'FORWARD' },
+          { id: '9', type: 'FORWARD' }
+        ]
+      }
     });
-    expect(underRes.pass).toBe(false);
-    expect(underRes.error).toContain('採集數量不足');
+    expect(nonOptimalRes.pass).toBe(true);
+    expect(nonOptimalRes.data.isOptimal).toBe(false);
+    expect(nonOptimalRes.data.blockCount).toBe(9);
+    expect(nonOptimalRes.feedback).toContain('通關合格');
 
-    // Excessive harvests
-    const overRes = level4.validate({
-      loopConfig: { loopCount: 7, action: 'HARVEST_CRYSTAL' }
+    // 4. Optimal pass using loops (5 blocks): reaches (4, 4) and awards optimal status
+    const optimalRes = level4.validate({
+      loopConfig: {
+        blocks: [
+          { id: '1', type: 'LOOP', count: 2, action: 'FORWARD' },
+          { id: '2', type: 'TURN_RIGHT' },
+          { id: '3', type: 'LOOP', count: 3, action: 'FORWARD' },
+          { id: '4', type: 'TURN_LEFT' },
+          { id: '5', type: 'LOOP', count: 2, action: 'FORWARD' }
+        ]
+      }
     });
-    expect(overRes.pass).toBe(false);
-    expect(overRes.error).toContain('次數過多');
+    expect(optimalRes.pass).toBe(true);
+    expect(optimalRes.data.isOptimal).toBe(true);
+    expect(optimalRes.data.blockCount).toBe(5);
+    expect(optimalRes.feedback).toContain('卓越評價');
   });
 
   // Level 5: Objects & Methods
@@ -319,10 +353,10 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
     const l3Res = level3.validate({ rules: { rule1Threshold: 2, rule1Action: 'FULL_SPEED', rule2Threshold: 8, rule2Action: 'STOP', fallbackAction: 'SLOW_DOWN' } });
     expect(l3Res.pass).toBe(false);
 
-    // Level 4 initial state (loopCount 3 < 5) -> FAILS
+    // Level 4 initial state (only 1 step forward) -> FAILS (stops far short of target)
     const l4Res = level4.validate({ loopConfig: level4.initialLoopConfig });
     expect(l4Res.pass).toBe(false);
-    expect(l4Res.error).toContain('採集數量不足');
+    expect(l4Res.error).toContain('未抵達目的地');
 
     // Level 5 initial state (basic-sensor, range 10 < 18) -> FAILS
     const l5Res = level5.validate({ moduleConfig: { moduleId: 'basic-sensor', range: 10, mode: 'NORMAL', isMethodInvoked: true } });
