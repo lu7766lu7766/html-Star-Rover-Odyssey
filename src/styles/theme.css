@@ -1,0 +1,46 @@
+:root {
+  /* Color Palette - Deep Space Cyberpunk */
+  --bg-space: #07090e;
+  --bg-panel: #0d121d;
+  --bg-panel-elevated: #131a29;
+  --bg-panel-glass: rgba(13, 18, 29, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(0, 242, 254, 0.3);
+  --border-glow: rgba(0, 242, 254, 0.6);
+
+  /* Primary Neon Colors */
+  --cyan-primary: #00f2fe;
+  --cyan-glow: rgba(0, 242, 254, 0.4);
+  --blue-bright: #38bdf8;
+  --blue-deep: #1e3a8a;
+  
+  /* Status Colors */
+  --success-emerald: #10b981;
+  --success-glow: rgba(16, 185, 129, 0.4);
+  --warning-amber: #f59e0b;
+  --warning-glow: rgba(245, 158, 11, 0.4);
+  --danger-crimson: #ef4444;
+  --danger-glow: rgba(239, 68, 68, 0.4);
+  --purple-accent: #a855f7;
+
+  /* Typography Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-cyan: #38bdf8;
+
+  /* Fonts */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Noto Sans TC', 'Outfit', sans-serif;
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Glassmorphism & Shadow */
+  --shadow-panel: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --shadow-neon-cyan: 0 0 15px rgba(0, 242, 254, 0.35);
+  --shadow-neon-emerald: 0 0 15px rgba(16, 185, 129, 0.35);
+}
