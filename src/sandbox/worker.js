@@ -6,6 +6,8 @@
 import { MockDocument } from './mockDOM.js';
 import { MSG_TYPE } from './protocol.js';
 
+const workerSelf = self;
+
 // Global state within worker instance
 let currentMockDoc = null;
 let recordedAPICalls = [];
@@ -24,7 +26,7 @@ function postLog(type, args) {
     return arg;
   });
   capturedLogs.push({ type, args: serialized, time: Date.now() });
-  self.postMessage({
+  workerSelf.postMessage({
     type: MSG_TYPE.CONSOLE_LOG,
     payload: { type, args: serialized }
   });
@@ -45,14 +47,14 @@ function sandboxedAssert(condition, message = '斷言失敗') {
   }
 }
 
-self.onmessage = function (e) {
+workerSelf.onmessage = function (e) {
   const { type, payload } = e.data || {};
 
   if (type === MSG_TYPE.TRIGGER_EVENT) {
     const { targetId, eventType } = payload || {};
     if (currentMockDoc && currentMockDoc.elements[targetId]) {
       currentMockDoc.elements[targetId].dispatchEvent(eventType);
-      self.postMessage({
+      workerSelf.postMessage({
         type: MSG_TYPE.DOM_MUTATION,
         payload: currentMockDoc.getSnapshot()
       });
@@ -66,7 +68,7 @@ self.onmessage = function (e) {
     capturedLogs = [];
 
     currentMockDoc = new MockDocument((mutation) => {
-      self.postMessage({
+      workerSelf.postMessage({
         type: MSG_TYPE.DOM_MUTATION,
         payload: currentMockDoc.getSnapshot()
       });
@@ -76,14 +78,14 @@ self.onmessage = function (e) {
     const rover = {
       setup: (name, battery, isActive) => {
         recordedAPICalls.push({ api: 'rover.setup', args: [name, battery, isActive] });
-        self.postMessage({
+        workerSelf.postMessage({
           type: MSG_TYPE.GAME_API_CALL,
           payload: { api: 'rover.setup', args: [name, battery, isActive] }
         });
       },
       launch: (remainingFuel) => {
         recordedAPICalls.push({ api: 'rover.launch', args: [remainingFuel] });
-        self.postMessage({
+        workerSelf.postMessage({
           type: MSG_TYPE.GAME_API_CALL,
           payload: { api: 'rover.launch', args: [remainingFuel] }
         });
@@ -109,7 +111,7 @@ self.onmessage = function (e) {
           fnError,
           isFunction: typeof pilotFn === 'function'
         });
-        self.postMessage({
+        workerSelf.postMessage({
           type: MSG_TYPE.GAME_API_CALL,
           payload: { api: 'rover.setAutoPilot', testResults, isFunction: typeof pilotFn === 'function' }
         });
@@ -134,7 +136,7 @@ self.onmessage = function (e) {
             hasActivate: typeof moduleObj?.activate === 'function'
           }]
         });
-        self.postMessage({
+        workerSelf.postMessage({
           type: MSG_TYPE.GAME_API_CALL,
           payload: {
             api: 'rover.installModule',
@@ -152,7 +154,7 @@ self.onmessage = function (e) {
     const drill = {
       dig: (depthIndex) => {
         recordedAPICalls.push({ api: 'drill.dig', args: [depthIndex] });
-        self.postMessage({
+        workerSelf.postMessage({
           type: MSG_TYPE.GAME_API_CALL,
           payload: { api: 'drill.dig', args: [depthIndex] }
         });
@@ -170,7 +172,7 @@ self.onmessage = function (e) {
     const droneFleet = {
       deploy: (droneList) => {
         recordedAPICalls.push({ api: 'droneFleet.deploy', args: [droneList] });
-        self.postMessage({
+        workerSelf.postMessage({
           type: MSG_TYPE.GAME_API_CALL,
           payload: { api: 'droneFleet.deploy', args: [droneList] }
         });
@@ -178,7 +180,12 @@ self.onmessage = function (e) {
     };
 
     try {
+      // Disable dangerous globals in worker scope
+      workerSelf.eval = () => { throw new Error('eval() 已在安全沙盒中被禁用'); };
+      workerSelf.Function = () => { throw new Error('Function() 已在安全沙盒中被禁用'); };
+
       // Create execution scope with strict forbidden globals
+      // NOTE: 'eval' and 'arguments' are NOT allowed as formal parameter names in strict mode!
       const executeFn = new Function(
         'console',
         'assert',
@@ -193,12 +200,11 @@ self.onmessage = function (e) {
         'fetch',
         'XMLHttpRequest',
         'importScripts',
-        'eval',
         'Function',
         `"use strict";\n${code}`
       );
 
-      // Execute code
+      // Execute student code
       const result = executeFn(
         sandboxedConsole,
         sandboxedAssert,
@@ -213,11 +219,10 @@ self.onmessage = function (e) {
         undefined, // fetch
         undefined, // XMLHttpRequest
         undefined, // importScripts
-        undefined, // eval
         undefined  // Function
       );
 
-      self.postMessage({
+      workerSelf.postMessage({
         type: MSG_TYPE.EXECUTION_SUCCESS,
         payload: {
           result,
@@ -227,7 +232,7 @@ self.onmessage = function (e) {
         }
       });
     } catch (err) {
-      self.postMessage({
+      workerSelf.postMessage({
         type: MSG_TYPE.EXECUTION_ERROR,
         payload: {
           error: err.message || String(err),

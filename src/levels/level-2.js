@@ -19,11 +19,11 @@ let initialFuel = 500;
 let burnCost = 25;
 let burnsCount = 8;
 
-// 請使用算術運算子計算剩餘燃料
-let remainingFuel = initialFuel - burnCost * burnsCount;
+// TODO: 請使用算術運算子計算剩餘燃料
+// 公式：初始燃料 減去 (每次消耗 乘以 推進次數)
+let remainingFuel = 0;
 
-// 發射推進！
-rover.launch(remainingFuel);
+// TODO: 請在下方呼叫 rover.launch(...)，傳入計算好的 remainingFuel 啟動發射！
 `,
   availableAPI: [
     'rover.launch(remainingFuel: number)'

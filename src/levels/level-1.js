@@ -15,14 +15,16 @@ export default {
     '呼叫 rover.setup(name, battery, isActive)'
   ],
   starterCode: `// 第 1 關：探測船通電自檢
-// 請宣告變數並填入對應資料型態
+// 請宣告變數並設定正確的資料型態：
+// 1. shipName：字串 (string)，為你的探測船命名 (例如 "奧德賽號")
+// 2. battery：數字 (number)，電量需在 1 到 100 之間
+// 3. isActive：布林值 (boolean)，設定為 true 才能啟動系統
 
-let shipName = "奧德賽號";
-let battery = 100;
-let isActive = true;
+let shipName = "";
+let battery = 0;
+let isActive = false;
 
-// 呼叫開機 API
-rover.setup(shipName, battery, isActive);
+// TODO: 請在下方呼叫 rover.setup(...)，依序傳入船名、電量與啟動狀態
 `,
   availableAPI: [
     'rover.setup(name: string, battery: number, isActive: boolean)'

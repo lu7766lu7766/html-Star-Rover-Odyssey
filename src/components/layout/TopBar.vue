@@ -123,12 +123,12 @@
           <span>通關金手指 / 開發者模式</span>
         </div>
         <div class="cheat-card-body">
-          <p class="cheat-hint">請輸入指定金手指代碼以切換開發者全關卡解鎖模式：</p>
+          <p class="cheat-hint">請輸入通關金手指代碼以切換全關卡解鎖模式：</p>
           <input
             v-model="cheatCodeInput"
             type="text"
             class="cheat-input"
-            placeholder="請輸入代碼 (例如 jaccis666)"
+            placeholder="請輸入通關代碼..."
             @keyup.enter="submitCheat"
           />
           <div v-if="cheatMessage" class="cheat-msg" :class="{ 'msg-success': isDeveloperMode }">

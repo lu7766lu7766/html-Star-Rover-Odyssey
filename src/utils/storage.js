@@ -3,7 +3,7 @@
  * Manages LocalStorage persistence and JSON import/export
  */
 
-const STORAGE_KEY = 'star_rover_odyssey_save_v1';
+const STORAGE_KEY = 'star_rover_odyssey_save_v2';
 
 export const DEFAULT_SAVE_DATA = {
   version: 1,

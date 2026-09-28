@@ -16,15 +16,14 @@ export default {
     '點擊觸發時將 status.style.color 改為 "green"'
   ],
   starterCode: `// 第 6 關：控制中心面板
-// 獲取 DOM 控制元素
+// 1. 取得 DOM 控制元素
 const unlockButton = document.getElementById("btn-unlock");
 const statusLabel = document.getElementById("status");
 
-// 綁定點擊事件監聽器
-unlockButton.addEventListener("click", function() {
-  statusLabel.innerText = "已解除鎖定";
-  statusLabel.style.color = "green";
-});
+// TODO: 使用 addEventListener 為 unlockButton 綁定 "click" 點擊事件
+// 點擊觸發時：
+// 1. 將 statusLabel.innerText 改為 "已解除鎖定"
+// 2. 將 statusLabel.style.color 改為 "green"
 `,
   availableAPI: [
     'document.getElementById(id: string)',

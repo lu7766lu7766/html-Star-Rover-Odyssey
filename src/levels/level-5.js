@@ -15,16 +15,14 @@ export default {
     '呼叫 rover.installModule(moduleObject)'
   ],
   starterCode: `// 第 5 關：外掛模組裝載
-// 定義雷達掃描儀物件
+// 請定義雷達掃描儀物件 scanModule，需包含：
+// 1. name: 模組名稱 (非空字串，例如 "星環雷達掃描儀")
+// 2. range: 掃描半徑 (大於 0 之數字，例如 30)
+// 3. activate(): 方法函式，透過 this.range 回傳半徑數值
 
 const scanModule = {
-  name: "星環雷達掃描儀",
-  range: 30,
-
-  // 啟用模組方法
-  activate() {
-    return this.range;
-  }
+  // TODO: 定義 name, range 與 activate() 方法
+  
 };
 
 // 裝載模組到探測船

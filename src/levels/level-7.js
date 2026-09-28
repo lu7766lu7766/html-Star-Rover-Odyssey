@@ -19,16 +19,15 @@ export default {
     '呼叫 droneFleet.deploy(drones) 部署陣列'
   ],
   starterCode: `// 第 7 關：無人機編隊
-// 系統已注入 drones 陣列，包含 4 架無人機資料
+// 系統已注入 drones 陣列，包含 4 架無人機資料 (每架有 id, x, y, z, battery)
 
 for (let i = 0; i < drones.length; i++) {
   let drone = drones[i];
   
-  if (drone.battery < 20) {
-    drone.status = "WARNING";
-  } else {
-    drone.status = "PATROL";
-  }
+  // TODO: 判斷電量
+  // - 若 drone.battery < 20：設定 drone.status = "WARNING"
+  // - 否則 (>= 20)：設定 drone.status = "PATROL"
+  
 }
 
 // 部署無人機編隊

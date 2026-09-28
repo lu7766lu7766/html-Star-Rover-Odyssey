@@ -15,11 +15,11 @@ export default {
     '不可超出深度範圍 (0 ~ 4) 或重複採集相同深度'
   ],
   starterCode: `// 第 4 關：地表深度鑽探
-// 請使用 for 迴圈執行 5 次鑽探
+// 請使用 for 迴圈採集地下 5 顆能源水晶（深度索引 0 到 4）
 
 for (let i = 0; i < 5; i++) {
-  // 依照深度索引採集水晶
-  drill.dig(i);
+  // TODO: 請在迴圈內呼叫 drill.dig(i) 進行採集
+  
 }
 `,
   availableAPI: [

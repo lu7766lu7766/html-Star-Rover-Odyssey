@@ -19,19 +19,17 @@ export default {
     '呼叫 rover.setAutoPilot(pilotFunction)'
   ],
   starterCode: `// 第 3 關：雷達自主避障
-// 請撰寫避障邏輯函式
+// 請撰寫避障邏輯函式，根據 distance 回傳指令：
+// - 小於 5 單位：回傳 "STOP"
+// - 5 到 15 單位 (含)：回傳 "SLOW_DOWN"
+// - 大於 15 單位：回傳 "FULL_SPEED"
 
 function autoPilot(distance) {
-  if (distance < 5) {
-    return "STOP";
-  } else if (distance <= 15) {
-    return "SLOW_DOWN";
-  } else {
-    return "FULL_SPEED";
-  }
+  // TODO: 請使用 if / else if / else 完成判斷
+  
 }
 
-// 註冊自動導航
+// 註冊自動導航回呼
 rover.setAutoPilot(autoPilot);
 `,
   availableAPI: [
