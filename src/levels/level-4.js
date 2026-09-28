@@ -1,70 +1,77 @@
 /**
- * Level 4: 地表深度鑽探
+ * Level 4: 水晶採集
+ * 核心概念：迴圈 (Loops - for)
  */
 
 export default {
   id: 4,
-  title: '地表深度鑽探',
-  subtitle: 'for 迴圈與計數器控制',
-  concepts: ['for 迴圈', '計數器變數', '終止條件', '遞增運算子 ++'],
-  description: `探測船抵達富含能源水晶的異星地表。地下共有 5 個深度的水晶礦層（深度索引 0 到 4）。請使用 \`for\` 迴圈指揮鑽探機械手臂逐層挖掘，採集全部 5 顆水晶！`,
+  title: '水晶採集',
+  subtitle: '迴圈與重複執行',
+  conceptTitle: '擺脫人工重複：用迴圈掌控次數',
+  concepts: ['for 迴圈', '計數器變數 (i++)', '重複執行邏輯'],
+  description: `探測船在發光的結晶洞穴發現了能量水晶礦脈！此處有 5 顆高純度水晶需要採樣。不需要手動下達 5 次採集指令，請使用「迴圈積木」設定精確的重複次數，並把「機械臂採集」指令放入迴圈主體內，自動化完成採礦作業。`,
   targetRequirements: [
-    '使用 for 迴圈遍歷深度 0 到 4',
-    '依序呼叫 drill.dig(i)',
-    '完整採集 5 顆水晶礦石',
-    '不可超出深度範圍 (0 ~ 4) 或重複採集相同深度'
+    '設定迴圈重複次數為 5 次',
+    '在迴圈內放入「機械臂採集水晶」指令',
+    '剛好採滿目標 5 顆能量水晶',
+    '避免採集次數過多導致機械臂空抓磨損'
   ],
-  starterCode: `// 第 4 關：地表深度鑽探
-// 請使用 for 迴圈採集地下 5 顆能源水晶（深度索引 0 到 4）
-
-for (let i = 0; i < 5; i++) {
-  // TODO: 請在迴圈內呼叫 drill.dig(i) 進行採集
-  
-}
-`,
-  availableAPI: [
-    'drill.dig(depthIndex: number)'
+  controlType: 'loop-blocks',
+  initialLoopConfig: {
+    loopCount: 3,
+    action: 'HARVEST_CRYSTAL'
+  },
+  availableLoopActions: [
+    { id: 'HARVEST_CRYSTAL', label: '機械臂採集水晶', icon: 'Sparkles', description: '伸出機械臂採收一顆水晶並放入貨艙' },
+    { id: 'IDLE_WAIT', label: '原地待命冷卻', icon: 'Clock', description: '不做任何動作，空轉一個循環' }
   ],
+  targetCrystals: 5,
   hints: [
-    '提示 1：標準 for 迴圈語法：for (let i = 0; i < 5; i++) { ... }。',
-    '提示 2：迴圈內呼叫 drill.dig(i)，i 會依序為 0, 1, 2, 3, 4。',
-    '提示 3：不要手動複製 5 行程式碼，請務必使用迴圈控制，體會程式自動化的威力！'
+    '提示 1：礦脈中總共只有 5 顆發光水晶，目標採集數量為 5。',
+    '提示 2：把迴圈計數器設定為 5，每次循環就會自動呼叫一次採集指令。',
+    '提示 3：若次數小於 5，無法滿足動力艙的最低能源需求；若大於 5，機械爪會抓空岩壁造成設備損壞！'
   ],
+  jsCodeExample: `// 💡 JavaScript 對照：使用 for 迴圈自動重複 5 次
+const targetCrystals = 5;
+
+for (let i = 0; i < targetCrystals; i++) {
+  // 每次迴圈執行時，i 的值依序為 0, 1, 2, 3, 4
+  mechanicalArm.harvestCrystal();
+  console.log(\`已採集第 \${i + 1} 顆能量水晶！\`);
+}`,
+  conceptExplanation: `**迴圈 (Loop)** 是讓電腦處理重複繁瑣工作的強大神器。不需要複製貼上五行一模一樣的程式碼，只要用 \`for (let i = 0; i < 5; i++)\`，電腦就會自動重複執行大括號中的區塊 5 次，既簡潔又不容易出錯！`,
   validate: (runResult) => {
-    if (!runResult.success) {
-      return { pass: false, error: runResult.error || '程式執行發生錯誤' };
-    }
+    const loopConfig = runResult.loopConfig || {};
+    const { loopCount = 0, action } = loopConfig;
+    const target = 5;
 
-    const digCalls = (runResult.apiCalls || []).filter(call => call.api === 'drill.dig');
-    if (digCalls.length === 0) {
-      return { pass: false, error: '未偵測到任何 drill.dig(...) 鑽探呼叫！' };
-    }
-
-    const depths = digCalls.map(c => c.args[0]);
-
-    // Check count
-    if (depths.length !== 5) {
-      return { 
-        pass: false, 
-        error: `鑽探次數不符！預期採集 5 顆水晶，目前採集了 ${depths.length} 次。` 
+    if (!action || action !== 'HARVEST_CRYSTAL') {
+      return {
+        pass: false,
+        error: '迴圈內尚未配置正確的採集指令！請將「機械臂採集水晶」放入迴圈內。'
       };
     }
 
-    // Check depths are 0, 1, 2, 3, 4
-    const expected = [0, 1, 2, 3, 4];
-    const isMatched = depths.every((val, idx) => val === expected[idx]);
+    if (loopCount < target) {
+      return {
+        pass: false,
+        error: `採集數量不足！目前迴圈僅執行 ${loopCount} 次，採集到 ${loopCount} 顆水晶，未達到目標 ${target} 顆！`,
+        details: { loopCount, harvested: loopCount, target }
+      };
+    }
 
-    if (!isMatched) {
-      return { 
-        pass: false, 
-        error: `採集深度順序錯誤！採集紀錄為 [${depths.join(', ')}]，預期為 [0, 1, 2, 3, 4]。` 
+    if (loopCount > target) {
+      return {
+        pass: false,
+        error: `次數過多！礦脈中只有 ${target} 顆水晶，迴圈執行了 ${loopCount} 次，機械臂後續空抓岩壁發生磨損！請將次數設為剛好 ${target}。`,
+        details: { loopCount, harvested: target, extraEmptyPulls: loopCount - target }
       };
     }
 
     return {
       pass: true,
-      data: { depths },
-      feedback: '鑽探手臂運作順暢！成功從地表採集 5 顆高純度能源水晶！'
+      data: { harvested: loopCount },
+      feedback: `採礦任務圓滿達成！迴圈精確執行 ${loopCount} 次，成功採集 5 顆晶瑩剔透的能量水晶，能源庫存滿載！`
     };
   }
 };

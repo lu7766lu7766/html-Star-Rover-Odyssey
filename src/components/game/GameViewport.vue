@@ -97,6 +97,7 @@ import { Level4Scene } from '../../game/scenes/Level4Scene.js';
 import { Level5Scene } from '../../game/scenes/Level5Scene.js';
 import { Level6Scene } from '../../game/scenes/Level6Scene.js';
 import { Level7Scene } from '../../game/scenes/Level7Scene.js';
+import { Level8Scene } from '../../game/scenes/Level8Scene.js';
 import ControlPanelHUD from './ControlPanelHUD.vue';
 import DroneFleetHUD from './DroneFleetHUD.vue';
 
@@ -130,7 +131,7 @@ let sceneManager = null;
 const contextLost = ref(false);
 
 const showSuccessModal = computed(() => props.isSuccessModalOpen);
-const hasNextLevel = computed(() => props.levelId < 7);
+const hasNextLevel = computed(() => props.levelId < 8);
 const feedbackText = computed(() => props.lastRunResult?.feedback || '探測船邏輯自檢完成，所有遙測數據全數通過！');
 
 const droneFleetData = computed(() => {
@@ -154,6 +155,7 @@ function createSceneInstance(id) {
     case 5: return new Level5Scene();
     case 6: return new Level6Scene();
     case 7: return new Level7Scene();
+    case 8: return new Level8Scene();
     default: return new Level1Scene();
   }
 }
@@ -242,7 +244,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #04070e;
+  background: #f1f5f9;
 }
 
 .canvas-wrapper {
@@ -258,15 +260,25 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: rgba(9, 14, 25, 0.7);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-subtle);
-  padding: 0.3rem 0.65rem;
-  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-md);
   z-index: 10;
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.beacon-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  display: inline-block;
+  box-shadow: 0 0 8px var(--success-glow);
 }
 
 .telemetry-item {
@@ -276,9 +288,9 @@ onBeforeUnmount(() => {
 }
 
 .telemetry-label {
-  color: var(--cyan-primary);
+  color: var(--primary-blue);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .telemetry-dim {
@@ -286,7 +298,7 @@ onBeforeUnmount(() => {
 }
 
 .telemetry-val {
-  color: #f1f5f9;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -301,20 +313,23 @@ onBeforeUnmount(() => {
 }
 
 .hud-btn {
-  background: rgba(11, 16, 29, 0.75);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
-  border: 1px solid var(--border-medium);
-  font-size: 0.76rem;
-  padding: 0.32rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  padding: 0.35rem 0.75rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .hud-btn:hover {
-  border-color: var(--cyan-primary);
-  background: rgba(0, 229, 255, 0.12);
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
 }
 
 .icon-hud {
-  color: var(--cyan-primary);
+  color: var(--primary-blue);
 }
 
 .context-lost-banner {
@@ -322,8 +337,8 @@ onBeforeUnmount(() => {
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(244, 63, 94, 0.18);
-  border: 1px solid var(--danger-crimson);
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
   backdrop-filter: blur(12px);
   padding: 0.85rem 1.35rem;
   border-radius: var(--radius-md);
@@ -331,14 +346,14 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 1rem;
   z-index: 25;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-elevated);
 }
 
 .banner-text {
   display: flex;
   flex-direction: column;
-  font-size: 0.8rem;
-  color: #fecdd3;
+  font-size: 0.82rem;
+  color: var(--danger-dark);
   gap: 0.15rem;
 }
 
@@ -349,7 +364,7 @@ onBeforeUnmount(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(3, 6, 12, 0.75);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -360,10 +375,10 @@ onBeforeUnmount(() => {
 
 .success-card {
   width: 100%;
-  max-width: 460px;
-  background: #0a1120;
-  border: 1px solid var(--success-emerald);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(16, 185, 129, 0.25);
+  max-width: 480px;
+  background: #ffffff;
+  border: 1px solid var(--success-border);
+  box-shadow: var(--shadow-elevated), 0 0 30px rgba(16, 185, 129, 0.2);
   padding: 2.2rem;
   text-align: center;
   border-radius: var(--radius-lg);
@@ -393,7 +408,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 2px dashed rgba(16, 185, 129, 0.6);
+  border: 2px dashed rgba(16, 185, 129, 0.5);
   animation: rotateRing 12s linear infinite;
 }
 
@@ -406,16 +421,16 @@ onBeforeUnmount(() => {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.16);
-  border: 2px solid var(--success-emerald);
+  background: var(--success-light);
+  border: 2px solid var(--success);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 20px var(--success-glow);
 }
 
 .icon-award {
-  color: var(--success-emerald);
+  color: var(--success-dark);
 }
 
 .success-headings {
@@ -426,32 +441,32 @@ onBeforeUnmount(() => {
 
 .sub-heading {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: var(--success-emerald);
+  color: var(--success-dark);
   letter-spacing: 0.08em;
 }
 
 .success-title {
   font-family: var(--font-display);
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -0.02em;
 }
 
 .success-feedback-box {
-  background: rgba(16, 185, 129, 0.06);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: var(--radius-sm);
-  padding: 0.75rem 1rem;
+  background: var(--success-light);
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
   width: 100%;
 }
 
 .success-feedback {
-  font-size: 0.88rem;
-  color: #d1fae5;
-  line-height: 1.5;
+  font-size: 0.92rem;
+  color: var(--success-dark);
+  line-height: 1.6;
 }
 
 .success-actions {

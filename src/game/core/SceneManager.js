@@ -30,14 +30,14 @@ export class SceneManager {
     const width = this.container.clientWidth || 800;
     const height = this.container.clientHeight || 600;
 
-    // 1. Scene
+    // 1. Scene - Bright Cosmic Dawn Atmosphere
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x07090e);
-    this.scene.fog = new THREE.FogExp2(0x07090e, 0.015);
+    this.scene.background = new THREE.Color(0xf1f5f9);
+    this.scene.fog = new THREE.FogExp2(0xf1f5f9, 0.01);
 
     // 2. Camera
     this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    this.camera.position.set(0, 5, 10);
+    this.camera.position.set(0, 7, 12);
 
     // 3. Renderer
     try {
@@ -49,7 +49,7 @@ export class SceneManager {
       this.renderer.setSize(width, height);
       this.renderer.setPixelRatio(this.isLowPerformance ? 1.0 : Math.min(window.devicePixelRatio, 2.0));
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.2;
+      this.renderer.toneMappingExposure = 1.05;
 
       this.container.appendChild(this.renderer.domElement);
     } catch (err) {
@@ -61,10 +61,10 @@ export class SceneManager {
     // 4. Controls
     this.cameraController = new CameraController(this.camera, this.renderer.domElement);
 
-    // 5. Lighting
+    // 5. Lighting - Bright, friendly, clean illumination
     this.setupLighting();
 
-    // 6. Ambient Starfield
+    // 6. Ambient Cosmic Dust Motes
     this.setupStarfield();
 
     // 7. Event Listeners
@@ -75,38 +75,44 @@ export class SceneManager {
   }
 
   setupLighting() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // Hemispherical soft sky/ground light
+    const hemiLight = new THREE.HemisphereLight(0xeff6ff, 0xf1f5f9, 0.7);
+    this.scene.add(hemiLight);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     this.scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x00f2fe, 1.2);
-    dirLight.position.set(10, 20, 15);
+    // Warm sun light
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(12, 24, 16);
     this.scene.add(dirLight);
 
-    const accentLight = new THREE.DirectionalLight(0xa855f7, 0.8);
-    accentLight.position.set(-15, 10, -10);
-    this.scene.add(accentLight);
+    // Soft lilac-blue fill light
+    const fillLight = new THREE.DirectionalLight(0xc4b5fd, 0.5);
+    fillLight.position.set(-16, 12, -12);
+    this.scene.add(fillLight);
   }
 
   setupStarfield() {
-    const starCount = this.isLowPerformance ? 300 : 1200;
-    const starGeo = new THREE.BufferGeometry();
-    const starPositions = new Float32Array(starCount * 3);
+    const particleCount = this.isLowPerformance ? 150 : 400;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
 
-    for (let i = 0; i < starCount * 3; i += 3) {
-      starPositions[i] = (Math.random() - 0.5) * 200;
-      starPositions[i + 1] = Math.random() * 80 - 10;
-      starPositions[i + 2] = (Math.random() - 0.5) * 200;
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      positions[i] = (Math.random() - 0.5) * 160;
+      positions[i + 1] = Math.random() * 60 - 5;
+      positions[i + 2] = (Math.random() - 0.5) * 160;
     }
 
-    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMat = new THREE.PointsMaterial({
-      color: 0x94a3b8,
-      size: 0.8,
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0x93c5fd, // Soft pastel blue dust particles
+      size: 0.9,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.65
     });
 
-    this.starfield = new THREE.Points(starGeo, starMat);
+    this.starfield = new THREE.Points(geo, mat);
     this.scene.add(this.starfield);
   }
 

@@ -1,87 +1,84 @@
 /**
- * Level 3: 雷達自主避障
+ * Level 3: 隕石避障
+ * 核心概念：條件判斷 (Conditionals - if / else if / else)
  */
 
 export default {
   id: 3,
-  title: '雷達自主避障',
-  subtitle: '條件判斷與邏輯運算子',
-  concepts: ['if', 'else if', 'else', '&&', '比較運算子'],
-  description: `前方小行星帶地形險峻，請撰寫自動導航函式。雷達將回傳障礙物距離 (distance)，依照距離做出正確航行決策：
-- 小於 5 單位：回傳 "STOP"（煞車緊急停止）
-- 5 到 15 單位（含）：回傳 "SLOW_DOWN"（減速通過）
-- 大於 15 單位：回傳 "FULL_SPEED"（全速前進）`,
+  title: '隕石避障',
+  subtitle: '條件判斷',
+  conceptTitle: '讓程式依不同情況做決定：if / else',
+  concepts: ['條件判斷', '邏輯比較 (<, <=, >)', '分支決策'],
+  description: `前方進入密集小行星亂石流！雷達感測器會持續回傳與前方隕石的「即時距離」。請為探測船的自動導航系統設定條件邏輯，根據距離做出正確的安全決策：極度接近時緊急煞停、近距離時減速觀察、遠距離時全速巡航。`,
   targetRequirements: [
-    '定義包含 distance 參數的導航回呼函式',
-    'distance < 5 時回傳 "STOP"',
-    'distance >= 5 且 <= 15 時回傳 "SLOW_DOWN"',
-    'distance > 15 時回傳 "FULL_SPEED"',
-    '呼叫 rover.setAutoPilot(pilotFunction)'
+    '設定條件 1：若距離 < 5，執行「停止 (STOP)」避免撞毀',
+    '設定條件 2：若距離 < 15，執行「減速巡航 (SLOW_DOWN)」謹慎通過',
+    '設定預設分支 (否則)：執行「全速前進 (FULL_SPEED)」維持前進動能'
   ],
-  starterCode: `// 第 3 關：雷達自主避障
-// 請撰寫避障邏輯函式，根據 distance 回傳指令：
-// - 小於 5 單位：回傳 "STOP"
-// - 5 到 15 單位 (含)：回傳 "SLOW_DOWN"
-// - 大於 15 單位：回傳 "FULL_SPEED"
-
-function autoPilot(distance) {
-  // TODO: 請使用 if / else if / else 完成判斷
-  
-}
-
-// 註冊自動導航回呼
-rover.setAutoPilot(autoPilot);
-`,
-  availableAPI: [
-    'rover.setAutoPilot(callback: (distance: number) => "STOP" | "SLOW_DOWN" | "FULL_SPEED")'
+  controlType: 'condition-builder',
+  conditionRules: {
+    rule1: { threshold: 5, action: 'STOP' },
+    rule2: { threshold: 15, action: 'SLOW_DOWN' },
+    fallbackAction: 'FULL_SPEED'
+  },
+  availableActions: [
+    { id: 'STOP', label: '停止避碰 (STOP)', tag: 'danger' },
+    { id: 'SLOW_DOWN', label: '減速慢行 (SLOW_DOWN)', tag: 'warning' },
+    { id: 'FULL_SPEED', label: '全速前進 (FULL_SPEED)', tag: 'success' }
   ],
+  testDistances: [3, 10, 22],
   hints: [
-    '提示 1：使用 if (distance < 5) 判斷極度危險距離。',
-    '提示 2：使用 else if (distance <= 15) 或 (distance >= 5 && distance <= 15) 判斷緩衝距離。',
-    '提示 3：字串大小寫必須精確為 "STOP"、"SLOW_DOWN" 與 "FULL_SPEED"。'
+    '提示 1：當距離小於 5 時，隕石已經近在眼前！必須立刻「停止」否則會發生撞擊。',
+    '提示 2：當距離在 5 到 15 之間時，減速慢行是最佳避障策略。',
+    '提示 3：如果距離大於 15（進入 else 否則分支），前方視野開闊，可以放心「全速前進」。',
+    '提示 4：注意檢查小於 (<) 的數值設定是否符合題目要求！'
   ],
+  jsCodeExample: `// 💡 JavaScript 對照：多重條件判斷
+function autoPilotDecision(distance) {
+  if (distance < 5) {
+    // 距離極近：緊急停止
+    return 'STOP';
+  } else if (distance < 15) {
+    // 距離接近：減速巡航
+    return 'SLOW_DOWN';
+  } else {
+    // 安全開闊：全速前進
+    return 'FULL_SPEED';
+  }
+}`,
+  conceptExplanation: `**條件判斷 (Conditional)** 是程式具備「智慧」的基石。透過 \`if\`、\`else if\` 與 \`else\`，電腦能檢視環境數據（例如距離、電量、分數），並根據比較的結果自動走進不同的處理分支，做出最佳反應。`,
   validate: (runResult) => {
-    if (!runResult.success) {
-      return { pass: false, error: runResult.error || '程式執行發生錯誤' };
+    const rules = runResult.rules || {};
+    const { rule1Threshold, rule1Action, rule2Threshold, rule2Action, fallbackAction } = rules;
+
+    // Simulation helper based on user input rules
+    function evaluate(dist) {
+      if (dist < rule1Threshold) return rule1Action;
+      if (dist < rule2Threshold) return rule2Action;
+      return fallbackAction;
     }
 
-    const autoPilotCall = (runResult.apiCalls || []).find(call => call.api === 'rover.setAutoPilot');
-    if (!autoPilotCall) {
-      return { pass: false, error: '未偵測到 rover.setAutoPilot(...) 呼叫！' };
-    }
+    const testCases = [
+      { dist: 3, expected: 'STOP', reason: '距離 3（極近距離），應緊急煞停避免撞擊！' },
+      { dist: 10, expected: 'SLOW_DOWN', reason: '距離 10（警戒範圍），應減速巡航謹慎通過！' },
+      { dist: 22, expected: 'FULL_SPEED', reason: '距離 22（安全距離），應全速前進！' }
+    ];
 
-    if (!autoPilotCall.isFunction) {
-      return { pass: false, error: 'rover.setAutoPilot 必須傳入一個函式 (Function) 作為參數！' };
-    }
-
-    if (autoPilotCall.fnError) {
-      return { pass: false, error: `導航函式執行時拋出異常: ${autoPilotCall.fnError}` };
-    }
-
-    const res = autoPilotCall.testResults;
-    if (!res) {
-      return { pass: false, error: '無法讀取導航測試結果' };
-    }
-
-    // Test distance = 3
-    if (res[3] !== 'STOP') {
-      return { pass: false, error: `測試距離 3 單位失敗：預期回傳 "STOP"，實際回傳 "${res[3]}"` };
-    }
-
-    // Test distance = 10
-    if (res[10] !== 'SLOW_DOWN') {
-      return { pass: false, error: `測試距離 10 單位失敗：預期回傳 "SLOW_DOWN"，實際回傳 "${res[10]}"` };
-    }
-
-    // Test distance = 20
-    if (res[20] !== 'FULL_SPEED') {
-      return { pass: false, error: `測試距離 20 單位失敗：預期回傳 "FULL_SPEED"，實際回傳 "${res[20]}"` };
+    for (const test of testCases) {
+      const actual = evaluate(test.dist);
+      if (actual !== test.expected) {
+        return {
+          pass: false,
+          error: `在測距為 ${test.dist} 單位時，探測船選擇了【${actual || '未指定'}】，但正確行為應為【${test.expected}】。原因：${test.reason}`,
+          details: { dist: test.dist, actual, expected: test.expected }
+        };
+      }
     }
 
     return {
       pass: true,
-      data: { testResults: res },
-      feedback: '雷達自主避障邏輯全部通過測試！探測船成功穿越未知小行星帶！'
+      data: { rules },
+      feedback: `避障邏輯測試全數通過！探測船在所有測距情境（3、10、22 單位）皆做出完美決策，順利穿越隕石帶！`
     };
   }
 };

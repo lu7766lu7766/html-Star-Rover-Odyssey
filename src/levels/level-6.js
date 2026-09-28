@@ -1,85 +1,97 @@
 /**
- * Level 6: 控制中心面板
+ * Level 6: 太空艙控制中心
+ * 核心概念：事件與 DOM (Events & DOM - addEventListener)
  */
 
 export default {
   id: 6,
-  title: '控制中心面板',
-  subtitle: 'DOM 操作與事件監聽',
-  concepts: ['document.getElementById', 'innerText', 'style.color', 'addEventListener'],
-  description: `太空站主機密門處於緊急鎖定。請獲取控制按鈕 \`btn-unlock\` 與狀態標籤 \`status\`，為按鈕綁定點擊事件 (\`addEventListener\`)。點擊時將狀態文字更新為 "已解鎖" 並將顏色設定為 "green"，開啟液壓氣密門！`,
+  title: '太空艙控制中心',
+  subtitle: '事件與 DOM 互動',
+  conceptTitle: '使用者與網頁的橋樑：事件驅動',
+  concepts: ['DOM 元素選擇', '事件監聽器 (addEventListener)', '狀態回饋'],
+  description: `太空主艙發生氣壓與警報誤觸鎖定！控制台的兩枚實體按鈕「解除警報 (#disarm-btn)」與「氣閘閘門 (#airlock-btn)」尚未綁定事件監聽器。請替元素配置正確的事件型別 (click) 與反應動作，隨後親自點擊操作按鈕，解除警報並開啟通往外層空間的氣閘艙門！`,
   targetRequirements: [
-    '透過 document.getElementById("btn-unlock") 取得按鈕',
-    '透過 document.getElementById("status") 取得狀態顯示元素',
-    '使用 btn.addEventListener("click", callback) 綁定點擊事件',
-    '點擊觸發時將 status.innerText 改為 "已解鎖" (或包含解鎖)',
-    '點擊觸發時將 status.style.color 改為 "green"'
+    '為 #disarm-btn 綁定 "click" 點擊事件，觸發「解除安全警報」',
+    '為 #airlock-btn 綁定 "click" 點擊事件，觸發「解鎖並開啟氣閘」',
+    '在操作面板中親自點擊「解除警報」，確認狀態轉為正常',
+    '點擊「開啟氣閘」，完成艙門開啟協議'
   ],
-  starterCode: `// 第 6 關：控制中心面板
-// 1. 取得 DOM 控制元素
-const unlockButton = document.getElementById("btn-unlock");
-const statusLabel = document.getElementById("status");
-
-// TODO: 使用 addEventListener 為 unlockButton 綁定 "click" 點擊事件
-// 點擊觸發時：
-// 1. 將 statusLabel.innerText 改為 "已解除鎖定"
-// 2. 將 statusLabel.style.color 改為 "green"
-`,
-  availableAPI: [
-    'document.getElementById(id: string)',
-    'element.innerText: string',
-    'element.style.color: string',
-    'element.addEventListener("click", callback: Function)'
+  controlType: 'dom-events',
+  initialBindings: {
+    disarmBtn: { eventType: 'click', action: 'DISARM_ALARM' },
+    airlockBtn: { eventType: 'click', action: 'OPEN_AIRLOCK' }
+  },
+  availableEvents: ['click', 'mouseover', 'dblclick'],
+  availableActions: [
+    { id: 'DISARM_ALARM', label: '解除安全警報 (disarmAlarm)' },
+    { id: 'OPEN_AIRLOCK', label: '開啟氣閘艙門 (openAirlock)' },
+    { id: 'EMERGENCY_LOCK', label: '全艙緊急封鎖 (emergencyLock)' }
   ],
   hints: [
-    '提示 1：使用 document.getElementById("btn-unlock") 取得按鈕元素。',
-    '提示 2：使用 unlockButton.addEventListener("click", function() { ... }) 監聽滑鼠點擊。',
-    '提示 3：在點擊函式內，將 statusLabel.innerText 設定為 "已解除鎖定"，並將 statusLabel.style.color = "green"。'
+    '提示 1：在網頁上，最常見的互動就是「點擊 (click)」。請將兩個按鈕的事件型態皆設定為 "click"。',
+    '提示 2：如果警報尚未解除就強行點擊開啟氣閘，防護系統會為了安全拒絕開門。請先點擊解除警報！',
+    '提示 3：綁定完成後，控制台上的按鈕將變為可互動狀態，點擊它們即可觀察指示燈與 3D 閘門變化。'
   ],
+  jsCodeExample: `// 💡 JavaScript 對照：透過 DOM 監聽使用者點擊事件
+const disarmButton = document.querySelector('#disarm-btn');
+const airlockButton = document.querySelector('#airlock-btn');
+const statusLight = document.querySelector('#status-indicator');
+
+let isAlarmActive = true;
+
+// 1. 綁定解除警報事件
+disarmButton.addEventListener('click', () => {
+  isAlarmActive = false;
+  statusLight.textContent = '系統正常 (NORMAL)';
+  console.log('警報已解除！');
+});
+
+// 2. 綁定開啟艙門事件
+airlockButton.addEventListener('click', () => {
+  if (!isAlarmActive) {
+    airlockDoor.open();
+    console.log('氣閘艙門已順利開啟！');
+  } else {
+    alert('警報中，安全協議禁止開門！');
+  }
+});`,
+  conceptExplanation: `網頁原本是靜態的文件（**DOM, 文件物件模型**）。當我們要讓網頁能對使用者的滑鼠、鍵盤做出反應時，就要透過 \`addEventListener('click', callback)\`「監聽」使用者的動作。一旦使用者點了按鈕，瀏覽器就會自動執行我們寫好的反應程式碼！`,
   validate: (runResult) => {
-    if (!runResult.success) {
-      return { pass: false, error: runResult.error || '程式執行發生錯誤' };
-    }
-
     const domState = runResult.domState || {};
-    const btn = domState['btn-unlock'];
-    const status = domState['status'];
+    const { bindings = {}, disarmed = false, airlockOpen = false } = domState;
 
-    if (!btn || !btn.hasListener) {
-      return { 
-        pass: false, 
-        error: '未偵測到按鈕點擊監聽器！請為 "btn-unlock" 綁定 addEventListener("click", ...)。' 
+    if (bindings.disarmEvent !== 'click' || bindings.disarmAction !== 'DISARM_ALARM') {
+      return {
+        pass: false,
+        error: '警報按鈕 (#disarm-btn) 的事件綁定不正確！請綁定 "click" 事件以執行「解除安全警報」。'
       };
     }
 
-    // Now check status after simulated or triggered click
-    // Note: status might be modified either by simulated event dispatch or student direct code
-    const isUnlockedText = status?.innerText && (
-      status.innerText.includes('解鎖') ||
-      status.innerText.includes('解除') ||
-      status.innerText.includes('開啟') ||
-      status.innerText.includes('PASS') ||
-      status.innerText.includes('正常')
-    );
-
-    const isGreenColor = status?.style?.color && (
-      status.style.color.toLowerCase() === 'green' ||
-      status.style.color.toLowerCase() === '#10b981' ||
-      status.style.color.toLowerCase() === '#00ff00' ||
-      status.style.color.toLowerCase() === 'rgb(0, 255, 0)'
-    );
-
-    if (!isUnlockedText || !isGreenColor) {
+    if (bindings.airlockEvent !== 'click' || bindings.airlockAction !== 'OPEN_AIRLOCK') {
       return {
         pass: false,
-        error: `按鈕已註冊監聽，但尚未觸發或文字/顏色不符。目前文字："${status?.innerText}"，顏色："${status?.style?.color}"。請點擊右側面板的按鈕或確認事件處理函式內更新了 innerText 與 style.color = "green"！`
+        error: '氣閘按鈕 (#airlock-btn) 的事件綁定不正確！請綁定 "click" 事件以執行「開啟氣閘艙門」。'
+      };
+    }
+
+    if (!disarmed) {
+      return {
+        pass: false,
+        error: '按鈕事件已綁定，但尚未在控制面板中點擊「解除警報」！請先點擊該按鈕以平息警報。'
+      };
+    }
+
+    if (!airlockOpen) {
+      return {
+        pass: false,
+        error: '警報已解除，但尚未點擊「開啟氣閘」！請點擊按鈕開啟氣閘閘門以通關。'
       };
     }
 
     return {
       pass: true,
-      data: { statusText: status.innerText, color: status.style.color },
-      feedback: '安全防護解除！狀態指示燈轉綠，液壓氣密門向兩側滑開！'
+      data: { disarmed, airlockOpen },
+      feedback: `控制中心事件運作完美！警報成功消除，重型氣閘艙門緩緩升起，通往星際的通道已暢通！`
     };
   }
 };

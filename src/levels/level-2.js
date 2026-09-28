@@ -1,65 +1,99 @@
 /**
- * Level 2: 推進力計算
+ * Level 2: 能源補給站
+ * 核心概念：變數與參數 (Variables & Parameters)
  */
 
 export default {
   id: 2,
-  title: '推進力計算',
-  subtitle: '算術運算子與運算順序',
-  concepts: ['+', '-', '*', '/', '運算優先順序', '變數計算'],
-  description: `探測船即將突破大氣層。初始燃料為 500 單位，每次推進消耗 25 單位，共需執行 8 次推進脈衝。請計算剩餘燃料並呼叫 \`rover.launch()\`。`,
+  title: '能源補給站',
+  subtitle: '變數與參數',
+  conceptTitle: '變數保存資料，參數決定行為',
+  concepts: ['變數宣告 (let/const)', '函式傳參', '數值運算'],
+  description: `探測船需要進行長途軌道轉移以抵達懸浮能源站。平台距離為 24 單位。請調整推進器的「初始燃料」、「每次消耗量」、「推進次數」與「推力速度」參數。注意：若推力速度過猛 (> 3) 會撞毀降落架，燃料不足則會半途熄火！`,
   targetRequirements: [
-    '設定初始燃料 500',
-    '計算消耗燃料：每次 25 單位，共 8 次',
-    '計算剩餘燃料 remainingFuel',
-    '呼叫 rover.launch(remainingFuel)'
+    '設定充足的初始燃料 (建議 >= 300 單位)',
+    '推進總位移 (推進次數 × 速度) 必須剛好等於 24 單位',
+    '剩餘燃料必須大於等於 0 (不可耗盡熄火)',
+    '進入平台時速度必須 <= 3 (平穩安全著陸)'
   ],
-  starterCode: `// 第 2 關：推進力計算
-let initialFuel = 500;
-let burnCost = 25;
-let burnsCount = 8;
-
-// TODO: 請使用算術運算子計算剩餘燃料
-// 公式：初始燃料 減去 (每次消耗 乘以 推進次數)
-let remainingFuel = 0;
-
-// TODO: 請在下方呼叫 rover.launch(...)，傳入計算好的 remainingFuel 啟動發射！
-`,
-  availableAPI: [
-    'rover.launch(remainingFuel: number)'
-  ],
+  controlType: 'parameter-adjuster',
+  initialParams: {
+    initialFuel: 300,
+    burnPerThrust: 25,
+    thrustCount: 6,
+    speed: 4
+  },
+  paramRanges: {
+    initialFuel: { min: 100, max: 500, step: 20, unit: '單位' },
+    burnPerThrust: { min: 10, max: 50, step: 5, unit: '單位/次' },
+    thrustCount: { min: 1, max: 12, step: 1, unit: '次' },
+    speed: { min: 1, max: 6, step: 1, unit: '米/次' }
+  },
   hints: [
-    '提示 1：先乘除後加減，總消耗燃料為 burnCost * burnsCount（即 25 * 8 = 200）。',
-    '提示 2：剩餘燃料為 500 - 200 = 300 單位。',
-    '提示 3：呼叫 rover.launch(remainingFuel)，剩餘燃料必須剛好等於 300 才能安全突破引力圈！'
+    '提示 1：總飛行距離 = 推進次數 × 推力速度。目標距離是 24！',
+    '提示 2：如果推進次數是 8 次，速度調為 3，剛好 8 × 3 = 24，而且速度 3 符合安全著陸標準！',
+    '提示 3：如果速度調為 4 (4 × 6 = 24)，雖然距離夠，但速度過快會撞上平台！請保持速度 <= 3。',
+    '提示 4：總燃料消耗 = 推進次數 × 每次消耗。請確保初始燃料足夠支撐推進。'
   ],
+  jsCodeExample: `// 💡 JavaScript 對照：變數儲存數值，傳入函式當作參數
+let initialFuel = 300;     // 初始燃料變數
+const burnRate = 25;       // 每次推進消耗 (常數)
+const count = 8;           // 推進次數
+const speed = 3;           // 巡航速度
+
+// 計算推進總消耗與總位移
+let totalBurn = burnRate * count;
+let remainingFuel = initialFuel - totalBurn;
+let distance = count * speed; // 8 * 3 = 24
+
+// 將計算好的參數傳入推進控制函式
+rover.approachStation({ distance, speed, remainingFuel });`,
+  conceptExplanation: `在程式中，**變數 (Variable)** 就像貼有標籤的收納盒，用來暫存各種類型的資料（例如燃料量、速度）。而當我們呼叫功能時，傳入的數值稱為**參數 (Argument / Parameter)**，它會直接影響函式內部的運算結果與角色的物理行為。`,
   validate: (runResult) => {
-    if (!runResult.success) {
-      return { pass: false, error: runResult.error || '程式執行發生錯誤' };
+    const params = runResult.params || {};
+    const { initialFuel = 0, burnPerThrust = 0, thrustCount = 0, speed = 0 } = params;
+
+    const totalConsumption = burnPerThrust * thrustCount;
+    const remainingFuel = initialFuel - totalConsumption;
+    const totalDistance = thrustCount * speed;
+    const targetDistance = 24;
+
+    if (totalConsumption > initialFuel) {
+      return {
+        pass: false,
+        error: `燃料耗盡！總消耗 ${totalConsumption} 單位大於初始燃料 ${initialFuel} 單位，推進器在半空中熄火！`,
+        details: { remainingFuel, totalDistance }
+      };
     }
 
-    const launchCall = (runResult.apiCalls || []).find(call => call.api === 'rover.launch');
-    if (!launchCall) {
-      return { pass: false, error: '未偵測到 rover.launch(...) 呼叫！' };
+    if (totalDistance < targetDistance) {
+      return {
+        pass: false,
+        error: `推力不足！目前總位移僅 ${totalDistance} 單位，尚未到達距離 ${targetDistance} 的補給平台。`,
+        details: { remainingFuel, totalDistance }
+      };
     }
 
-    const [fuel] = launchCall.args;
-
-    if (typeof fuel !== 'number' || isNaN(fuel)) {
-      return { pass: false, error: '剩餘燃料必須為數值 (number)！' };
+    if (totalDistance > targetDistance) {
+      return {
+        pass: false,
+        error: `推力過多！總位移 ${totalDistance} 單位衝過了補給平台 (${targetDistance} 單位)！`,
+        details: { remainingFuel, totalDistance }
+      };
     }
 
-    if (fuel !== 300) {
-      return { 
-        pass: false, 
-        error: `燃料計算錯誤！目前傳入 ${fuel}，預期剩餘燃料為 300 (500 - 25 * 8)。` 
+    if (speed > 3) {
+      return {
+        pass: false,
+        error: `著陸速度過猛！目前速度為 ${speed}（安全上限為 3），探測船劇烈撞擊停機坪！請降低推力速度並增加次數。`,
+        details: { remainingFuel, totalDistance, speed }
       };
     }
 
     return {
       pass: true,
-      data: { fuel },
-      feedback: `推進力計算完美！剩餘燃料 ${fuel} 單位，探測船成功點火突破大氣層！`
+      data: { remainingFuel, totalDistance, speed },
+      feedback: `著陸大成功！推進總位移精準達到 24 單位，剩餘燃料 ${remainingFuel} 單位，平穩降落能源補給平台！`
     };
   }
 };

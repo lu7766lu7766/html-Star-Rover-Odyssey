@@ -12,12 +12,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   background-color: var(--bg-space);
-  background-image: 
-    radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.035) 0%, transparent 40%),
-    radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.025) 0%, transparent 40%),
-    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+  background-image: var(--bg-space-gradient);
   color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -33,55 +28,53 @@ html, body {
   position: relative;
 }
 
-/* Custom Avionics Scrollbars */
+/* Custom Clean Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(6, 8, 14, 0.8);
+  background: rgba(226, 232, 240, 0.5);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--border-medium);
   border-radius: 3px;
   transition: background var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--cyan-primary);
-  box-shadow: 0 0 8px var(--cyan-glow);
+  background: var(--primary-blue);
 }
 
-/* Aerospace Tactical Buttons */
+/* Clean Button Styles */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.48rem 0.95rem;
+  padding: 0.5rem 1rem;
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-medium);
-  background: var(--bg-panel-elevated);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
   color: var(--text-primary);
   cursor: pointer;
   transition: all var(--transition-normal);
   user-select: none;
   text-decoration: none;
-  position: relative;
-  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn:hover:not(:disabled) {
   border-color: var(--border-accent);
-  background: var(--bg-panel-hover);
-  color: #ffffff;
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.22);
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  box-shadow: var(--shadow-blue-glow);
   transform: translateY(-1px);
 }
 
@@ -90,189 +83,187 @@ html, body {
 }
 
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
 }
 
 /* Button Variants */
 .btn-primary {
-  background: linear-gradient(135deg, #00e5ff 0%, #0284c7 100%);
-  color: #050b14;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+  background: linear-gradient(135deg, var(--primary-blue) 0%, #1d4ed8 100%);
+  border-color: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #38bdf8 0%, #0369a1 100%);
-  box-shadow: 0 0 28px rgba(0, 229, 255, 0.7);
-  color: #04080f;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+  border-color: #059669;
   color: #ffffff;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 .btn-success:hover:not(:disabled) {
-  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
-  box-shadow: 0 0 26px rgba(16, 185, 129, 0.65);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
 }
 
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
+.btn-purple {
+  background: linear-gradient(135deg, var(--accent-purple) 0%, #7c3aed 100%);
+  border-color: #7c3aed;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+}
+
+.btn-purple:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+}
+
+.btn-outline {
+  background: #ffffff;
   border-color: var(--border-medium);
   color: var(--text-secondary);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--primary-blue);
+  color: var(--primary-blue);
+  background: var(--primary-blue-light);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(226, 232, 240, 0.6);
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.btn-danger {
-  background: rgba(244, 63, 94, 0.12);
-  border-color: rgba(244, 63, 94, 0.35);
-  color: #fb7185;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: rgba(244, 63, 94, 0.25);
-  border-color: var(--danger-crimson);
-  box-shadow: 0 0 16px rgba(244, 63, 94, 0.35);
-  color: #ffffff;
-}
-
-.btn-sm {
-  padding: 0.32rem 0.68rem;
-  font-size: 0.78rem;
-  border-radius: var(--radius-sm);
-}
-
-/* Glass Panels & Cockpit Frames */
+/* Glass Panels & Modern Cards */
 .glass-panel {
   background: var(--bg-panel-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-panel);
-  position: relative;
-}
-
-/* Tactical Avionics Panel Framing */
-.avionics-panel {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  position: relative;
-  overflow: hidden;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel);
 }
 
-/* Sub-pixel aerospace highlight on panel tops */
-.avionics-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.35), transparent);
-  pointer-events: none;
-  z-index: 2;
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
 }
 
-/* Badges & Telemetry Status Tags */
+.card:hover {
+  border-color: var(--border-accent-light);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Badge Styles */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.22rem 0.58rem;
-  font-size: 0.725rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  line-height: 1.2;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-.badge-cyan {
-  background: var(--cyan-surface);
-  border: 1px solid rgba(0, 229, 255, 0.35);
-  color: var(--cyan-primary);
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
-}
-
-.badge-emerald {
-  background: var(--success-surface);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: var(--success-emerald);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
-}
-
-.badge-amber {
-  background: var(--warning-surface);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  color: var(--warning-amber);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+.badge-blue {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid var(--border-accent-light);
 }
 
 .badge-purple {
-  background: rgba(168, 85, 247, 0.12);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  color: var(--purple-accent);
+  background: var(--accent-purple-light);
+  color: var(--accent-purple);
+  border: 1px solid #ddd6fe;
+}
+
+.badge-success {
+  background: var(--success-light);
+  color: var(--success-dark);
+  border: 1px solid var(--success-border);
+}
+
+.badge-warning {
+  background: var(--warning-light);
+  color: var(--warning-dark);
+  border: 1px solid var(--warning-border);
 }
 
 .badge-danger {
-  background: var(--danger-surface);
-  border: 1px solid rgba(244, 63, 94, 0.35);
-  color: #fb7185;
+  background: var(--danger-light);
+  color: var(--danger-dark);
+  border: 1px solid var(--danger-border);
 }
 
-/* Glowing Pulsing Telemetry State */
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
-    border-color: rgba(0, 229, 255, 0.35);
-  }
-  50% {
-    box-shadow: 0 0 24px rgba(0, 229, 255, 0.7);
-    border-color: rgba(0, 229, 255, 0.8);
-  }
+/* Floating Toast Notifications */
+.toast-notice {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 0.85rem 1.4rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  font-size: 0.92rem;
+  z-index: 9999;
+  box-shadow: var(--shadow-elevated);
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
 }
 
-.pulse-glow {
-  animation: pulseGlow 2.4s infinite ease-in-out;
+.toast-success {
+  border-left: 5px solid var(--success);
+  color: var(--success-dark);
 }
 
-/* Telemetry Beacon Blink */
-@keyframes beaconBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+.toast-info {
+  border-left: 5px solid var(--primary-blue);
+  color: var(--primary-blue);
 }
 
-.beacon-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  display: inline-block;
-  background: var(--cyan-primary);
-  box-shadow: 0 0 8px var(--cyan-primary);
-  animation: beaconBlink 1.8s infinite ease-in-out;
+.toast-warning {
+  border-left: 5px solid var(--warning);
+  color: var(--warning-dark);
 }
 
-.beacon-dot.success {
-  background: var(--success-emerald);
-  box-shadow: 0 0 8px var(--success-emerald);
+.toast-error {
+  border-left: 5px solid var(--danger);
+  color: var(--danger-dark);
 }
 
-.beacon-dot.warning {
-  background: var(--warning-amber);
-  box-shadow: 0 0 8px var(--warning-amber);
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateY(16px);
 }

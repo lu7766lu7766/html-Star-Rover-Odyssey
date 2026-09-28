@@ -1,23 +1,23 @@
 /**
- * Star Rover Odyssey - Level Store (Pinia)
- * Manages active level execution, evaluation, console logs, and 3D event triggers
+ * Star Rover Odyssey 2.0 - Level Store (Pinia)
+ * Manages active level execution, evaluation, feedback, and 3D event triggers
  */
 
 import { defineStore } from 'pinia';
 import { getLevelById } from '../levels/index.js';
-import { sandboxRuntime } from '../sandbox/runtime.js';
 import { useProgressStore } from './progressStore.js';
 import { soundManager } from '../game/core/SoundManager.js';
 
 export const useLevelStore = defineStore('level', {
   state: () => ({
     isExecuting: false,
-    consoleLogs: [],
+    executionLogs: [],
     lastRunResult: null,
-    mockDomState: null,
-    sceneActionTrigger: null, // Callback to trigger scene animations
+    sceneActionTrigger: null, // Callback to trigger scene 3D animations
     isSuccessModalOpen: false,
-    successModalTimer: null
+    successModalTimer: null,
+    isCodePeekOpen: false, // JavaScript peek toggle
+    isHintModalOpen: false
   }),
 
   getters: {
@@ -33,91 +33,102 @@ export const useLevelStore = defineStore('level', {
         clearTimeout(this.successModalTimer);
         this.successModalTimer = null;
       }
-      this.consoleLogs = [];
+      this.executionLogs = [];
       this.lastRunResult = null;
     },
 
     appendLog(logEntry) {
-      if (this.consoleLogs.length < 100) {
-        this.consoleLogs.push({
+      if (this.executionLogs.length < 50) {
+        this.executionLogs.push({
           id: Date.now() + Math.random(),
-          type: logEntry.type || 'log',
-          args: logEntry.args || [],
-          time: new Date().toLocaleTimeString()
+          type: logEntry.type || 'info',
+          message: logEntry.message || '',
+          time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         });
       }
-    },
-
-    setMockDomState(state) {
-      this.mockDomState = state;
     },
 
     setSceneActionTrigger(triggerFn) {
       this.sceneActionTrigger = triggerFn;
     },
 
-    async runCode(code) {
+    toggleCodePeek() {
+      this.isCodePeekOpen = !this.isCodePeekOpen;
+      soundManager.playClick();
+    },
+
+    toggleHintModal(open = null) {
+      this.isHintModalOpen = open !== null ? open : !this.isHintModalOpen;
+      soundManager.playClick();
+    },
+
+    resetCurrentLevel() {
+      soundManager.playClick();
+      this.clearLogs();
+      if (this.sceneActionTrigger) {
+        this.sceneActionTrigger('RESET', { levelId: this.currentLevel.id });
+      }
+      this.appendLog({
+        type: 'info',
+        message: '關卡場景與參數已重置為初始狀態。'
+      });
+    },
+
+    async executeLevel(payload) {
       const progressStore = useProgressStore();
       const currentLevel = this.currentLevel;
 
       this.isExecuting = true;
       this.clearLogs();
+      soundManager.playLaunch();
+
+      this.appendLog({
+        type: 'info',
+        message: `開始執行【${currentLevel.title}】任務程序...`
+      });
+
+      // Save operation in progress store
+      progressStore.saveOperation(currentLevel.id, payload);
+
+      // Notify 3D scene that execution has started
+      if (this.sceneActionTrigger) {
+        this.sceneActionTrigger('EXECUTE_START', { levelId: currentLevel.id, payload });
+      }
+
+      // Allow a brief animation duration for student to observe 3D response
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       try {
-        soundManager.playClick();
-
-        const result = await sandboxRuntime.execute({
-          code,
-          levelId: currentLevel.id,
-          initialData: {},
-          onLog: (logPayload) => {
-            this.appendLog(logPayload);
-          },
-          onDomMutation: (domSnapshot) => {
-            this.setMockDomState(domSnapshot);
-          },
-          onApiCall: (apiPayload) => {
-            // Trigger interactive 3D cues as APIs are invoked
-            if (this.sceneActionTrigger) {
-              this.sceneActionTrigger('API_INVOKED', apiPayload);
-            }
-          }
-        });
-
-        // Run level evaluation
-        const evaluation = currentLevel.validate(result);
+        const evaluation = currentLevel.validate(payload);
         this.lastRunResult = evaluation;
 
         if (evaluation.pass) {
-          // 1. 立即觸發 3D 場景過關動畫
+          // Notify 3D scene of success
           if (this.sceneActionTrigger) {
-            this.sceneActionTrigger('LEVEL_SUCCESS', evaluation);
+            this.sceneActionTrigger('LEVEL_SUCCESS', { levelId: currentLevel.id, evaluation });
           }
 
-          // 2. 標記關卡完成並輸出成功訊息至主控台
           progressStore.markLevelCompleted(currentLevel.id);
           this.appendLog({
-            type: 'log',
-            args: [`🚀 [任務達成] ${evaluation.feedback}`]
+            type: 'success',
+            message: `🌟 [任務通關] ${evaluation.feedback}`
           });
 
-          // 3. 延遲彈出獎勵視窗，讓學生先飽覽 3D 太空船發射/通電/避障動畫
-          const animationDelay = currentLevel.id === 2 || currentLevel.id === 3 ? 2400 : 1800;
+          // Delay success modal to let user watch 3D animation
           if (this.successModalTimer) clearTimeout(this.successModalTimer);
           this.successModalTimer = setTimeout(() => {
             soundManager.playSuccess();
             this.isSuccessModalOpen = true;
-          }, animationDelay);
+          }, 1400);
         } else {
           soundManager.playError();
           this.appendLog({
             type: 'error',
-            args: [`[檢驗未通過] ${evaluation.error}`]
+            message: `⚠️ [未通過] ${evaluation.error}`
           });
 
-          // Notify 3D scene of failure
           if (this.sceneActionTrigger) {
-            this.sceneActionTrigger('LEVEL_FAIL', evaluation);
+            this.sceneActionTrigger('LEVEL_FAIL', { levelId: currentLevel.id, evaluation });
           }
         }
 
@@ -131,52 +142,12 @@ export const useLevelStore = defineStore('level', {
         this.lastRunResult = errResult;
         this.appendLog({
           type: 'error',
-          args: [errResult.error]
+          message: errResult.error
         });
         return errResult;
       } finally {
         this.isExecuting = false;
       }
-    },
-
-    /**
-     * Triggers button click in Level 6 Mock DOM
-     */
-    triggerMockDomEvent(targetId, eventType = 'click') {
-      soundManager.playClick();
-      sandboxRuntime.triggerEvent(targetId, eventType);
-
-      // Re-evaluate Level 6 if code has been run
-      setTimeout(() => {
-        if (this.currentLevel.id === 6) {
-          const evalResult = this.currentLevel.validate({
-            success: true,
-            domState: this.mockDomState
-          });
-          this.lastRunResult = evalResult;
-          if (evalResult.pass) {
-            soundManager.playDoorOpen();
-            const progress = useProgressStore();
-            progress.markLevelCompleted(6);
-
-            if (this.sceneActionTrigger) {
-              this.sceneActionTrigger('LEVEL_SUCCESS', evalResult);
-            }
-
-            this.appendLog({
-              type: 'log',
-              args: [`🚀 [任務達成] ${evalResult.feedback}`]
-            });
-
-            // 等待氣密門完全滑開 (1.8秒) 後再跳出通關彈窗
-            if (this.successModalTimer) clearTimeout(this.successModalTimer);
-            this.successModalTimer = setTimeout(() => {
-              soundManager.playSuccess();
-              this.isSuccessModalOpen = true;
-            }, 1800);
-          }
-        }
-      }, 100);
     }
   }
 });

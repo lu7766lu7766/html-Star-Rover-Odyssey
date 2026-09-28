@@ -1,15 +1,16 @@
 /**
- * Star Rover Odyssey - Storage Utility
+ * Star Rover Odyssey 2.0 - Storage Utility
  * Manages LocalStorage persistence and JSON import/export
+ * Stores unlocked levels, completed levels, and operation states (Levels 1-8).
  */
 
 const STORAGE_KEY = 'star_rover_odyssey_save_v2';
 
 export const DEFAULT_SAVE_DATA = {
-  version: 1,
+  version: 2,
   currentLevel: 1,
   unlockedLevels: [1],
-  savedCode: {},
+  savedOperations: {},
   completedLevels: [],
   timestamp: Date.now()
 };
@@ -23,38 +24,37 @@ export function validateSaveData(data) {
   if (!data || typeof data !== 'object') {
     return { valid: false, error: '存檔內容非有效 JSON 物件' };
   }
-  if (data.version !== 1) {
+
+  // Support version 1 and 2
+  const version = typeof data.version === 'number' ? data.version : 1;
+  if (version !== 1 && version !== 2) {
     return { valid: false, error: `不支援的存檔版本: ${data.version}` };
   }
+
   if (!Array.isArray(data.unlockedLevels) || data.unlockedLevels.length === 0) {
     return { valid: false, error: '存檔缺少解鎖關卡列表' };
   }
   if (!Array.isArray(data.completedLevels)) {
     return { valid: false, error: '存檔缺少完成關卡列表' };
   }
-  if (!data.savedCode || typeof data.savedCode !== 'object') {
-    return { valid: false, error: '存檔缺少程式碼紀錄' };
-  }
 
-  // Ensure currentLevel is valid number
-  const currentLevel = typeof data.currentLevel === 'number' ? data.currentLevel : 1;
+  // Ensure currentLevel is valid number 1..8
+  let currentLevel = typeof data.currentLevel === 'number' ? data.currentLevel : 1;
+  if (currentLevel < 1 || currentLevel > 8) currentLevel = 1;
 
-  // Sanitize savedCode: ensure all values are strings
-  const sanitizedCode = {};
-  for (const [lvl, code] of Object.entries(data.savedCode)) {
-    if (typeof code === 'string') {
-      sanitizedCode[lvl] = code.slice(0, 50000); // Prevent overflow
-    }
-  }
+  // Sanitize savedOperations
+  const savedOperations = (data.savedOperations && typeof data.savedOperations === 'object')
+    ? data.savedOperations
+    : (data.savedCode && typeof data.savedCode === 'object') ? data.savedCode : {};
 
   return {
     valid: true,
     data: {
-      version: 1,
+      version: 2,
       currentLevel,
-      unlockedLevels: Array.from(new Set(data.unlockedLevels.map(Number))).filter(n => n >= 1 && n <= 7),
-      completedLevels: Array.from(new Set(data.completedLevels.map(Number))).filter(n => n >= 1 && n <= 7),
-      savedCode: sanitizedCode,
+      unlockedLevels: Array.from(new Set(data.unlockedLevels.map(Number))).filter(n => n >= 1 && n <= 8),
+      completedLevels: Array.from(new Set(data.completedLevels.map(Number))).filter(n => n >= 1 && n <= 8),
+      savedOperations,
       timestamp: typeof data.timestamp === 'number' ? data.timestamp : Date.now()
     }
   };
@@ -90,6 +90,7 @@ export function saveSaveData(data) {
   try {
     const payload = {
       ...data,
+      version: 2,
       timestamp: Date.now()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -107,6 +108,7 @@ export function saveSaveData(data) {
 export function exportSaveFile(data) {
   const payload = {
     ...data,
+    version: 2,
     timestamp: Date.now()
   };
   const jsonStr = JSON.stringify(payload, null, 2);
