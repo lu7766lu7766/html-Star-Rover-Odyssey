@@ -3,15 +3,27 @@
     <!-- 3D Canvas Mount Point -->
     <div class="canvas-wrapper" ref="canvasContainer"></div>
 
+    <!-- Viewport Optical HUD Header (Top Left / Right) -->
+    <div class="viewport-telemetry-banner">
+      <div class="telemetry-item">
+        <span class="beacon-dot"></span>
+        <span class="telemetry-label">3D OPTICAL SENSOR</span>
+      </div>
+      <div class="telemetry-item hide-mobile">
+        <span class="telemetry-dim">SUB-ORBIT:</span>
+        <span class="telemetry-val">ALT 142.8 KM</span>
+      </div>
+    </div>
+
     <!-- HUD Overlay Controls (Top Right) -->
     <div class="viewport-hud-controls">
       <button class="btn btn-sm hud-btn" @click="resetCamera" title="重設 3D 觀察視角">
-        <Compass :size="14" />
-        <span>重設視角</span>
+        <Compass :size="14" class="icon-hud" />
+        <span>視角復位</span>
       </button>
-      <button class="btn btn-sm hud-btn" @click="resetScene" title="重設 3D 場景狀態">
-        <RotateCcw :size="14" />
-        <span>重設場景</span>
+      <button class="btn btn-sm hud-btn" @click="resetScene" title="重設 3D 場景物理狀態">
+        <RotateCcw :size="14" class="icon-hud" />
+        <span>重置場景</span>
       </button>
     </div>
 
@@ -30,27 +42,39 @@
 
     <!-- WebGL Context Lost Warning -->
     <div v-if="contextLost" class="context-lost-banner">
-      <AlertTriangle :size="24" class="text-danger" />
+      <AlertTriangle :size="22" class="text-danger" />
       <div class="banner-text">
-        <strong>3D 渲染核心斷開 (WebGL Context Lost)</strong>
-        <span>瀏覽器釋放了圖形資源，請點擊按鈕重新初始化。</span>
+        <strong>3D 圖形核心中斷 · WEBGL CONTEXT INTERRUPTED</strong>
+        <span>瀏覽器已釋放 GPU 圖形資源，請點擊右側按鈕重新建立連線。</span>
       </div>
       <button class="btn btn-primary btn-sm" @click="reinitScene">重新連線</button>
     </div>
 
-    <!-- Level Complete Success Banner Modal -->
+    <!-- Level Complete Success Milestone Modal -->
     <div v-if="showSuccessModal" class="success-overlay" @click.self="closeSuccess">
       <div class="success-card glass-panel pulse-glow">
-        <div class="success-icon-wrapper">
-          <Award :size="48" class="icon-award" />
+        <div class="success-badge-container">
+          <div class="badge-ring"></div>
+          <div class="success-icon-wrapper">
+            <Award :size="42" class="icon-award" />
+          </div>
         </div>
-        <h3 class="success-title">任務圓滿達成！</h3>
-        <p class="success-feedback">{{ feedbackText }}</p>
+
+        <div class="success-headings">
+          <span class="sub-heading">MISSION NOMINAL · TELEMETRY VERIFIED</span>
+          <h3 class="success-title">任務圓滿達成！</h3>
+        </div>
+
+        <div class="success-feedback-box">
+          <p class="success-feedback">{{ feedbackText }}</p>
+        </div>
 
         <div class="success-actions">
-          <button class="btn btn-secondary btn-sm" @click="closeSuccess">留在本關觀察</button>
+          <button class="btn btn-secondary btn-sm" @click="closeSuccess">
+            留在本站觀察
+          </button>
           <button v-if="hasNextLevel" class="btn btn-success" @click="goToNextLevel">
-            <span>前往下一關</span>
+            <span>前往下一站導航</span>
             <ArrowRight :size="16" />
           </button>
           <button v-else class="btn btn-success" @click="closeSuccess">
@@ -107,7 +131,7 @@ const contextLost = ref(false);
 
 const showSuccessModal = computed(() => props.isSuccessModalOpen);
 const hasNextLevel = computed(() => props.levelId < 7);
-const feedbackText = computed(() => props.lastRunResult?.feedback || '程式碼邏輯檢驗全部通過！');
+const feedbackText = computed(() => props.lastRunResult?.feedback || '探測船邏輯自檢完成，所有遙測數據全數通過！');
 
 const droneFleetData = computed(() => {
   if (props.lastRunResult?.data?.fleet) {
@@ -218,9 +242,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #07090e;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
+  background: #04070e;
 }
 
 .canvas-wrapper {
@@ -229,19 +251,70 @@ onBeforeUnmount(() => {
   outline: none;
 }
 
+.viewport-telemetry-banner {
+  position: absolute;
+  top: 0.85rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(9, 14, 25, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm);
+  z-index: 10;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.telemetry-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.telemetry-label {
+  color: var(--cyan-primary);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.telemetry-dim {
+  color: var(--text-muted);
+}
+
+.telemetry-val {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
 .viewport-hud-controls {
   position: absolute;
-  top: 1rem;
+  top: 0.85rem;
   right: 1rem;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   z-index: 10;
   pointer-events: auto;
 }
 
 .hud-btn {
-  background: rgba(13, 18, 29, 0.75);
-  backdrop-filter: blur(8px);
+  background: rgba(11, 16, 29, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-medium);
+  font-size: 0.76rem;
+  padding: 0.32rem 0.65rem;
+}
+
+.hud-btn:hover {
+  border-color: var(--cyan-primary);
+  background: rgba(0, 229, 255, 0.12);
+}
+
+.icon-hud {
+  color: var(--cyan-primary);
 }
 
 .context-lost-banner {
@@ -249,92 +322,149 @@ onBeforeUnmount(() => {
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid #ef4444;
-  backdrop-filter: blur(8px);
-  padding: 0.8rem 1.25rem;
-  border-radius: 8px;
+  background: rgba(244, 63, 94, 0.18);
+  border: 1px solid var(--danger-crimson);
+  backdrop-filter: blur(12px);
+  padding: 0.85rem 1.35rem;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   gap: 1rem;
-  z-index: 20;
+  z-index: 25;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
 }
 
 .banner-text {
   display: flex;
   flex-direction: column;
   font-size: 0.8rem;
-  color: #fca5a5;
+  color: #fecdd3;
+  gap: 0.15rem;
 }
 
+/* Success Milestone Modal */
 .success-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(4, 7, 15, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(3, 6, 12, 0.75);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 30;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .success-card {
   width: 100%;
-  max-width: 440px;
-  background: #0b1220;
+  max-width: 460px;
+  background: #0a1120;
   border: 1px solid var(--success-emerald);
-  padding: 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(16, 185, 129, 0.25);
+  padding: 2.2rem;
   text-align: center;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 1.15rem;
+  animation: modalEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes popIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.success-badge-container {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed rgba(16, 185, 129, 0.6);
+  animation: rotateRing 12s linear infinite;
+}
+
+@keyframes rotateRing {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .success-icon-wrapper {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.16);
   border: 2px solid var(--success-emerald);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
 }
 
 .icon-award {
   color: var(--success-emerald);
 }
 
+.success-headings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sub-heading {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--success-emerald);
+  letter-spacing: 0.08em;
+}
+
 .success-title {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.success-feedback-box {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  width: 100%;
 }
 
 .success-feedback {
-  font-size: 0.9rem;
-  color: #94a3b8;
+  font-size: 0.88rem;
+  color: #d1fae5;
   line-height: 1.5;
 }
 
 .success-actions {
   display: flex;
   gap: 0.75rem;
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
   width: 100%;
   justify-content: center;
+}
+
+@media (max-width: 600px) {
+  .hide-mobile {
+    display: none;
+  }
 }
 </style>

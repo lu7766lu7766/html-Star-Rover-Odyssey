@@ -222,46 +222,51 @@ onBeforeUnmount(() => {
 
 .toast-notice {
   position: fixed;
-  bottom: 2rem;
+  bottom: 2.5rem;
   left: 50%;
   transform: translateX(-50%);
-  padding: 0.65rem 1.25rem;
-  border-radius: 8px;
+  padding: 0.65rem 1.35rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   z-index: 2000;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  gap: 0.65rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.02em;
 }
 
 .toast-info {
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid var(--border-accent);
-  color: #38bdf8;
+  background: rgba(10, 16, 29, 0.96);
+  border: 1px solid var(--cyan-primary);
+  color: #e0f2fe;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
 }
 
 .toast-success {
-  background: rgba(6, 78, 59, 0.95);
+  background: rgba(8, 25, 20, 0.96);
   border: 1px solid var(--success-emerald);
-  color: #34d399;
+  color: #d1fae5;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
 }
 
 .toast-error {
-  background: rgba(127, 29, 29, 0.95);
+  background: rgba(30, 12, 16, 0.96);
   border: 1px solid var(--danger-crimson);
-  color: #fca5a5;
+  color: #ffe4e6;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.35);
 }
 
 .toast-fade-enter-active,
 .toast-fade-leave-active {
-  transition: opacity 0.3s, transform 0.3s;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .toast-fade-enter-from,
 .toast-fade-leave-to {
   opacity: 0;
-  transform: translate(-50%, 15px);
+  transform: translate(-50%, 12px);
 }
 </style>

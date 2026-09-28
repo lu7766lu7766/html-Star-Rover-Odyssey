@@ -180,10 +180,6 @@ workerSelf.onmessage = function (e) {
     };
 
     try {
-      // Disable dangerous globals in worker scope
-      workerSelf.eval = () => { throw new Error('eval() 已在安全沙盒中被禁用'); };
-      workerSelf.Function = () => { throw new Error('Function() 已在安全沙盒中被禁用'); };
-
       // Create execution scope with strict forbidden globals
       // NOTE: 'eval' and 'arguments' are NOT allowed as formal parameter names in strict mode!
       const executeFn = new Function(

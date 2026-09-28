@@ -1,24 +1,37 @@
 <template>
   <div class="code-editor-container">
+    <!-- Flight Computer Tab Header -->
     <div class="editor-header">
-      <div class="editor-title">
-        <span class="dot red"></span>
-        <span class="dot yellow"></span>
-        <span class="dot green"></span>
-        <span class="title-text">solution.js</span>
+      <div class="header-left">
+        <div class="file-tab">
+          <FileCode :size="14" class="icon-file" />
+          <span class="file-name">solution.js</span>
+          <span class="status-indicator" title="程式碼已即時自動快取">
+            <span class="beacon-dot success"></span>
+          </span>
+        </div>
       </div>
-      <div class="editor-actions">
-        <button class="btn btn-sm" @click="$emit('reset')" title="復原至本關預設程式碼">
-          重設代碼
+
+      <div class="header-right">
+        <div class="shortcut-tip">
+          <Terminal :size="12" />
+          <span>⌘↵ 執行指令</span>
+        </div>
+        <button class="btn btn-sm btn-reset" @click="$emit('reset')" title="復原至本關預設程式碼">
+          <RotateCcw :size="12" />
+          <span>重設代碼</span>
         </button>
       </div>
     </div>
+
+    <!-- CodeMirror Viewport Container -->
     <div class="editor-viewport" ref="editorParent"></div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { FileCode, RotateCcw, Terminal } from 'lucide-vue-next';
 import { EditorState, Compartment } from '@codemirror/state';
 import { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
@@ -45,36 +58,41 @@ const editorParent = ref(null);
 let view = null;
 const completionCompartment = new Compartment();
 
-// Cyberpunk Dark Editor Theme customizations
+// Tactical Deep Space Flight Computer CodeMirror Theme
 const customEditorTheme = EditorView.theme({
   '&': {
     height: '100%',
-    fontSize: '14px',
-    backgroundColor: '#0c101a',
+    fontSize: '13.5px',
+    backgroundColor: '#070a13',
     color: '#e2e8f0',
     fontFamily: 'var(--font-mono)'
   },
   '.cm-content': {
-    caretColor: '#00f2fe',
-    padding: '12px 0'
+    caretColor: '#00e5ff',
+    padding: '10px 0',
+    lineHeight: '1.6'
   },
   '.cm-gutters': {
-    backgroundColor: '#090d16',
+    backgroundColor: '#05080f',
     color: '#475569',
-    borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+    borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+    paddingLeft: '4px'
   },
   '&.cm-focused .cm-cursor': {
-    borderLeftColor: '#00f2fe'
+    borderLeftColor: '#00e5ff',
+    borderLeftWidth: '2px',
+    boxShadow: '0 0 8px rgba(0, 229, 255, 0.8)'
   },
   '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-    backgroundColor: 'rgba(0, 242, 254, 0.25)'
+    backgroundColor: 'rgba(0, 229, 255, 0.22)'
   },
   '.cm-activeLine': {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)'
+    backgroundColor: 'rgba(255, 255, 255, 0.025)'
   },
   '.cm-activeLineGutter': {
-    backgroundColor: 'rgba(0, 242, 254, 0.1)',
-    color: '#00f2fe'
+    backgroundColor: 'rgba(0, 229, 255, 0.08)',
+    color: '#00e5ff',
+    fontWeight: '700'
   }
 }, { dark: true });
 
@@ -150,43 +168,79 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: #090d16;
-  border-radius: 8px;
+  background: #070a13;
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
+  position: relative;
 }
 
 .editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.85rem;
-  background: #0b111e;
+  padding: 0 0.75rem;
+  background: #090e1a;
   border-bottom: 1px solid var(--border-subtle);
+  height: 38px;
   user-select: none;
 }
 
-.editor-title {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  height: 100%;
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.dot.red { background: #ef4444; }
-.dot.yellow { background: #f59e0b; }
-.dot.green { background: #10b981; }
-
-.title-text {
-  margin-left: 0.5rem;
+.file-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.75rem;
+  height: 100%;
+  background: #070a13;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 2px solid var(--cyan-primary);
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.icon-file {
+  color: var(--cyan-primary);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  margin-left: 0.2rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.shortcut-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.btn-reset {
+  padding: 0.22rem 0.55rem;
+  font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-subtle);
   color: var(--text-secondary);
+}
+
+.btn-reset:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 .editor-viewport {

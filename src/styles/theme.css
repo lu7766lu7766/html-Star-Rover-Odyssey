@@ -1,46 +1,63 @@
 :root {
-  /* Color Palette - Deep Space Cyberpunk */
-  --bg-space: #07090e;
-  --bg-panel: #0d121d;
-  --bg-panel-elevated: #131a29;
-  --bg-panel-glass: rgba(13, 18, 29, 0.85);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(0, 242, 254, 0.3);
-  --border-glow: rgba(0, 242, 254, 0.6);
+  /* Core Avionics Palette - Deep Space Flight Deck */
+  --bg-space: #06080e;
+  --bg-panel: #0b101d;
+  --bg-panel-elevated: #111728;
+  --bg-panel-hover: #161f36;
+  --bg-panel-glass: rgba(11, 16, 29, 0.88);
+  --bg-surface-tint: rgba(0, 229, 255, 0.03);
 
-  /* Primary Neon Colors */
-  --cyan-primary: #00f2fe;
-  --cyan-glow: rgba(0, 242, 254, 0.4);
+  /* Tactical Borders & Gridlines */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-accent: rgba(0, 229, 255, 0.35);
+  --border-glow: rgba(0, 229, 255, 0.65);
+
+  /* Primary Telemetry & Signal Colors */
+  --cyan-primary: #00e5ff;
+  --cyan-glow: rgba(0, 229, 255, 0.4);
+  --cyan-surface: rgba(0, 229, 255, 0.08);
   --blue-bright: #38bdf8;
-  --blue-deep: #1e3a8a;
-  
-  /* Status Colors */
+  --blue-deep: #0284c7;
+
+  /* Flight Status Colors */
   --success-emerald: #10b981;
   --success-glow: rgba(16, 185, 129, 0.4);
+  --success-surface: rgba(16, 185, 129, 0.1);
   --warning-amber: #f59e0b;
   --warning-glow: rgba(245, 158, 11, 0.4);
-  --danger-crimson: #ef4444;
-  --danger-glow: rgba(239, 68, 68, 0.4);
+  --warning-surface: rgba(245, 158, 11, 0.1);
+  --danger-crimson: #f43f5e;
+  --danger-glow: rgba(244, 63, 94, 0.4);
+  --danger-surface: rgba(244, 63, 94, 0.1);
   --purple-accent: #a855f7;
 
   /* Typography Colors */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --text-cyan: #38bdf8;
+  --text-cyan: #00e5ff;
+  --text-amber: #fbbf24;
 
   /* Fonts */
-  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Noto Sans TC', 'Outfit', sans-serif;
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: 'Noto Sans TC', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  /* Transitions */
+  /* Transitions & Curves */
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Glassmorphism & Shadow */
-  --shadow-panel: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
-  --shadow-neon-cyan: 0 0 15px rgba(0, 242, 254, 0.35);
-  --shadow-neon-emerald: 0 0 15px rgba(16, 185, 129, 0.35);
+  /* Aerospace Shadows & Bevels */
+  --shadow-panel: 0 12px 36px 0 rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-subtle);
+  --shadow-neon-cyan: 0 0 20px rgba(0, 229, 255, 0.35);
+  --shadow-neon-emerald: 0 0 20px rgba(16, 185, 129, 0.35);
+  --shadow-neon-amber: 0 0 20px rgba(245, 158, 11, 0.35);
+
+  /* Corner Chamfer Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 }
+
