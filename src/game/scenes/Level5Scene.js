@@ -52,7 +52,13 @@ export class Level5Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
+    if (actionType === 'RESET_POSITION' || actionType === 'RESET') {
+      this.reset();
+      return;
+    }
+
     if (actionType === 'EXECUTE_START') {
+      this.reset();
       const moduleConfig = payload.payload?.moduleConfig || payload.moduleConfig || {};
       const range = moduleConfig.range || 20;
       this.isInstalled = true;
@@ -84,8 +90,6 @@ export class Level5Scene extends BaseGameScene {
         nameLabel.material.map = createTextTexture('SCAN INCOMPLETE', '#ffffff', '#ef4444');
         nameLabel.material.needsUpdate = true;
       }
-    } else if (actionType === 'RESET') {
-      this.reset();
     }
   }
 

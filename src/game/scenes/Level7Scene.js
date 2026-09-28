@@ -59,7 +59,13 @@ export class Level7Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
+    if (actionType === 'RESET_POSITION' || actionType === 'RESET') {
+      this.reset();
+      return;
+    }
+
     if (actionType === 'EXECUTE_START') {
+      this.reset();
       this.isDeployed = true;
       try { soundManager.playDroneFly(); } catch (e) {}
 
@@ -76,8 +82,6 @@ export class Level7Scene extends BaseGameScene {
     } else if (actionType === 'LEVEL_SUCCESS') {
       this.isDeployed = true;
       try { soundManager.playDroneFly(); } catch (e) {}
-    } else if (actionType === 'RESET') {
-      this.reset();
     }
   }
 

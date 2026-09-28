@@ -67,7 +67,13 @@ export class Level4Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
+    if (actionType === 'RESET_POSITION' || actionType === 'RESET') {
+      this.reset();
+      return;
+    }
+
     if (actionType === 'EXECUTE_START') {
+      this.reset();
       const loopConfig = payload.payload?.loopConfig || payload.loopConfig || {};
       const count = Math.min(loopConfig.loopCount || 3, 5);
       this.targetHarvest = count;
@@ -89,8 +95,6 @@ export class Level4Scene extends BaseGameScene {
         nameLabel.material.map = createTextTexture(`HARVEST: ${this.collectedCount}/5`, '#ffffff', '#ef4444');
         nameLabel.material.needsUpdate = true;
       }
-    } else if (actionType === 'RESET') {
-      this.reset();
     }
   }
 

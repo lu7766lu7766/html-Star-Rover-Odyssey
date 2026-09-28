@@ -122,7 +122,14 @@ export class Level1Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
+    if (actionType === 'RESET_POSITION' || actionType === 'RESET') {
+      this.reset();
+      this.resetCamera();
+      return;
+    }
+
     if (actionType === 'EXECUTE_START') {
+      this.reset();
       const vars = payload.payload?.variables || payload.variables || {};
       const { roverName = '奧德賽號', powerLevel = 0, shieldActive = false } = vars;
 
@@ -162,9 +169,6 @@ export class Level1Scene extends BaseGameScene {
       }
       this.dockBeacons.forEach(b => b.material.color.setHex(0xef4444));
       try { soundManager.playError(); } catch (e) {}
-    } else if (actionType === 'RESET') {
-      this.reset();
-      this.resetCamera();
     }
   }
 

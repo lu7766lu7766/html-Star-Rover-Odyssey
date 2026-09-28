@@ -21,8 +21,12 @@
         <Compass :size="14" class="icon-hud" />
         <span>視角復位</span>
       </button>
-      <button class="btn btn-sm hud-btn" @click="resetScene" title="重設 3D 場景物理狀態">
+      <button class="btn btn-sm hud-btn btn-action-restore" @click="restoreVehicle" title="將探測船還原至發射起跑點">
         <RotateCcw :size="14" class="icon-hud" />
+        <span>車輛位置還原</span>
+      </button>
+      <button class="btn btn-sm hud-btn" @click="resetScene" title="重設 3D 場景物理狀態">
+        <RefreshCw :size="14" class="icon-hud" />
         <span>重置場景</span>
       </button>
     </div>
@@ -83,12 +87,55 @@
         </div>
       </div>
     </div>
+
+    <!-- Level Failed Diagnostic Alert Modal (UX Consistency with Success Modal) -->
+    <div v-if="showFailModal" class="fail-overlay" @click.self="closeFail">
+      <div class="fail-card glass-panel pulse-glow-amber">
+        <div class="fail-badge-container">
+          <div class="fail-badge-ring"></div>
+          <div class="fail-icon-wrapper">
+            <AlertTriangle :size="38" class="icon-fail" />
+          </div>
+        </div>
+
+        <div class="fail-headings">
+          <span class="sub-heading text-warning">DIAGNOSTIC ALERT · TELEMETRY INCOMPLETE</span>
+          <h3 class="fail-title">遙測自檢未通過</h3>
+        </div>
+
+        <div class="fail-feedback-box">
+          <p class="fail-feedback">{{ failureErrorText }}</p>
+        </div>
+
+        <div class="fail-suggestion-box">
+          <div class="suggestion-header">
+            <Lightbulb :size="14" class="text-brand" />
+            <strong class="suggestion-title">💡 偵錯建議指引：</strong>
+          </div>
+          <p class="suggestion-text">{{ failureSuggestionText }}</p>
+        </div>
+
+        <div class="fail-actions">
+          <button class="btn btn-secondary btn-sm" @click="closeFail">
+            留在現場觀察
+          </button>
+          <button class="btn btn-outline btn-sm" @click="openHint">
+            <Lightbulb :size="15" />
+            <span>查看思考提示</span>
+          </button>
+          <button class="btn btn-primary" @click="restoreAndTune">
+            <RotateCcw :size="15" />
+            <span>還原車輛並調整</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
-import { Compass, RotateCcw, AlertTriangle, Award, ArrowRight } from 'lucide-vue-next';
+import { Compass, RotateCcw, AlertTriangle, Award, ArrowRight, Lightbulb, RefreshCw } from 'lucide-vue-next';
 import { SceneManager } from '../../game/core/SceneManager.js';
 import { Level1Scene } from '../../game/scenes/Level1Scene.js';
 import { Level2Scene } from '../../game/scenes/Level2Scene.js';
@@ -118,21 +165,43 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  isFailModalOpen: {
+    type: Boolean,
+    default: false
+  },
   isLowPerformance: {
     type: Boolean,
     default: false
   }
 });
 
-const emit = defineEmits(['mock-dom-click', 'next-level', 'close-success', 'register-trigger']);
+const emit = defineEmits(['mock-dom-click', 'next-level', 'close-success', 'close-fail', 'restore-vehicle', 'open-hint', 'register-trigger']);
 
 const canvasContainer = ref(null);
 let sceneManager = null;
 const contextLost = ref(false);
 
 const showSuccessModal = computed(() => props.isSuccessModalOpen);
+const showFailModal = computed(() => props.isFailModalOpen);
 const hasNextLevel = computed(() => props.levelId < 8);
 const feedbackText = computed(() => props.lastRunResult?.feedback || '探測船邏輯自檢完成，所有遙測數據全數通過！');
+const failureErrorText = computed(() => props.lastRunResult?.error || '遙測數據自檢未通過，請檢查參數設定。');
+
+const failureSuggestionText = computed(() => {
+  const err = failureErrorText.value;
+  if (err.includes('未命名')) return 'JavaScript 變數需賦予字串型態，請在控制面板輸入船艦名稱或點選快速代號。';
+  if (err.includes('能源不足') || err.includes('功率')) return '系統最低需 80% 功率才能啟動反應爐，請拖曳功率滑桿至 80%~100% 安全範圍。';
+  if (err.includes('防護力場') || err.includes('防護罩')) return '外太空充滿輻射危險，請將 shieldActive 設為 true (布林值真)。';
+  if (err.includes('推力不足') || err.includes('尚未抵達補給站')) return '位移 = 推力次數 × 每次速度。目標補給站位於 24 單位，請調高次數或速度達到 24！';
+  if (err.includes('超速') || err.includes('超出')) return '探測船衝過頭了！請計算 推力次數 × 速度 剛好等於 24，避免超過補給站。';
+  if (err.includes('燃料不足') || err.includes('燃料耗盡')) return '總耗油 = 推力次數 × 每次燃燒量。請調高初始燃料或調整推力次數以避免油料用罄。';
+  if (err.includes('採集數量不足')) return '迴圈執行次數過少，請將 for 迴圈次數調高以採集完 5 顆能量水晶。';
+  if (err.includes('模組型號')) return '當前模組掃描半徑不足，請更換為高階感測模組並調用 scanArea() 方法。';
+  if (err.includes('安全警報')) return '尚未解除警報！請在按鈕上觸發設定的 DOM 事件（如點擊或連擊）。';
+  if (err.includes('墜毀')) return '低電量無人機因電量不足墜毀！請提高安全電量門檻，並將低電量無人機設為返航充電。';
+  if (err.includes('氣象') || err.includes('fetch')) return '尚未取得即時氣象遙測資料，請點擊 API 請求並校準安全發射係數。';
+  return '請參閱任務目標與通關要求，調整控制面板中的對應參數後再次測試！';
+});
 
 const droneFleetData = computed(() => {
   if (props.lastRunResult?.data?.fleet) {
@@ -172,6 +241,10 @@ function resetCamera() {
   }
 }
 
+function restoreVehicle() {
+  emit('restore-vehicle');
+}
+
 function resetScene() {
   if (sceneManager) {
     sceneManager.resetCurrentScene();
@@ -188,6 +261,20 @@ function reinitScene() {
 
 function closeSuccess() {
   emit('close-success');
+}
+
+function closeFail() {
+  emit('close-fail');
+}
+
+function restoreAndTune() {
+  emit('close-fail');
+  emit('restore-vehicle');
+}
+
+function openHint() {
+  emit('close-fail');
+  emit('open-hint');
 }
 
 function goToNextLevel() {
@@ -475,6 +562,153 @@ onBeforeUnmount(() => {
   margin-top: 0.4rem;
   width: 100%;
   justify-content: center;
+}
+
+/* ==========================================================================
+   Failure Diagnostic Alert Modal Styles (Consistent with Success Modal)
+   ========================================================================== */
+.pulse-glow-amber {
+  box-shadow: 0 20px 48px rgba(239, 68, 68, 0.12), 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.fail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+  padding: 1.5rem;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.fail-card {
+  max-width: 480px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fail-badge-container {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fail-badge-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed rgba(239, 68, 68, 0.45);
+  animation: rotateRing 12s linear infinite reverse;
+}
+
+.fail-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+}
+
+.icon-fail {
+  color: #dc2626;
+}
+
+.fail-headings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.fail-title {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.fail-feedback-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  width: 100%;
+}
+
+.fail-feedback {
+  font-size: 0.92rem;
+  color: #b91c1c;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.fail-suggestion-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  width: 100%;
+  text-align: left;
+}
+
+.suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.suggestion-title {
+  font-size: 0.84rem;
+  color: var(--text-primary);
+}
+
+.suggestion-text {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.fail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-action-restore {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.btn-action-restore:hover {
+  background: #dbeafe;
 }
 
 @media (max-width: 600px) {

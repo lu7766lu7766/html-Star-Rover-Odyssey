@@ -6,23 +6,36 @@
         <Variable :size="18" class="text-brand" />
         <h3 class="deck-title">變數宣告與記憶體配置 · Variable Declaration</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetToFactory" title="重設至出廠預設值">
-        <RotateCcw :size="14" />
-        <span>出廠狀態</span>
-      </button>
+      <div class="deck-actions">
+        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="還原探測船整備台狀態">
+          <RotateCcw :size="14" />
+          <span>車輛還原</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="loadDemoSafely" title="自動填入符合規範的安全變數值">
+          <Sparkles :size="14" class="text-brand" />
+          <span>合規示範</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="resetToFactory" title="重設至未配置出廠狀態">
+          <RefreshCw :size="14" />
+          <span>出廠狀態</span>
+        </button>
+      </div>
     </div>
 
     <!-- Main Deck Grid -->
     <div class="deck-content">
       <!-- Variable 1: roverName (String) -->
-      <div class="var-card card">
+      <div class="var-card card" :class="{ 'card-valid': isNameValid, 'card-pending': !isNameValid }">
         <div class="var-header">
           <div class="var-title-wrap">
             <span class="keyword">let</span>
             <strong class="var-name">roverName</strong>
             <span class="type-tag tag-string">String (字串)</span>
           </div>
-          <span class="var-comment">// 探測船識別代號</span>
+          <div class="header-right">
+            <span v-if="isNameValid" class="status-badge badge-safe">✓ 字串已設定</span>
+            <span v-else class="status-badge badge-warn">⚠️ 待命名</span>
+          </div>
         </div>
 
         <div class="var-body">
@@ -54,14 +67,17 @@
       </div>
 
       <!-- Variable 2: powerLevel (Number) -->
-      <div class="var-card card">
+      <div class="var-card card" :class="{ 'card-valid': isPowerValid, 'card-pending': !isPowerValid }">
         <div class="var-header">
           <div class="var-title-wrap">
             <span class="keyword">let</span>
             <strong class="var-name">powerLevel</strong>
             <span class="type-tag tag-number">Number (數值)</span>
           </div>
-          <span class="var-comment">// 系統輸出功率 (80% ~ 100%)</span>
+          <div class="header-right">
+            <span v-if="isPowerValid" class="status-badge badge-safe">✓ 功率合格 (80~100%)</span>
+            <span v-else class="status-badge badge-warn">⚠️ 需 80%~100%</span>
+          </div>
         </div>
 
         <div class="var-body">
@@ -90,14 +106,17 @@
       </div>
 
       <!-- Variable 3: shieldActive (Boolean) -->
-      <div class="var-card card">
+      <div class="var-card card" :class="{ 'card-valid': isShieldValid, 'card-pending': !isShieldValid }">
         <div class="var-header">
           <div class="var-title-wrap">
             <span class="keyword">let</span>
             <strong class="var-name">shieldActive</strong>
             <span class="type-tag tag-boolean">Boolean (布林值)</span>
           </div>
-          <span class="var-comment">// 防護力場開關 (true / false)</span>
+          <div class="header-right">
+            <span v-if="isShieldValid" class="status-badge badge-safe">✓ 力場已啟動 (true)</span>
+            <span v-else class="status-badge badge-warn">❌ 未開啟 (需為 true)</span>
+          </div>
         </div>
 
         <div class="var-body">
@@ -140,15 +159,21 @@ rover.<span class="func">systemCheck</span>({ roverName, powerLevel, shieldActiv
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        設定完成 3 項核心狀態變數 ➔ 點擊執行通電自檢
+        <span v-if="allVariablesValid" class="text-success font-semibold">
+          ✓ 3 項核心狀態變數皆已就緒！點擊啟動通電自檢
+        </span>
+        <span v-else class="text-muted">
+          請設定完成船名、80%~100% 功率與開啟防護罩 ➔ 點擊執行通電自檢
+        </span>
       </div>
       <button
-        class="btn btn-success execute-btn"
+        class="btn execute-btn"
+        :class="allVariablesValid ? 'btn-success pulse-glow' : 'btn-primary'"
         :disabled="levelStore.isExecuting"
         @click="runExecution"
       >
         <Zap :size="16" />
-        <span>{{ levelStore.isExecuting ? '通電自檢運行中...' : '執行通電自檢 (rover.systemCheck)' }}</span>
+        <span>{{ levelStore.isExecuting ? '通電自檢運行中...' : (allVariablesValid ? '啟動通電自檢 (就緒 ✓)' : '執行通電自檢 (rover.systemCheck)') }}</span>
       </button>
     </div>
   </div>
@@ -156,7 +181,7 @@ rover.<span class="func">systemCheck</span>({ roverName, powerLevel, shieldActiv
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { Variable, RotateCcw, ShieldCheck, ShieldAlert, Code, Zap } from 'lucide-vue-next';
+import { Variable, RotateCcw, RefreshCw, Sparkles, ShieldCheck, ShieldAlert, Code, Zap } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { soundManager } from '../../game/core/SoundManager.js';
@@ -170,6 +195,11 @@ const presetNames = ['奧德賽號', '星馳號', '先鋒探索者', '阿波羅�
 const roverName = ref('');
 const powerLevel = ref(0);
 const shieldActive = ref(false);
+
+const isNameValid = computed(() => !!roverName.value.trim());
+const isPowerValid = computed(() => powerLevel.value >= 80 && powerLevel.value <= 100);
+const isShieldValid = computed(() => shieldActive.value === true);
+const allVariablesValid = computed(() => isNameValid.value && isPowerValid.value && isShieldValid.value);
 
 const powerStatusClass = computed(() => {
   if (powerLevel.value === 0) return 'badge-muted';
@@ -197,11 +227,24 @@ function setShield(val) {
   shieldActive.value = val;
 }
 
+function restorePosition() {
+  levelStore.restoreVehiclePosition();
+}
+
+function loadDemoSafely() {
+  soundManager.playClick();
+  roverName.value = '奧德賽號';
+  powerLevel.value = 90;
+  shieldActive.value = true;
+  restorePosition();
+}
+
 function resetToFactory() {
   soundManager.playClick();
   roverName.value = '';
   powerLevel.value = 0;
   shieldActive.value = false;
+  restorePosition();
 }
 
 function runExecution() {
@@ -231,6 +274,32 @@ function runExecution() {
   align-items: center;
   border-bottom: 1px solid var(--border-subtle);
   background: #ffffff;
+}
+
+.deck-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.card-valid {
+  border-left: 3px solid #10b981;
+}
+
+.card-pending {
+  border-left: 3px solid #f59e0b;
 }
 
 .deck-title-group {

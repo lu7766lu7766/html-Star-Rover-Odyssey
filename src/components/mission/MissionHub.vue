@@ -50,11 +50,15 @@
         <div class="feedback-header">
           <CheckCircle2 v-if="lastRunResult.pass" :size="18" class="text-success" />
           <AlertCircle v-else :size="18" class="text-danger" />
-          <strong class="feedback-title">{{ lastRunResult.pass ? '通關遙測驗證通過！' : '遙測自檢未通過' }}</strong>
+          <strong class="feedback-title">{{ lastRunResult.pass ? '通關遙測驗證通過！' : '遙測自檢未通過 (需調整參數)' }}</strong>
         </div>
         <p class="feedback-body">
           {{ lastRunResult.pass ? lastRunResult.feedback : lastRunResult.error }}
         </p>
+        <div v-if="!lastRunResult.pass && failureHint" class="feedback-action-hint">
+          <Lightbulb :size="14" class="text-brand" />
+          <span>{{ failureHint }}</span>
+        </div>
       </section>
 
       <!-- Live Scope & Variable Inspector (Pedagogical Enhancement) -->
@@ -156,6 +160,20 @@ const progressStore = useProgressStore();
 const level = computed(() => levelStore.currentLevel);
 const isCompleted = computed(() => progressStore.isLevelCompleted(level.value.id));
 const lastRunResult = computed(() => levelStore.lastRunResult);
+
+const failureHint = computed(() => {
+  if (!lastRunResult.value || lastRunResult.value.pass) return '';
+  const err = lastRunResult.value.error || '';
+  if (err.includes('未命名')) return 'JavaScript 變數需賦予字串，請在左下輸入名稱或點選快速代號。';
+  if (err.includes('能源不足') || err.includes('功率')) return '系統最低需 80% 功率，請拉動功率滑桿至 80%~100% 範圍。';
+  if (err.includes('防護力場') || err.includes('防護罩')) return '請將 shieldActive 設為 true 以啟動防護力場。';
+  if (err.includes('推力不足') || err.includes('尚未抵達補給站')) return '請調整推進次數與速度，讓 總位移 (次數 × 速度) 剛好等於 24 單位。';
+  if (err.includes('超速') || err.includes('超出')) return '速度或位移過大，請將著陸速度控制在 3 以內，並讓位移剛好為 24。';
+  if (err.includes('燃料不足') || err.includes('燃料耗盡')) return '請調高初始燃料或減少推進次數，確保剩餘燃料大於 0。';
+  if (err.includes('採集數量不足')) return '請調整 for 迴圈次數至 5 次以採集所有水晶。';
+  if (err.includes('模組型號')) return '請更換為高階模組並調用 scanArea() 方法。';
+  return '請調整左側控制項參數後再次點擊測試。';
+});
 
 const copyStatusText = ref('複製程式碼');
 
@@ -430,6 +448,20 @@ const activeScopeVariables = computed(() => {
   font-size: 0.84rem;
   line-height: 1.5;
   margin: 0;
+}
+
+.feedback-action-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ffffff;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fecaca;
+  font-size: 0.8rem;
+  color: #991b1b;
+  font-weight: 500;
+  margin-top: 0.25rem;
 }
 
 /* Live Scope Inspector Card */

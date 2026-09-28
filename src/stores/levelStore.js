@@ -16,6 +16,8 @@ export const useLevelStore = defineStore('level', {
     sceneActionTrigger: null, // Callback to trigger scene 3D animations
     isSuccessModalOpen: false,
     successModalTimer: null,
+    isFailModalOpen: false,
+    failModalTimer: null,
     isCodePeekOpen: false, // JavaScript peek toggle
     isHintModalOpen: false,
     resetNonce: 0
@@ -34,8 +36,42 @@ export const useLevelStore = defineStore('level', {
         clearTimeout(this.successModalTimer);
         this.successModalTimer = null;
       }
+      if (this.failModalTimer) {
+        clearTimeout(this.failModalTimer);
+        this.failModalTimer = null;
+      }
+      this.isSuccessModalOpen = false;
+      this.isFailModalOpen = false;
       this.executionLogs = [];
       this.lastRunResult = null;
+    },
+
+    closeSuccessModal() {
+      this.isSuccessModalOpen = false;
+      if (this.successModalTimer) {
+        clearTimeout(this.successModalTimer);
+        this.successModalTimer = null;
+      }
+    },
+
+    closeFailModal() {
+      this.isFailModalOpen = false;
+      if (this.failModalTimer) {
+        clearTimeout(this.failModalTimer);
+        this.failModalTimer = null;
+      }
+    },
+
+    restoreVehiclePosition() {
+      soundManager.playClick();
+      this.isFailModalOpen = false;
+      if (this.sceneActionTrigger) {
+        this.sceneActionTrigger('RESET_POSITION', { levelId: this.currentLevel.id });
+      }
+      this.appendLog({
+        type: 'info',
+        message: '探測船已還原至發射起跑點。'
+      });
     },
 
     appendLog(logEntry) {
@@ -140,6 +176,9 @@ export const useLevelStore = defineStore('level', {
             message: `🌟 [任務通關] ${evaluation.feedback}`
           });
 
+          if (this.failModalTimer) clearTimeout(this.failModalTimer);
+          this.isFailModalOpen = false;
+
           // Delay success modal to let user enjoy the final victory animation
           if (this.successModalTimer) clearTimeout(this.successModalTimer);
           this.successModalTimer = setTimeout(() => {
@@ -160,6 +199,12 @@ export const useLevelStore = defineStore('level', {
           if (this.sceneActionTrigger) {
             this.sceneActionTrigger('LEVEL_FAIL', { levelId: currentLevel.id, evaluation });
           }
+
+          // Delay fail modal to let user see 3D fail state / car stop
+          if (this.failModalTimer) clearTimeout(this.failModalTimer);
+          this.failModalTimer = setTimeout(() => {
+            this.isFailModalOpen = true;
+          }, 750);
         }
 
         return evaluation;
@@ -176,6 +221,12 @@ export const useLevelStore = defineStore('level', {
           type: 'error',
           message: errResult.error
         });
+
+        if (this.failModalTimer) clearTimeout(this.failModalTimer);
+        this.failModalTimer = setTimeout(() => {
+          this.isFailModalOpen = true;
+        }, 750);
+
         return errResult;
       } finally {
         this.isExecuting = false;

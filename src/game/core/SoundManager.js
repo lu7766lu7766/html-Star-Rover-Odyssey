@@ -6,12 +6,15 @@
 class SoundManager {
   constructor() {
     this.ctx = null;
-    this.muted = localStorage.getItem('star_rover_muted') === 'true';
+    this.muted = typeof localStorage !== 'undefined'
+      ? localStorage.getItem('star_rover_muted') === 'true'
+      : false;
     this.masterGain = null;
   }
 
   init() {
     if (this.ctx) return;
+    if (typeof window === 'undefined') return;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
@@ -36,7 +39,9 @@ class SoundManager {
 
   setMuted(muted) {
     this.muted = !!muted;
-    localStorage.setItem('star_rover_muted', String(this.muted));
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('star_rover_muted', String(this.muted));
+    }
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.muted ? 0 : 0.3, this.ctx.currentTime);
     }

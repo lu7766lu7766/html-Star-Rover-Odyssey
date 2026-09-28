@@ -13,9 +13,13 @@
             :level-id="levelStore.currentLevel.id"
             :last-run-result="levelStore.lastRunResult"
             :is-success-modal-open="levelStore.isSuccessModalOpen"
+            :is-fail-modal-open="levelStore.isFailModalOpen"
             :is-low-performance="progressStore.isLowPerformanceMode"
             @next-level="handleNextLevel"
-            @close-success="levelStore.isSuccessModalOpen = false"
+            @close-success="levelStore.closeSuccessModal"
+            @close-fail="levelStore.closeFailModal"
+            @restore-vehicle="levelStore.restoreVehiclePosition"
+            @open-hint="levelStore.toggleHintModal(true)"
             @register-trigger="handleRegisterSceneTrigger"
           />
         </section>

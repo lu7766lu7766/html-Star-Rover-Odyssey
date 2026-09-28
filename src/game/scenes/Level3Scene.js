@@ -69,7 +69,13 @@ export class Level3Scene extends BaseGameScene {
   }
 
   handleAction(actionType, payload = {}) {
+    if (actionType === 'RESET_POSITION' || actionType === 'RESET') {
+      this.reset();
+      return;
+    }
+
     if (actionType === 'EXECUTE_START') {
+      this.reset();
       this.simulating = true;
       this.simStep = 1;
       this.stepTimer = 0;
@@ -89,8 +95,6 @@ export class Level3Scene extends BaseGameScene {
         nameLabel.material.needsUpdate = true;
       }
       try { soundManager.playError(); } catch (e) {}
-    } else if (actionType === 'RESET') {
-      this.reset();
     }
   }
 

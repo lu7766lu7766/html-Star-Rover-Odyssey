@@ -5,10 +5,16 @@
         <Sliders :size="18" class="text-brand" />
         <h3 class="deck-title">飛行變數與推力參數調節 · Flight Parameters</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="恢復預設參數">
-        <RotateCcw :size="14" />
-        <span>預設值</span>
-      </button>
+      <div class="deck-actions">
+        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="將探測船還原至發射起跑點">
+          <RotateCcw :size="14" />
+          <span>車輛還原</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="恢復預設參數">
+          <RefreshCw :size="14" />
+          <span>預設值</span>
+        </button>
+      </div>
     </div>
 
     <div class="deck-content">
@@ -127,8 +133,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { Sliders, RotateCcw, Play } from 'lucide-vue-next';
+import { ref, computed, onMounted, watch } from 'vue';
+import { Sliders, RotateCcw, RefreshCw, Play } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 
@@ -154,11 +160,21 @@ const totalDistance = computed(() => thrustCount.value * speed.value);
 const totalBurn = computed(() => thrustCount.value * burnPerThrust.value);
 const remainingFuel = computed(() => initialFuel.value - totalBurn.value);
 
+// Auto-restore rover to starting line whenever student tweaks parameters
+watch([thrustCount, speed, initialFuel, burnPerThrust], () => {
+  levelStore.restoreVehiclePosition();
+});
+
+function restorePosition() {
+  levelStore.restoreVehiclePosition();
+}
+
 function resetDefaults() {
   initialFuel.value = 150;
   burnPerThrust.value = 30;
   thrustCount.value = 3;
   speed.value = 2;
+  restorePosition();
 }
 
 function runExecution() {

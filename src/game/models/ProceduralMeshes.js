@@ -10,6 +10,9 @@ import * as THREE from 'three';
  * Creates dynamic high-res text canvas texture for Rover label and beacons
  */
 export function createTextTexture(text, bgColor = '#ffffff', textColor = '#2563eb') {
+  if (typeof document === 'undefined') {
+    return new THREE.Texture();
+  }
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 128;
