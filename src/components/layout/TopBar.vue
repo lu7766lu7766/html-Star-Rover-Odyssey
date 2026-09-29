@@ -147,7 +147,7 @@
               v-model="cheatCodeInput"
               type="text"
               class="cheat-input"
-              placeholder="輸入安全指令代碼 (如 jaccis666)..."
+              placeholder="輸入安全指令代碼..."
               @keyup.enter="submitCheat"
               autofocus
             />

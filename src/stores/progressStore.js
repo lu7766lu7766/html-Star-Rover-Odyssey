@@ -107,7 +107,7 @@ export const useProgressStore = defineStore('progress', {
           success: true,
           mode: this.isDeveloperMode,
           message: this.isDeveloperMode 
-            ? '🚀 金手指【jaccis666】啟動！已開啟教師/全關卡解鎖模式！' 
+            ? '🚀 金手指已啟動！已開啟教師/全關卡解鎖模式！' 
             : '🔒 開發者模式已關閉，切回學生漸進探索模式。'
         };
       }

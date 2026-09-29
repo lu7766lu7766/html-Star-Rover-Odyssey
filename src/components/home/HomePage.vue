@@ -204,7 +204,7 @@
           <input
             v-model="cheatInput"
             type="password"
-            placeholder="請輸入密令 (例如 jaccis666)"
+            placeholder="請輸入密令..."
             class="cheat-input"
             @keyup.enter="submitCheat"
           />
