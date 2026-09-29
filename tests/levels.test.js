@@ -7,7 +7,7 @@ import level5 from '../src/levels/level-5.js';
 import level6 from '../src/levels/level-6.js';
 import level7 from '../src/levels/level-7.js';
 import level8 from '../src/levels/level-8.js';
-import { evaluateFlightSafety } from '../src/services/weatherService.js';
+import { evaluateTelemetry, resolveJsonPath, BENCHMARK_STATION_DATA, DRONE_FLIGHT_LIMITS } from '../src/services/weatherService.js';
 
 describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
   // Level 1: Variable Declaration & Data Types
@@ -285,58 +285,72 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
 
   // Level 8: Open-Meteo Weather API
   it('Level 8: validates weather safety evaluation and flight dispatch', () => {
+    const tpeJson = BENCHMARK_STATION_DATA['station-tpe'];
     const passRes = level8.validate({
       weatherSession: {
-        weatherData: {
-          stationName: '台北觀測站',
-          windSpeed: 16.5,
-          precipitationProbability: 10,
-          temperature: 22,
-          isRealData: true
+        rawJson: tpeJson,
+        paths: {
+          windPath: 'current.wind_speed_10m',
+          tempPath: 'current.temperature_2m',
+          precipPath: 'hourly.precipitation_probability[0]'
         },
-        conditions: {
-          maxWindSpeed: 25,
-          maxPrecipitation: 30
-        },
-        launched: true
+        station: { id: 'station-tpe', name: '台北觀測站' },
+        launched: true,
+        isRealData: false
       }
     });
     expect(passRes.pass).toBe(true);
 
-    // Exceeding student threshold
+    // High wind station (Tokyo 38km/h) exceeds 25km/h limit
+    const tyoJson = BENCHMARK_STATION_DATA['station-tyo'];
     const highWind = level8.validate({
       weatherSession: {
-        weatherData: {
-          stationName: '台北觀測站',
-          windSpeed: 28,
-          precipitationProbability: 10,
-          temperature: 22,
-          isRealData: true
+        rawJson: tyoJson,
+        paths: {
+          windPath: 'current.wind_speed_10m',
+          tempPath: 'current.temperature_2m',
+          precipPath: 'hourly.precipitation_probability[0]'
         },
-        conditions: {
-          maxWindSpeed: 25,
-          maxPrecipitation: 30
-        },
-        launched: true
+        station: { id: 'station-tyo', name: '東京觀測站' },
+        launched: true,
+        isRealData: false
       }
     });
     expect(highWind.pass).toBe(false);
-    expect(highWind.error).toContain('超過你設定的容許上限');
+    expect(highWind.error).toContain('風速高達');
   });
 
   it('Weather Service: correctly flags unsafe wind and rain conditions', () => {
-    const safeResult = evaluateFlightSafety(
-      { windSpeed: 15, precipitationProbability: 10, temperature: 20 },
-      { maxWindSpeed: 25, maxPrecipitation: 30 }
-    );
+    const tpeJson = BENCHMARK_STATION_DATA['station-tpe'];
+    const safeResult = evaluateTelemetry(tpeJson, {
+      windPath: 'current.wind_speed_10m',
+      tempPath: 'current.temperature_2m',
+      precipPath: 'hourly.precipitation_probability[0]'
+    });
     expect(safeResult.canLaunch).toBe(true);
+    expect(safeResult.allSensorsOnline).toBe(true);
 
-    const unsafeResult = evaluateFlightSafety(
-      { windSpeed: 35, precipitationProbability: 60, temperature: 20 },
-      { maxWindSpeed: 25, maxPrecipitation: 30 }
-    );
+    const tyoJson = BENCHMARK_STATION_DATA['station-tyo'];
+    const unsafeResult = evaluateTelemetry(tyoJson, {
+      windPath: 'current.wind_speed_10m',
+      tempPath: 'current.temperature_2m',
+      precipPath: 'hourly.precipitation_probability[0]'
+    });
     expect(unsafeResult.canLaunch).toBe(false);
-    expect(unsafeResult.issues.length).toBe(2);
+    expect(unsafeResult.failReason).toBe('WIND');
+
+    // Bad JSON paths -> sensors offline
+    const badPaths = evaluateTelemetry(tpeJson, {
+      windPath: 'current.not_exist',
+      tempPath: '',
+      precipPath: ''
+    });
+    expect(badPaths.allSensorsOnline).toBe(false);
+    expect(badPaths.canLaunch).toBe(false);
+
+    // resolveJsonPath sanity
+    expect(resolveJsonPath(tpeJson, 'current.wind_speed_10m')).toBe(14.2);
+    expect(resolveJsonPath(tpeJson, 'hourly.precipitation_probability[0]')).toBe(15);
   });
 
   // Strict Pedagogical Rule: No Level Passes Without Active Student Interaction & Tuning!

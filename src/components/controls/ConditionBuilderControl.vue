@@ -33,6 +33,7 @@
           <div class="branch-action-row">
             <span class="action-arrow">➔ 執行動作：</span>
             <select v-model="rule1Action" class="action-select">
+              <option value="" disabled>請選擇動作…</option>
               <option value="STOP">緊急停止避碰 (STOP)</option>
               <option value="SLOW_DOWN">減速巡航慢行 (SLOW_DOWN)</option>
               <option value="FULL_SPEED">全速前進巡航 (FULL_SPEED)</option>
@@ -59,6 +60,7 @@
           <div class="branch-action-row">
             <span class="action-arrow">➔ 執行動作：</span>
             <select v-model="rule2Action" class="action-select">
+              <option value="" disabled>請選擇動作…</option>
               <option value="STOP">緊急停止避碰 (STOP)</option>
               <option value="SLOW_DOWN">減速巡航慢行 (SLOW_DOWN)</option>
               <option value="FULL_SPEED">全速前進巡航 (FULL_SPEED)</option>
@@ -75,6 +77,7 @@
           <div class="branch-action-row">
             <span class="action-arrow">➔ 執行動作：</span>
             <select v-model="fallbackAction" class="action-select">
+              <option value="" disabled>請選擇動作…</option>
               <option value="STOP">緊急停止避碰 (STOP)</option>
               <option value="SLOW_DOWN">減速巡航慢行 (SLOW_DOWN)</option>
               <option value="FULL_SPEED">全速前進巡航 (FULL_SPEED)</option>
@@ -129,22 +132,22 @@ import { useProgressStore } from '../../stores/progressStore.js';
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-const rule1Threshold = ref(2);
-const rule1Action = ref('FULL_SPEED');
+const rule1Threshold = ref(5);
+const rule1Action = ref('');
 
-const rule2Threshold = ref(8);
-const rule2Action = ref('STOP');
+const rule2Threshold = ref(15);
+const rule2Action = ref('');
 
-const fallbackAction = ref('SLOW_DOWN');
+const fallbackAction = ref('');
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(3);
   if (saved && saved.rules) {
-    rule1Threshold.value = saved.rules.rule1Threshold ?? 2;
-    rule1Action.value = saved.rules.rule1Action ?? 'FULL_SPEED';
-    rule2Threshold.value = saved.rules.rule2Threshold ?? 8;
-    rule2Action.value = saved.rules.rule2Action ?? 'STOP';
-    fallbackAction.value = saved.rules.fallbackAction ?? 'SLOW_DOWN';
+    rule1Threshold.value = saved.rules.rule1Threshold ?? 5;
+    rule1Action.value = saved.rules.rule1Action ?? '';
+    rule2Threshold.value = saved.rules.rule2Threshold ?? 15;
+    rule2Action.value = saved.rules.rule2Action ?? '';
+    fallbackAction.value = saved.rules.fallbackAction ?? '';
   }
 });
 
@@ -156,6 +159,7 @@ function evaluateDecision(dist) {
 
 function getDecisionText(dist) {
   const act = evaluateDecision(dist);
+  if (!act) return '未選擇動作';
   if (act === 'STOP') return '緊急停止 (STOP)';
   if (act === 'SLOW_DOWN') return '減速慢行 (SLOW_DOWN)';
   if (act === 'FULL_SPEED') return '全速前進 (FULL_SPEED)';
@@ -170,11 +174,11 @@ function getDecisionClass(dist) {
 }
 
 function resetDefaults() {
-  rule1Threshold.value = 2;
-  rule1Action.value = 'FULL_SPEED';
-  rule2Threshold.value = 8;
-  rule2Action.value = 'STOP';
-  fallbackAction.value = 'SLOW_DOWN';
+  rule1Threshold.value = 5;
+  rule1Action.value = '';
+  rule2Threshold.value = 15;
+  rule2Action.value = '';
+  fallbackAction.value = '';
 }
 
 function runExecution() {

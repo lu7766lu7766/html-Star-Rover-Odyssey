@@ -17,9 +17,9 @@ export default {
   ],
   controlType: 'condition-builder',
   conditionRules: {
-    rule1: { threshold: 2, action: 'FULL_SPEED' },
-    rule2: { threshold: 8, action: 'STOP' },
-    fallbackAction: 'SLOW_DOWN'
+    rule1: { threshold: 5, action: '' },
+    rule2: { threshold: 15, action: '' },
+    fallbackAction: ''
   },
   availableActions: [
     { id: 'STOP', label: '停止避碰 (STOP)', tag: 'danger' },

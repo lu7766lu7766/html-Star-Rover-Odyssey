@@ -21,7 +21,8 @@ export const useProgressStore = defineStore('progress', {
       savedOperations: loaded.savedOperations || {},
       isDeveloperMode: false,
       isSoundMuted: localStorage.getItem('star_rover_sound_muted') === 'true',
-      isLowPerformanceMode: localStorage.getItem('star_rover_low_perf') === 'true'
+      // 教室電腦老舊，預設開啟低效能模式（除非使用者明確關過）
+      isLowPerformanceMode: localStorage.getItem('star_rover_low_perf') !== 'false'
     };
   },
 

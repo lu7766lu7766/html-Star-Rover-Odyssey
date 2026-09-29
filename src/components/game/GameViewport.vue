@@ -53,6 +53,9 @@
     <!-- Level Complete Success Milestone Modal -->
     <div v-if="showSuccessModal" class="success-overlay" @click.self="closeSuccess">
       <div class="success-card glass-panel pulse-glow">
+        <div class="confetti-container" aria-hidden="true">
+          <span v-for="n in 24" :key="n" class="confetti" :style="confettiStyle(n)">{{ confettiEmoji(n) }}</span>
+        </div>
         <div class="success-badge-container">
           <div class="badge-ring"></div>
           <div class="success-icon-wrapper">
@@ -283,6 +286,24 @@ function goToNextLevel() {
   emit('next-level');
 }
 
+// 課堂趣味：純 CSS confetti，免依賴。位置/延遲用確定性偽隨機，避免 hydration 抖動
+const CONFETTI_EMOJI = ['🎉', '⭐', '✨', '🚀', '💫'];
+function confettiStyle(n) {
+  const left = (n * 37) % 100;
+  const delay = ((n * 13) % 10) / 10;
+  const duration = 1.6 + ((n * 7) % 10) / 10;
+  const size = 0.9 + ((n * 11) % 8) / 10;
+  return {
+    left: `${left}%`,
+    animationDelay: `${delay}s`,
+    animationDuration: `${duration}s`,
+    fontSize: `${size}rem`
+  };
+}
+function confettiEmoji(n) {
+  return CONFETTI_EMOJI[n % CONFETTI_EMOJI.length];
+}
+
 function init3D() {
   // Level 6 改用 2D 網頁模式，不初始化 WebGL，改註冊空觸發器讓 executeLevel 照常運作
   if (props.levelId === 6) {
@@ -495,6 +516,30 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 1.15rem;
   animation: modalEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.confetti-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.confetti {
+  position: absolute;
+  top: -2rem;
+  animation: confettiFall linear infinite;
+  opacity: 0.9;
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(-2rem) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(22rem) rotate(360deg); opacity: 0.2; }
 }
 
 @keyframes modalEnter {
