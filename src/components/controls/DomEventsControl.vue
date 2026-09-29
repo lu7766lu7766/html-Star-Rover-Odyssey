@@ -3,26 +3,45 @@
     <div class="deck-header">
       <div class="deck-title-group">
         <MousePointer :size="18" class="text-brand" />
-        <h3 class="deck-title">DOM 事件監聽與控制台 · Event Binding</h3>
+        <h3 class="deck-title">DOM 事件實驗室 · 幫網頁按鈕接上電線</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="重置事件配置">
+      <button class="btn btn-ghost btn-sm" @click="onReset" title="重置事件配置">
         <RotateCcw :size="14" />
         <span>重置狀態</span>
       </button>
     </div>
 
     <div class="deck-content">
-      <!-- 1. Event Listeners Configuration Card -->
-      <div class="binding-card card">
-        <h4 class="card-subtitle">1. 配置事件監聽器 (addEventListener)</h4>
+      <!-- Steps checklist -->
+      <div class="steps-row">
+        <div class="step" :class="{ done: step1Done }">
+          <span class="step-num">1</span>
+          <span>兩顆按鈕都綁 <b>click</b></span>
+          <span class="step-check">{{ step1Done ? '✓' : '○' }}</span>
+        </div>
+        <div class="step" :class="{ done: dom.disarmed }">
+          <span class="step-num">2</span>
+          <span>上方 2D 網頁解除警報</span>
+          <span class="step-check">{{ dom.disarmed ? '✓' : '○' }}</span>
+        </div>
+        <div class="step" :class="{ done: dom.airlockOpen }">
+          <span class="step-num">3</span>
+          <span>上方 2D 網頁開啟氣閘</span>
+          <span class="step-check">{{ dom.airlockOpen ? '✓' : '○' }}</span>
+        </div>
+      </div>
 
-        <!-- Binding for Disarm Button -->
+      <!-- 1. Bindings -->
+      <div class="binding-card card">
+        <h4 class="card-subtitle">1. 配置事件監聽器 — 就像幫按鈕接電線</h4>
+        <p class="card-tip">左邊是「元素」，中間選「什麼動作會觸發」，右邊選「觸發後要做什麼」。改完立刻看上方 2D 網頁按鈕上的 👂 徽章變化！</p>
+
         <div class="binding-row">
           <span class="element-tag">元素: #disarm-btn</span>
           <div class="bind-selects">
             <div class="select-group">
               <label>事件類型:</label>
-              <select v-model="disarmEvent" class="mini-select">
+              <select v-model="dom.disarmEvent" class="mini-select" @change="onBindingChange">
                 <option value="click">click (滑鼠點擊)</option>
                 <option value="mouseover">mouseover (懸停)</option>
                 <option value="dblclick">dblclick (雙擊)</option>
@@ -30,21 +49,23 @@
             </div>
             <div class="select-group">
               <label>回呼動作:</label>
-              <select v-model="disarmAction" class="mini-select">
+              <select v-model="dom.disarmAction" class="mini-select" @change="onBindingChange">
                 <option value="DISARM_ALARM">解除安全警報 (disarmAlarm)</option>
                 <option value="EMERGENCY_LOCK">緊急封鎖 (emergencyLock)</option>
               </select>
             </div>
           </div>
+          <div class="wire-hint" :class="disarmWireOk ? 'ok' : 'bad'">
+            {{ disarmWireOk ? '✓ 這條線接對了：點擊 → 解除警報' : '⚠ 想想看：日常網頁按鈕最常用哪種觸發？動作該是解除警報嗎？' }}
+          </div>
         </div>
 
-        <!-- Binding for Airlock Button -->
         <div class="binding-row">
           <span class="element-tag">元素: #airlock-btn</span>
           <div class="bind-selects">
             <div class="select-group">
               <label>事件類型:</label>
-              <select v-model="airlockEvent" class="mini-select">
+              <select v-model="dom.airlockEvent" class="mini-select" @change="onBindingChange">
                 <option value="click">click (滑鼠點擊)</option>
                 <option value="mouseover">mouseover (懸停)</option>
                 <option value="dblclick">dblclick (雙擊)</option>
@@ -52,67 +73,72 @@
             </div>
             <div class="select-group">
               <label>回呼動作:</label>
-              <select v-model="airlockAction" class="mini-select">
+              <select v-model="dom.airlockAction" class="mini-select" @change="onBindingChange">
                 <option value="OPEN_AIRLOCK">開啟氣閘艙門 (openAirlock)</option>
                 <option value="DISARM_ALARM">解除安全警報 (disarmAlarm)</option>
               </select>
             </div>
           </div>
+          <div class="wire-hint" :class="airlockWireOk ? 'ok' : 'bad'">
+            {{ airlockWireOk ? '✓ 這條線接對了：點擊 → 開啟氣閘' : '⚠ 氣閘門該配哪個動作？事件該用最直覺的點擊嗎？' }}
+          </div>
         </div>
       </div>
 
-      <!-- 2. Interactive Virtual Physical Control Console -->
-      <div class="virtual-console-card card">
-        <div class="console-header">
-          <h4 class="card-subtitle">2. 實體太空艙面板 (點擊親自觸發事件)</h4>
-          <div class="status-indicator-badge">
-            <span class="status-dot" :class="isDisarmed ? 'dot-green' : 'dot-red'"></span>
-            <span>系統狀態：{{ isDisarmed ? '正常 (NORMAL)' : '警戒鎖定中 (ALARM ACTIVE)' }}</span>
-          </div>
+      <!-- 2. Live JS preview -->
+      <div class="code-card card">
+        <div class="code-head">
+          <h4 class="card-subtitle">2. 你剛剛寫的 JS 長這樣（即時連動）</h4>
+          <span class="live-tag">LIVE</span>
         </div>
+        <pre class="live-code"><code>{{ dom.liveJsCode }}</code></pre>
+        <p class="card-tip">💡 重點：<b>addEventListener(事件, 回呼)</b> 只是「先接好線」；要親自去上方 2D 網頁觸發事件，回呼才會跑，才會改到 textContent / style / class。</p>
+      </div>
 
+      <!-- 3. Quick test mirror -->
+      <div class="virtual-console-card card">
+        <h4 class="card-subtitle">3. 快速測試（跟上方 2D 網頁是同一組按鈕）</h4>
         <div class="physical-buttons-row">
-          <!-- Button 1: Disarm -->
           <button
-            id="disarm-btn"
+            id="disarm-btn-mirror"
             class="physical-btn"
-            :class="isDisarmed ? 'btn-disarmed' : 'btn-alarm'"
-            @click="handleDisarmClick"
+            :class="dom.disarmed ? 'btn-disarmed' : 'btn-alarm'"
+            @click="dom.dispatch('disarm', 'click')"
           >
-            <ShieldAlert v-if="!isDisarmed" :size="20" />
+            <ShieldAlert v-if="!dom.disarmed" :size="20" />
             <ShieldCheck v-else :size="20" />
             <div class="btn-text-col">
               <strong>解除警報 (#disarm-btn)</strong>
-              <span>{{ isDisarmed ? '警報已解除 ✓' : '點擊送出解除信號' }}</span>
+              <span>{{ dom.disarmed ? '警報已解除 ✓' : '點擊送出解除信號' }}</span>
             </div>
           </button>
 
-          <!-- Button 2: Airlock -->
           <button
-            id="airlock-btn"
+            id="airlock-btn-mirror"
             class="physical-btn btn-airlock"
-            :class="{ 'btn-door-open': isAirlockOpen }"
-            @click="handleAirlockClick"
+            :class="{ 'btn-door-open': dom.airlockOpen }"
+            @click="dom.dispatch('airlock', 'click')"
           >
-            <DoorOpen v-if="isAirlockOpen" :size="20" />
+            <DoorOpen v-if="dom.airlockOpen" :size="20" />
             <DoorClosed v-else :size="20" />
             <div class="btn-text-col">
               <strong>氣閘艙門 (#airlock-btn)</strong>
-              <span>{{ isAirlockOpen ? '氣閘已開啟 (OPEN) ✓' : '點擊手動開啟氣閘' }}</span>
+              <span>{{ dom.airlockOpen ? '氣閘已開啟 (OPEN) ✓' : '點擊手動開啟氣閘' }}</span>
             </div>
           </button>
         </div>
 
-        <div v-if="consoleNotice" class="console-notice" :class="noticeType">
-          {{ consoleNotice }}
+        <div v-if="dom.notice" class="console-notice" :class="'n-' + dom.noticeType">
+          {{ dom.notice }}
         </div>
+        <div v-else class="console-notice n-muted">還沒觸發任何事件。建議直接去上方 2D 網頁點點看，差別更明顯！</div>
       </div>
     </div>
 
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        綁定 click 事件 ➔ 點擊解除警報 ➔ 點擊開啟氣閘
+        綁定 click ➔ 上方網頁先解除警報 ➔ 再開氣閘 ➔ 提交驗證
       </div>
       <button
         class="btn btn-success execute-btn"
@@ -127,103 +153,46 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import {
   MousePointer, RotateCcw, Play, ShieldAlert, ShieldCheck,
   DoorClosed, DoorOpen
 } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
+import { useDomLabStore } from '../../stores/domLabStore.js';
 import { soundManager } from '../../game/core/SoundManager.js';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
+const dom = useDomLabStore();
 
-const disarmEvent = ref('mouseover');
-const disarmAction = ref('DISARM_ALARM');
-
-const airlockEvent = ref('dblclick');
-const airlockAction = ref('OPEN_AIRLOCK');
-
-const isDisarmed = ref(false);
-const isAirlockOpen = ref(false);
-const consoleNotice = ref('');
-const noticeType = ref('text-muted');
+const step1Done = computed(() =>
+  dom.disarmEvent === 'click' && dom.disarmAction === 'DISARM_ALARM' &&
+  dom.airlockEvent === 'click' && dom.airlockAction === 'OPEN_AIRLOCK'
+);
+const disarmWireOk = computed(() => dom.disarmEvent === 'click' && dom.disarmAction === 'DISARM_ALARM');
+const airlockWireOk = computed(() => dom.airlockEvent === 'click' && dom.airlockAction === 'OPEN_AIRLOCK');
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(6);
   if (saved && saved.domState) {
-    disarmEvent.value = saved.domState.bindings?.disarmEvent ?? 'mouseover';
-    disarmAction.value = saved.domState.bindings?.disarmAction ?? 'DISARM_ALARM';
-    airlockEvent.value = saved.domState.bindings?.airlockEvent ?? 'dblclick';
-    airlockAction.value = saved.domState.bindings?.airlockAction ?? 'OPEN_AIRLOCK';
-    isDisarmed.value = saved.domState.disarmed ?? false;
-    isAirlockOpen.value = saved.domState.airlockOpen ?? false;
+    dom.hydrateFromSaved(saved.domState);
   }
 });
 
-function handleDisarmClick() {
-  soundManager.playClick();
-  if (disarmEvent.value !== 'click') {
-    consoleNotice.value = `監聽器型態設定為 ${disarmEvent.value}，點擊未觸發此事件！`;
-    noticeType.value = 'text-warning';
-    return;
-  }
-  if (disarmAction.value === 'DISARM_ALARM') {
-    isDisarmed.value = true;
-    soundManager.playPowerUp();
-    consoleNotice.value = '【事件觸發】解除警報動作生效，指示燈切換為綠色正常狀態！';
-    noticeType.value = 'text-success';
-  } else {
-    consoleNotice.value = '【事件觸發】但指派的動作不是解除警報！';
-    noticeType.value = 'text-danger';
-  }
+function onBindingChange() {
+  try { soundManager.playClick(); } catch (e) {}
+  dom.pushLog('system', `🔌 重新接線：#disarm-btn ← ${dom.disarmEvent} → ${dom.disarmAction}；#airlock-btn ← ${dom.airlockEvent} → ${dom.airlockAction}`);
 }
 
-function handleAirlockClick() {
-  soundManager.playClick();
-  if (airlockEvent.value !== 'click') {
-    consoleNotice.value = `氣閘事件監聽為 ${airlockEvent.value}，點擊未觸發！`;
-    noticeType.value = 'text-warning';
-    return;
-  }
-  if (!isDisarmed.value) {
-    soundManager.playError();
-    consoleNotice.value = '【安全協議攔截】主警報尚未解除，嚴禁開啟外部氣閘！請先點擊解除警報。';
-    noticeType.value = 'text-danger';
-    return;
-  }
-  if (airlockAction.value === 'OPEN_AIRLOCK') {
-    isAirlockOpen.value = true;
-    soundManager.playDoorOpen();
-    consoleNotice.value = '【事件觸發】氣閘艙門液壓解鎖，3D 重型艙門已順利開啟！';
-    noticeType.value = 'text-success';
-  }
-}
-
-function resetDefaults() {
-  disarmEvent.value = 'mouseover';
-  disarmAction.value = 'DISARM_ALARM';
-  airlockEvent.value = 'dblclick';
-  airlockAction.value = 'OPEN_AIRLOCK';
-  isDisarmed.value = false;
-  isAirlockOpen.value = false;
-  consoleNotice.value = '';
+function onReset() {
+  dom.resetDefaults();
+  try { soundManager.playClick(); } catch (e) {}
 }
 
 function runExecution() {
-  levelStore.executeLevel({
-    domState: {
-      bindings: {
-        disarmEvent: disarmEvent.value,
-        disarmAction: disarmAction.value,
-        airlockEvent: airlockEvent.value,
-        airlockAction: airlockAction.value
-      },
-      disarmed: isDisarmed.value,
-      airlockOpen: isAirlockOpen.value
-    }
-  });
+  levelStore.executeLevel({ domState: dom.getDomStateForValidation() });
 }
 </script>
 
@@ -276,7 +245,42 @@ function runExecution() {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-primary);
+  margin: 0;
 }
+
+.card-tip {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Steps */
+.steps-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  background: #fff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  color: var(--text-secondary);
+}
+.step.done { border-color: #6ee7b7; background: #ecfdf5; color: #065f46; font-weight: 700; }
+.step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #e2e8f0; color: #475569;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
+}
+.step.done .step-num { background: #10b981; color: #fff; }
+.step-check { margin-left: auto; font-weight: 800; }
 
 /* Bindings */
 .binding-card {
@@ -325,43 +329,32 @@ function runExecution() {
   outline: none;
 }
 
+.wire-hint { font-size: 0.76rem; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid; line-height: 1.45; }
+.wire-hint.ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.wire-hint.bad { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+
+/* Live code */
+.code-card { display: flex; flex-direction: column; gap: 0.55rem; }
+.code-head { display: flex; align-items: center; justify-content: space-between; }
+.live-tag {
+  font-size: 0.65rem; font-weight: 800; color: #059669;
+  background: #ecfdf5; border: 1px solid #6ee7b7;
+  padding: 0.1rem 0.45rem; border-radius: 999px;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+.live-code {
+  margin: 0; background: #0f172a; color: #a5f3fc;
+  border-radius: 8px; padding: 0.7rem 0.8rem;
+  font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.6;
+  overflow-x: auto; white-space: pre;
+}
+
 /* Virtual Console */
 .virtual-console-card {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-}
-
-.console-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.status-indicator-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.status-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.dot-red {
-  background: var(--danger);
-  box-shadow: 0 0 8px var(--danger-glow);
-}
-
-.dot-green {
-  background: var(--success);
-  box-shadow: 0 0 8px var(--success-glow);
 }
 
 .physical-buttons-row {
@@ -430,10 +423,13 @@ function runExecution() {
   font-size: 0.82rem;
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
-  background: var(--bg-panel-hover);
   border: 1px solid var(--border-subtle);
   line-height: 1.4;
 }
+.console-notice.n-success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.console-notice.n-danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.console-notice.n-warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.console-notice.n-muted { background: var(--bg-panel-hover); color: var(--text-secondary); }
 
 .deck-footer {
   height: 52px;

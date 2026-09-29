@@ -1,10 +1,13 @@
 <template>
   <div class="game-viewport-container">
-    <!-- 3D Canvas Mount Point -->
-    <div class="canvas-wrapper" ref="canvasContainer"></div>
+    <!-- Level 6: 2D Webpage Mode (取代 3D，專注 DOM 體驗) -->
+    <Level6DomViewport v-if="levelId === 6" />
+
+    <!-- 3D Canvas Mount Point (Level 6 以外) -->
+    <div v-else class="canvas-wrapper" ref="canvasContainer"></div>
 
     <!-- Viewport Optical HUD Header (Top Left / Right) -->
-    <div class="viewport-telemetry-banner">
+    <div v-if="levelId !== 6" class="viewport-telemetry-banner">
       <div class="telemetry-item">
         <span class="beacon-dot"></span>
         <span class="telemetry-label">3D OPTICAL SENSOR</span>
@@ -15,8 +18,8 @@
       </div>
     </div>
 
-    <!-- HUD Overlay Controls (Top Right) -->
-    <div class="viewport-hud-controls">
+    <!-- HUD Overlay Controls (Top Right, 3D only) -->
+    <div v-if="levelId !== 6" class="viewport-hud-controls">
       <button class="btn btn-sm hud-btn" @click="resetCamera" title="重設 3D 觀察視角">
         <Compass :size="14" class="icon-hud" />
         <span>視角復位</span>
@@ -31,21 +34,14 @@
       </button>
     </div>
 
-    <!-- Level 6 Custom Mock DOM HUD -->
-    <ControlPanelHUD
-      v-if="levelId === 6"
-      :mock-dom-state="mockDomState"
-      @button-click="$emit('mock-dom-click', $event)"
-    />
-
     <!-- Level 7 Custom Drone Fleet HUD -->
     <DroneFleetHUD
       v-if="levelId === 7"
       :drones="droneFleetData"
     />
 
-    <!-- WebGL Context Lost Warning -->
-    <div v-if="contextLost" class="context-lost-banner">
+    <!-- WebGL Context Lost Warning (3D only) -->
+    <div v-if="levelId !== 6 && contextLost" class="context-lost-banner">
       <AlertTriangle :size="22" class="text-danger" />
       <div class="banner-text">
         <strong>3D 圖形核心中斷 · WEBGL CONTEXT INTERRUPTED</strong>
@@ -145,7 +141,7 @@ import { Level5Scene } from '../../game/scenes/Level5Scene.js';
 import { Level6Scene } from '../../game/scenes/Level6Scene.js';
 import { Level7Scene } from '../../game/scenes/Level7Scene.js';
 import { Level8Scene } from '../../game/scenes/Level8Scene.js';
-import ControlPanelHUD from './ControlPanelHUD.vue';
+import Level6DomViewport from './Level6DomViewport.vue';
 import DroneFleetHUD from './DroneFleetHUD.vue';
 
 const props = defineProps({
@@ -288,6 +284,11 @@ function goToNextLevel() {
 }
 
 function init3D() {
+  // Level 6 改用 2D 網頁模式，不初始化 WebGL，改註冊空觸發器讓 executeLevel 照常運作
+  if (props.levelId === 6) {
+    emit('register-trigger', () => {});
+    return;
+  }
   if (!canvasContainer.value) return;
   sceneManager = new SceneManager(canvasContainer.value);
 
@@ -312,7 +313,22 @@ onMounted(() => {
   init3D();
 });
 
-watch(() => props.levelId, (newId) => {
+watch(() => props.levelId, (newId, oldId) => {
+  // 切換進出 Level 6 (2D) 時重建 / 釋放 3D 資源
+  if (newId === 6) {
+    if (sceneManager) {
+      sceneManager.dispose();
+      sceneManager = null;
+    }
+    emit('register-trigger', () => {});
+    return;
+  }
+  if (oldId === 6) {
+    // 從 2D 切回 3D：等待 canvas 重新掛載後再初始化
+    contextLost.value = false;
+    setTimeout(() => init3D(), 50);
+    return;
+  }
   loadLevelScene(newId);
 });
 

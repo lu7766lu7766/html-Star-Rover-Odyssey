@@ -6,15 +6,15 @@
 export default {
   id: 6,
   title: '太空艙控制中心',
-  subtitle: '事件與 DOM 互動',
+  subtitle: '2D 網頁修復任務 · 事件與 DOM',
   conceptTitle: '使用者與網頁的橋樑：事件驅動',
-  concepts: ['DOM 元素選擇', '事件監聽器 (addEventListener)', '狀態回饋'],
-  description: `太空主艙發生氣壓與警報誤觸鎖定！控制台的兩枚實體按鈕「解除警報 (#disarm-btn)」與「氣閘閘門 (#airlock-btn)」尚未綁定事件監聽器。請替元素配置正確的事件型別 (click) 與反應動作，隨後親自點擊操作按鈕，解除警報並開啟通往外層空間的氣閘艙門！`,
+  concepts: ['DOM 元素選擇', '事件監聽器 (addEventListener)', 'textContent / style 即時改寫'],
+  description: `太空艙的控制「網頁」當機了！上方 2D 視窗就是一整個故障中的儀表板網頁：警報燈狂閃、氣閘門鎖死。兩顆按鈕「#disarm-btn」與「#airlock-btn」的電線（addEventListener）被拔掉了。請在下方操作區幫它們接回正確的事件（click）與動作，然後親自到 2D 網頁上點擊按鈕，看著 textContent、顏色、艙門 class 即時被你的 JS 改寫！`,
   targetRequirements: [
-    '為 #disarm-btn 綁定 "click" 點擊事件，觸發「解除安全警報」',
-    '為 #airlock-btn 綁定 "click" 點擊事件，觸發「解鎖並開啟氣閘」',
-    '在操作面板中親自點擊「解除警報」，確認狀態轉為正常',
-    '點擊「開啟氣閘」，完成艙門開啟協議'
+    '為 #disarm-btn 接回 "click" 事件，觸發「解除安全警報」',
+    '為 #airlock-btn 接回 "click" 事件，觸發「解鎖並開啟氣閘」',
+    '到上方 2D 網頁親自點擊「解除警報」，看 #status-indicator 轉綠色正常',
+    '再點擊「開啟氣閘」，看 #airlock-door 滑開並完成驗證'
   ],
   controlType: 'dom-events',
   initialBindings: {
@@ -28,34 +28,35 @@ export default {
     { id: 'EMERGENCY_LOCK', label: '全艙緊急封鎖 (emergencyLock)' }
   ],
   hints: [
-    '提示 1【DOM 與事件】：網頁中的按鈕與元素透過 addEventListener(事件, 回呼函式) 監聽使用者的動作，做出即時反應。',
-    '提示 2【互動型態觀察】：在日常網頁與遊戲介面中，觸發實體按鈕功能最通用的使用者行為是哪一種事件？',
-    '提示 3【引導式思考】：安全防護協議具有邏輯前置條件。若警報尚未解除就直接開啟氣閘，系統會拒絕執行。正確的操作順序應該是？'
+    '提示 1【DOM 與事件】：addEventListener(事件, 回呼) 只是「先幫按鈕接好電線」。上方 2D 網頁按鈕上的 👂 徽章就是目前接的線。',
+    '提示 2【動手實驗】：故意把事件改成 mouseover 或 dblclick，再去 2D 網頁懸停 / 雙擊按鈕，看看 click 為何是日常網頁最直覺的選擇。',
+    '提示 3【順序有意義】：開門的 JS 裡有 if (!isAlarmActive) 判斷。警報沒解除就開門會被擋下，先解除警報再開門才是正確流程。'
   ],
-  jsCodeExample: `// 💡 JavaScript 對照：透過 DOM 監聽使用者點擊事件
+  jsCodeExample: `// 💡 JavaScript 對照：你在下方接的線，就是這段程式碼
 const disarmButton = document.querySelector('#disarm-btn');
 const airlockButton = document.querySelector('#airlock-btn');
-const statusLight = document.querySelector('#status-indicator');
+const statusEl = document.querySelector('#status-indicator');
+const doorEl = document.querySelector('#airlock-door');
 
 let isAlarmActive = true;
 
-// 1. 綁定解除警報事件
+// 1. 接線：解除警報按鈕
 disarmButton.addEventListener('click', () => {
   isAlarmActive = false;
-  statusLight.textContent = '系統正常 (NORMAL)';
-  console.log('警報已解除！');
+  statusEl.textContent = '系統正常 (NORMAL)'; // ← 直接改網頁文字！
+  statusEl.style.color = 'green';             // ← 直接改網頁樣式！
 });
 
-// 2. 綁定開啟艙門事件
+// 2. 接線：氣閘門按鈕（含安全判斷）
 airlockButton.addEventListener('click', () => {
   if (!isAlarmActive) {
-    airlockDoor.open();
-    console.log('氣閘艙門已順利開啟！');
+    doorEl.classList.add('open');             // ← 加上 CSS class，門就滑開！
+    doorEl.textContent = '氣閘已開啟 (OPEN)';
   } else {
     alert('警報中，安全協議禁止開門！');
   }
 });`,
-  conceptExplanation: `網頁原本是靜態的文件（**DOM, 文件物件模型**）。當我們要讓網頁能對使用者的滑鼠、鍵盤做出反應時，就要透過 \`addEventListener('click', callback)\`「監聽」使用者的動作。一旦使用者點了按鈕，瀏覽器就會自動執行我們寫好的反應程式碼！`,
+  conceptExplanation: `網頁就是一棵 DOM 樹，每個按鈕、文字、艙門都是一個節點。addEventListener('click', callback) 是「幫節點接電線」：先接好，之後使用者一點擊，瀏覽器就自動跑回呼。本關上方就是一個真的 2D 網頁，你親手接線、親手點擊，親眼看到 textContent、style、class 被改寫——這就是前端工程師每天在做的事！`,
   validate: (runResult) => {
     const domState = runResult.domState || {};
     const { bindings = {}, disarmed = false, airlockOpen = false } = domState;
@@ -63,35 +64,35 @@ airlockButton.addEventListener('click', () => {
     if (bindings.disarmEvent !== 'click' || bindings.disarmAction !== 'DISARM_ALARM') {
       return {
         pass: false,
-        error: '警報按鈕 (#disarm-btn) 的事件綁定不正確！請綁定 "click" 事件以執行「解除安全警報」。'
+        error: '警報按鈕 (#disarm-btn) 的線接錯了！請接回 "click" 事件＋「解除安全警報」，再去 2D 網頁試試點擊 / 懸停的差別。'
       };
     }
 
     if (bindings.airlockEvent !== 'click' || bindings.airlockAction !== 'OPEN_AIRLOCK') {
       return {
         pass: false,
-        error: '氣閘按鈕 (#airlock-btn) 的事件綁定不正確！請綁定 "click" 事件以執行「開啟氣閘艙門」。'
+        error: '氣閘按鈕 (#airlock-btn) 的線接錯了！請接回 "click" 事件＋「開啟氣閘艙門」。'
       };
     }
 
     if (!disarmed) {
       return {
         pass: false,
-        error: '按鈕事件已綁定，但尚未在控制面板中點擊「解除警報」！請先點擊該按鈕以平息警報。'
+        error: '線接對了，但你還沒親手觸發事件！請到上方 2D 網頁點擊「解除警報」，看 #status-indicator 轉綠燈。'
       };
     }
 
     if (!airlockOpen) {
       return {
         pass: false,
-        error: '警報已解除，但尚未點擊「開啟氣閘」！請點擊按鈕開啟氣閘閘門以通關。'
+        error: '警報已解除，很棒！但還沒開門。請到上方 2D 網頁點擊「開啟氣閘」，看 #airlock-door 滑開後再提交。'
       };
     }
 
     return {
       pass: true,
       data: { disarmed, airlockOpen },
-      feedback: `控制中心事件運作完美！警報成功消除，重型氣閘艙門緩緩升起，通往星際的通道已暢通！`
+      feedback: `2D 網頁修復成功！你親手接好 addEventListener、親手點擊觸發，#status-indicator 轉綠、#airlock-door 滑開——這就是 JS 操控 DOM 的完整流程！`
     };
   }
 };
