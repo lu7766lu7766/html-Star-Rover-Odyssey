@@ -1,6 +1,7 @@
 /**
- * Level 8 Scene: 星際氣象站 (Open-Meteo Weather API)
- * Renders Weather Station Tower, radar dish, atmospheric clouds, and probe drone launch.
+ * Level 8 Scene: 星際氣象站 (Open-Meteo Weather API & Drone Flight Dynamics)
+ * Renders Weather Station Tower, radar dish, atmospheric clouds, and probe drone launch
+ * with distinctive animations for success (piercing clouds) and failures (wind buffeting, icing stall, rain short-circuit, disconnect).
  */
 
 import * as THREE from 'three';
@@ -18,6 +19,8 @@ export class Level8Scene extends BaseGameScene {
     this.clouds = [];
     this.isLaunching = false;
     this.launchHeight = 0;
+    this.failMode = null; // 'WIND' | 'TEMP' | 'PRECIP' | 'DISCONNECT'
+    this.failAnimTimer = 0;
   }
 
   build() {
@@ -77,6 +80,8 @@ export class Level8Scene extends BaseGameScene {
   reset() {
     this.isLaunching = false;
     this.launchHeight = 0;
+    this.failMode = null;
+    this.failAnimTimer = 0;
     if (this.drone) {
       this.drone.position.set(4, 0.6, 0);
       this.drone.rotation.set(0, 0, 0);
@@ -93,15 +98,13 @@ export class Level8Scene extends BaseGameScene {
       this.reset();
       try { soundManager.playThrust(); } catch (e) {}
     } else if (actionType === 'LEVEL_SUCCESS') {
+      this.failMode = null;
       this.isLaunching = true;
       try { soundManager.playLaunch(); } catch (e) {}
     } else if (actionType === 'LEVEL_FAIL') {
       this.isLaunching = false;
-      this.launchHeight = 0;
-      if (this.drone) {
-        this.drone.position.set(4, 0.6, 0);
-        this.drone.rotation.set(0, 0, 0);
-      }
+      this.failAnimTimer = 0;
+      this.failMode = payload.evaluation?.failReason || 'WIND';
       try { soundManager.playError(); } catch (e) {}
     }
   }
@@ -112,24 +115,72 @@ export class Level8Scene extends BaseGameScene {
       this.radarDish.userData.head.rotation.y += delta * 1.5;
     }
 
-    // Spin drone rotors
+    // Spin drone rotors (unless frozen in icing fail mode)
+    const rotorSpeed = this.failMode === 'TEMP' ? Math.max(0, 25 - this.failAnimTimer * 15) : 25;
     if (this.drone && this.drone.userData.rotors) {
       this.drone.userData.rotors.forEach(r => {
-        r.rotation.y += delta * 25;
+        r.rotation.y += delta * rotorSpeed;
       });
     }
 
-    // Animate Drone Launch Lift-off
+    // 1. Success Animation: Drone launches up smoothly into clouds
     if (this.isLaunching && this.drone) {
-      this.launchHeight += delta * 8;
+      this.launchHeight += delta * 9;
       this.drone.position.y = 0.6 + this.launchHeight;
-      this.drone.rotation.x = Math.sin(this.launchHeight * 0.5) * 0.15;
+      this.drone.rotation.x = Math.sin(this.launchHeight * 0.4) * 0.1;
+      this.drone.rotation.z = Math.cos(this.launchHeight * 0.3) * 0.05;
 
       // Gentle cloud drift
       this.clouds.forEach(c => {
         c.position.x += delta * 0.5;
         if (c.position.x > 20) c.position.x = -20;
       });
+    }
+
+    // 2. Failure Animations
+    if (this.failMode && this.drone) {
+      this.failAnimTimer += delta;
+
+      if (this.failMode === 'WIND') {
+        // Drone lifts off slightly, wobbles violently in high wind, then tilts and crashes down
+        if (this.failAnimTimer < 1.2) {
+          this.drone.position.y = 0.6 + Math.sin(this.failAnimTimer * Math.PI) * 1.8;
+          this.drone.rotation.z = Math.sin(this.failAnimTimer * 18) * 0.55;
+          this.drone.rotation.x = Math.cos(this.failAnimTimer * 12) * 0.4;
+          this.drone.position.x = 4 + Math.sin(this.failAnimTimer * 8) * 0.8;
+        } else {
+          // Lands back on pad tilted
+          this.drone.position.set(4.3, 0.6, 0);
+          this.drone.rotation.set(0.1, 0, 0.4);
+        }
+      } else if (this.failMode === 'TEMP') {
+        // Jitters due to freezing, rotors slow down, drops onto pad
+        if (this.failAnimTimer < 1.5) {
+          const jitter = (Math.random() - 0.5) * 0.08;
+          this.drone.position.y = 0.6 + Math.min(this.failAnimTimer * 0.4, 0.5) + jitter;
+          this.drone.position.x = 4 + jitter;
+        } else {
+          this.drone.position.set(4, 0.6, 0);
+          this.drone.rotation.set(0, 0, 0);
+        }
+      } else if (this.failMode === 'PRECIP') {
+        // Rotor twitching / descending in rain
+        if (this.failAnimTimer < 1.2) {
+          this.drone.position.y = 0.6 + Math.sin(this.failAnimTimer * 2) * 0.6;
+          this.drone.rotation.z = Math.sin(this.failAnimTimer * 25) * 0.2;
+        } else {
+          this.drone.position.set(4, 0.6, 0);
+          this.drone.rotation.set(0, 0, 0);
+        }
+      } else if (this.failMode === 'DISCONNECT') {
+        // Drone remains grounded, slight vibration then stops
+        if (this.failAnimTimer < 0.6) {
+          this.drone.position.y = 0.6 + (Math.random() - 0.5) * 0.04;
+        } else {
+          this.drone.position.set(4, 0.6, 0);
+          this.drone.rotation.set(0, 0, 0);
+        }
+      }
     }
   }
 }

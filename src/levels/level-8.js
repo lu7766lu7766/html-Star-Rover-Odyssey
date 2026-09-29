@@ -1,105 +1,147 @@
 /**
  * Level 8: 星際氣象站
- * 核心概念：API 與外部資料交換 (Fetch & External Web APIs)
+ * 核心概念：API 與外部資料交換、JSON 物件解析、多站點氣候決策
  */
+
+import { DRONE_FLIGHT_LIMITS, resolveJsonPath } from '../services/weatherService.js';
 
 export default {
   id: 8,
   title: '星際氣象站',
-  subtitle: 'API 與外部資料',
-  conceptTitle: '連結世界：透過 API 交換即時資料',
-  concepts: ['Web API (fetch)', 'JSON 資料解析', '非同步資料交換 (Async/Await)'],
-  description: `高空探測無人機準備升空進行行星高層大氣測繪！然而無人機對強風與暴雨極度敏感。我們需要透過「星際氣象 API (Open-Meteo)」向地面觀測站請求真實即時天氣數據。請選擇觀測站、發起 API 請求取得即時風速與降雨機率，並在操作台設定安全飛行門檻，判定是否安全派遣無人機！`,
+  subtitle: 'API 與 JSON 資料解析',
+  conceptTitle: '連結世界：透過 API 交換資料與解析 JSON 結構',
+  concepts: ['Web API (fetch)', 'JSON 物件樹與屬性取值', '非同步資料交換 (Async/Await)', '多站點氣候安全決策'],
+  description: `高空探測無人機準備升空進行行星高層大氣測繪！然而無人機具備嚴格的航太硬體安全極限（風速 ≤ 25 km/h、降雨 ≤ 20%、氣溫 ≥ 0°C）。我們需要向「星際氣象 API (Open-Meteo)」請求真實即時大氣 JSON 資料。請檢視 API 回傳的樹狀結構，為無人機感測器配置正確的取值路徑，並比對全球 5 大觀測基地，找出唯一符合全安全窗口的基地派遣無人機升空！`,
   targetRequirements: [
-    '選擇任一觀測站（台北、東京、倫敦、杜拜或雷克雅維克）',
-    '點擊「發送 API 請求」取得即時大氣資料 (溫度、風速、降雨率)',
-    '檢視 API 回傳的真實或模擬數據結構',
-    '設定無人機耐受標準（風速上限 15~35 km/h、降雨上限 10~50%）',
-    '確保目前天氣指標符合安全標準後，點擊「派遣無人機」完成高空測繪'
+    '點擊「發送 API 請求」向全球氣象站獲取原始 JSON 資料',
+    '配置風速感測器屬性路徑 (current.wind_speed_10m)',
+    '配置氣溫感測器屬性路徑 (current.temperature_2m)',
+    '配置降水感測器屬性路徑 (hourly.precipitation_probability[0])',
+    '分析各站大氣數據，選定全安全基地（風速 ≤ 25 km/h、降水 ≤ 20%、氣溫 ≥ 0°C）派遣升空'
   ],
   controlType: 'weather-api',
-  defaultConditions: {
-    maxWindSpeed: 25,
-    maxPrecipitation: 30
+  flightLimits: DRONE_FLIGHT_LIMITS,
+  defaultBindings: {
+    windPath: '',
+    tempPath: '',
+    precipPath: ''
   },
   hints: [
-    '提示 1【API 觀念】：API 是程式與外部網路服務交換資料的標準管道。使用 async/await 與 fetch() 可以在不卡死畫面的情況下等待資料回傳。',
-    '提示 2【資料流向觀察】：從選定站點發送 API 請求後，檢查回傳的 JSON 物件中包含哪些大氣數值（如風速、降雨機率）。',
-    '提示 3【引導式思考】：無人機的耐受上限必須高於實際觀測到的風雨量才能安全執勤。試著調整容許上限，或切換到天氣更穩定的觀測站！'
+    '提示 1【JSON 樹與點運算子】：API 回傳的資料是巢狀物件。想要取得 current 物件內的 wind_speed_10m，在 JavaScript 中使用點運算子寫作 current.wind_speed_10m。',
+    '提示 2【陣列索引取值】：降水機率存放在 hourly 物件底下的陣列中，若要取得當前第 0 小時的預報值，使用中括號索引 hourly.precipitation_probability[0]。',
+    '提示 3【全球航區決策】：切換全球觀測站比對氣候：東京風速高達 38 km/h 會吹翻機體、倫敦降雨高達 85% 易短路、雷克雅維克氣溫 -6°C 會結冰墜毀！請選定台北或杜拜等溫和基地發射。'
   ],
-  jsCodeExample: `// 💡 JavaScript 對照：使用 fetch() 發送 API 請求並解析 JSON
-async function assessWeatherAndLaunch() {
-  const apiUrl = "https://api.open-meteo.com/v1/forecast?latitude=25.03&longitude=121.56&current=wind_speed_10m,precipitation";
-
-  // 1. 發送網路請求 (非同步等待回傳)
-  const response = await fetch(apiUrl);
-  // 2. 將回傳內容解析為 JavaScript 物件
+  jsCodeExample: `// 💡 JavaScript 對照：使用 async/await fetch() 請求 API 並以點運算子解析 JSON
+async function evaluateAndLaunchDrone(stationUrl) {
+  // 1. 發送網路請求 (非同步等待伺服器回傳)
+  const response = await fetch(stationUrl);
+  // 2. 將 HTTP 回應內容解析為 JavaScript JSON 物件
   const data = await response.json();
 
-  const currentWind = data.current.wind_speed_10m; // 例如 14.5 km/h
-  const maxSafeWind = 25; // 學生設定的安全上限
+  // 3. 依據 JSON 物件屬性路徑提取感測器數值
+  const wind = data.current.wind_speed_10m;                  // 風速 (km/h)
+  const temp = data.current.temperature_2m;                   // 氣溫 (°C)
+  const rainProb = data.hourly.precipitation_probability[0];  // 降雨機率 (%)
 
-  // 3. 根據外部 API 取得的真實數據做出飛行決策
-  if (currentWind <= maxSafeWind) {
-    console.log("氣象符合標準，無人機核准升空！");
+  console.log(\`基地氣象遙測 ➔ 風速: \${wind}km/h | 氣溫: \${temp}°C | 降水率: \${rainProb}%\`);
+
+  // 4. 嚴格航太安全規範複合判斷 (AND 邏輯)
+  if (wind <= 25 && rainProb <= 20 && temp >= 0) {
+    console.log("氣候完全符合飛行安全標準，無人機核准發射！");
     drone.launch();
   } else {
-    console.warn("風速過高，取消本次飛行任務。");
+    console.warn("大氣超標或低溫結冰，安全協議禁止發射！");
+    drone.abortMission();
   }
 }`,
-  conceptExplanation: `在現代網路世界中，**API (應用程式介面)** 是系統之間溝通的語言。例如遊戲想知道今天會不會下雨，不需要自建氣象雷達，只需向氣象局的 API 伺服器發送一條請求，對方就會將最新的資料（通常是 JSON 格式）回傳給遊戲，程式就能即時做出反應！`,
+  conceptExplanation: `在現代網路軟體架構中，**API (應用程式介面)** 是系統之間溝通的標準橋樑，而 **JSON (JavaScript Object Notation)** 則是傳遞資料的通用格式。透過 \`await fetch(url)\` 與 \`await response.json()\`，我們能取得龐大的結構化資料樹，再使用**點運算子 (如 data.current.wind_speed_10m)** 與**陣列索引 (如 [0])** 精準提取所需的數值！`,
   validate: (runResult) => {
     const weatherSession = runResult.weatherSession || {};
-    const { weatherData, conditions = {}, launched = false } = weatherSession;
+    const {
+      rawJson,
+      paths = {},
+      station = {},
+      launched = false
+    } = weatherSession;
 
-    if (!weatherData) {
+    if (!rawJson) {
       return {
         pass: false,
-        error: '尚未取得天氣資料！請先點擊「發送 API 請求」向氣象站索取資料。'
+        failReason: 'DISCONNECT',
+        error: '尚未取得氣象 API 資料！請先點擊「發送 API 請求」向氣象站索取資料。'
       };
     }
 
     if (!launched) {
       return {
         pass: false,
-        error: '天氣資料已解析，但尚未點擊「派遣無人機」執行發射！'
+        failReason: 'DISCONNECT',
+        error: '氣象資料已接收，但尚未點擊「派遣無人機」執行發射！'
       };
     }
 
-    const maxWind = conditions.maxWindSpeed ?? 25;
-    const maxPrecip = conditions.maxPrecipitation ?? 30;
+    const { windPath = '', tempPath = '', precipPath = '' } = paths;
 
-    // Physical limits of drone hardware
-    if (weatherData.windSpeed > 50) {
+    // Evaluate JSON path extraction
+    const windVal = resolveJsonPath(rawJson, windPath);
+    const tempVal = resolveJsonPath(rawJson, tempPath);
+    const precipVal = resolveJsonPath(rawJson, precipPath);
+
+    const isWindValid = typeof windVal === 'number' && !isNaN(windVal);
+    const isTempValid = typeof tempVal === 'number' && !isNaN(tempVal);
+    const isPrecipValid = typeof precipVal === 'number' && !isNaN(precipVal);
+
+    if (!isWindValid || !isTempValid || !isPrecipValid) {
+      const errSensors = [];
+      if (!isWindValid) errSensors.push(`風速感測器 (目前路徑: "${windPath || '(未填)'}")`);
+      if (!isTempValid) errSensors.push(`氣溫感測器 (目前路徑: "${tempPath || '(未填)'}")`);
+      if (!isPrecipValid) errSensors.push(`降水感測器 (目前路徑: "${precipPath || '(未填)'}")`);
+
       return {
         pass: false,
-        error: `當前站點風速高達 ${weatherData.windSpeed} km/h，已超出無人機機體物理安全極限 (50 km/h)！請切換至其他溫和站點或切換模擬天氣。`
+        failReason: 'DISCONNECT',
+        error: `感測器路徑解析失敗！${errSensors.join('、')} 解析值為 undefined。請對照 JSON 物件樹輸入正確路徑（例如 current.wind_speed_10m）。`
       };
     }
 
-    if (weatherData.windSpeed > maxWind) {
+    // Evaluate Aerospace Safety Limits
+    if (windVal > DRONE_FLIGHT_LIMITS.maxWindSpeed) {
       return {
         pass: false,
-        error: `目前風速 (${weatherData.windSpeed} km/h) 超過你設定的容許上限 (${maxWind} km/h)！飛行電腦拒絕起飛以防失控。請調整門檻或更換平靜站點。`
+        failReason: 'WIND',
+        data: { station: station.name, wind: windVal, temp: tempVal, precip: precipVal },
+        error: `【${station.name || '當前基地'}】風速高達 ${windVal} km/h，超出無人機 25 km/h 安全極限！強風將導致機體劇烈偏航失控翻滾。請更換其他風速平穩的觀測基地。`
       };
     }
 
-    if (weatherData.precipitationProbability > maxPrecip) {
+    if (precipVal > DRONE_FLIGHT_LIMITS.maxPrecipitation) {
       return {
         pass: false,
-        error: `目前降雨機率 (${weatherData.precipitationProbability}%) 超過你設定的容許上限 (${maxPrecip}%)！儀器恐受潮短路。請調整條件或換站。`
+        failReason: 'PRECIP',
+        data: { station: station.name, wind: windVal, temp: tempVal, precip: precipVal },
+        error: `【${station.name || '當前基地'}】降水機率高達 ${precipVal}%，超出無人機 20% 防雨極限！高空暴雨將導致精密探測儀器受潮短路。請更換乾燥無雨的基地。`
+      };
+    }
+
+    if (tempVal < DRONE_FLIGHT_LIMITS.minTemperature) {
+      return {
+        pass: false,
+        failReason: 'TEMP',
+        data: { station: station.name, wind: windVal, temp: tempVal, precip: precipVal },
+        error: `【${station.name || '當前基地'}】地表氣溫僅 ${tempVal}°C，低於無人機 0°C 防結冰極限！高空極寒將導致機翼與旋翼嚴重結霜失速墜毀。請選擇溫暖適宜的基地。`
       };
     }
 
     return {
       pass: true,
       data: {
-        station: weatherData.stationName,
-        windSpeed: weatherData.windSpeed,
-        temperature: weatherData.temperature,
-        isRealData: weatherData.isRealData
+        station: station.name,
+        wind: windVal,
+        temp: tempVal,
+        precip: precipVal,
+        isRealData: weatherSession.isRealData
       },
-      feedback: `API 氣象評估大成功！【${weatherData.stationName}】天氣符合安全標準，無人機穿破雲層完成高空行星測繪，傳回壯麗全景資料！`
+      feedback: `API 遙測解析與基地決策大獲全勝！【${station.name}】風速 ${windVal} km/h、氣溫 ${tempVal}°C、降水 ${precipVal}% 均處於完美安全窗口，無人機穿破雲層完成高空行星測繪！`
     };
   }
 };
