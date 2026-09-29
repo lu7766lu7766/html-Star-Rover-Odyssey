@@ -8,9 +8,9 @@ import { defineStore } from 'pinia';
 
 const DEFAULTS = {
   disarmEvent: 'mouseover',
-  disarmAction: 'DISARM_ALARM',
+  disarmAction: 'EMERGENCY_LOCK',
   airlockEvent: 'dblclick',
-  airlockAction: 'OPEN_AIRLOCK'
+  airlockAction: 'DISARM_ALARM'
 };
 
 export const useDomLabStore = defineStore('domLab', {
@@ -80,7 +80,7 @@ export const useDomLabStore = defineStore('domLab', {
       this.notice = '';
       this.noticeType = 'muted';
       this.eventLog = [];
-      this.pushLog('system', '已重置：監聽器回到預設錯誤綁定，請重新配置。');
+      this.pushLog('system', '已重置：4 條線全部接錯（事件＋動作都要修），請重新配置。');
     },
 
     hydrateFromSaved(savedDomState) {

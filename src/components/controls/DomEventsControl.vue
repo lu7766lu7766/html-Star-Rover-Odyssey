@@ -95,44 +95,6 @@
         <p class="card-tip">💡 重點：<b>addEventListener(事件, 回呼)</b> 只是「先接好線」；要親自去上方 2D 網頁觸發事件，回呼才會跑，才會改到 textContent / style / class。</p>
       </div>
 
-      <!-- 3. Quick test mirror -->
-      <div class="virtual-console-card card">
-        <h4 class="card-subtitle">3. 快速測試（跟上方 2D 網頁是同一組按鈕）</h4>
-        <div class="physical-buttons-row">
-          <button
-            id="disarm-btn-mirror"
-            class="physical-btn"
-            :class="dom.disarmed ? 'btn-disarmed' : 'btn-alarm'"
-            @click="dom.dispatch('disarm', 'click')"
-          >
-            <ShieldAlert v-if="!dom.disarmed" :size="20" />
-            <ShieldCheck v-else :size="20" />
-            <div class="btn-text-col">
-              <strong>解除警報 (#disarm-btn)</strong>
-              <span>{{ dom.disarmed ? '警報已解除 ✓' : '點擊送出解除信號' }}</span>
-            </div>
-          </button>
-
-          <button
-            id="airlock-btn-mirror"
-            class="physical-btn btn-airlock"
-            :class="{ 'btn-door-open': dom.airlockOpen }"
-            @click="dom.dispatch('airlock', 'click')"
-          >
-            <DoorOpen v-if="dom.airlockOpen" :size="20" />
-            <DoorClosed v-else :size="20" />
-            <div class="btn-text-col">
-              <strong>氣閘艙門 (#airlock-btn)</strong>
-              <span>{{ dom.airlockOpen ? '氣閘已開啟 (OPEN) ✓' : '點擊手動開啟氣閘' }}</span>
-            </div>
-          </button>
-        </div>
-
-        <div v-if="dom.notice" class="console-notice" :class="'n-' + dom.noticeType">
-          {{ dom.notice }}
-        </div>
-        <div v-else class="console-notice n-muted">還沒觸發任何事件。建議直接去上方 2D 網頁點點看，差別更明顯！</div>
-      </div>
     </div>
 
     <!-- Execute Bar -->
@@ -155,8 +117,7 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import {
-  MousePointer, RotateCcw, Play, ShieldAlert, ShieldCheck,
-  DoorClosed, DoorOpen
+  MousePointer, RotateCcw, Play
 } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
@@ -349,87 +310,6 @@ function runExecution() {
   font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.6;
   overflow-x: auto; white-space: pre;
 }
-
-/* Virtual Console */
-.virtual-console-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.physical-buttons-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
-}
-
-.physical-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  border: 1px solid var(--border-medium);
-  transition: all var(--transition-normal);
-  text-align: left;
-}
-
-.btn-alarm {
-  background: var(--danger-light);
-  border-color: var(--danger-border);
-  color: var(--danger-dark);
-}
-
-.btn-alarm:hover {
-  background: #fee2e2;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
-}
-
-.btn-disarmed {
-  background: var(--success-light);
-  border-color: var(--success-border);
-  color: var(--success-dark);
-}
-
-.btn-airlock {
-  background: var(--primary-blue-light);
-  border-color: var(--border-accent-light);
-  color: var(--primary-blue);
-}
-
-.btn-door-open {
-  background: var(--success-light);
-  border-color: var(--success-border);
-  color: var(--success-dark);
-}
-
-.btn-text-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.btn-text-col strong {
-  font-size: 0.88rem;
-}
-
-.btn-text-col span {
-  font-size: 0.75rem;
-  opacity: 0.85;
-}
-
-.console-notice {
-  font-size: 0.82rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  line-height: 1.4;
-}
-.console-notice.n-success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
-.console-notice.n-danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-.console-notice.n-warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
-.console-notice.n-muted { background: var(--bg-panel-hover); color: var(--text-secondary); }
 
 .deck-footer {
   height: 52px;

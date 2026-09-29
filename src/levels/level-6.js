@@ -18,8 +18,8 @@ export default {
   ],
   controlType: 'dom-events',
   initialBindings: {
-    disarmBtn: { eventType: 'click', action: 'DISARM_ALARM' },
-    airlockBtn: { eventType: 'click', action: 'OPEN_AIRLOCK' }
+    disarmBtn: { eventType: 'mouseover', action: 'EMERGENCY_LOCK' },
+    airlockBtn: { eventType: 'dblclick', action: 'DISARM_ALARM' }
   },
   availableEvents: ['click', 'mouseover', 'dblclick'],
   availableActions: [
