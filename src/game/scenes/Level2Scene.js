@@ -240,15 +240,28 @@ export class Level2Scene extends BaseGameScene {
       // 1. Immediately restore rover to start pad before launching
       this.resetRoverPosition();
 
-      const params = payload.payload?.params || payload.params || {};
-      const { initialFuel = 150, burnPerThrust = 30, thrustCount = 3, speed = 2 } = params;
-      
-      const totalBurn = thrustCount * burnPerThrust;
-      const remainingFuel = initialFuel - totalBurn;
+      const inner = payload.payload || payload || {};
+      let targetDistance;
+      let speed;
+      let remainingFuel;
+      // 寫碼模式：Worker 真跑 rover.approachStation({ distance, speed, remainingFuel })
+      const approachCall = inner.apiCalls?.find((c) => c.api === 'rover.approachStation');
+      if (approachCall) {
+        const plan = approachCall.args[0] || {};
+        targetDistance = Number(plan.distance) || 0;
+        speed = Number(plan.speed) || 0;
+        remainingFuel = Number(plan.remainingFuel) || 0;
+      } else {
+        const params = inner.params || {};
+        const { initialFuel = 150, burnPerThrust = 30, thrustCount = 3, speed: s = 2 } = params;
+        speed = s;
+        remainingFuel = initialFuel - thrustCount * burnPerThrust;
+        targetDistance = thrustCount * s;
+      }
       this.fuelRemaining = remainingFuel;
 
       // Calculate total displacement = thrustCount * speed
-      this.targetDistance = thrustCount * speed;
+      this.targetDistance = targetDistance;
       this.currentDistance = 0;
       this.launchSpeed = Math.max(speed * 3.2, 4);
       this.isLaunching = true;

@@ -62,10 +62,20 @@ export class Level5Scene extends BaseGameScene {
     if (actionType === 'EXECUTE_START') {
       this.reset();
       const inner = payload.payload || payload || {};
+      // 寫碼模式：Worker 真跑 rover.installModule({ name, range, mode, ... }) 的 trace
+      const installCall = inner.apiCalls?.find((c) => c.api === 'rover.installModule');
       const methodCall = inner.methodCall || {};
       const moduleConfig = inner.moduleConfig || {};
-      const params = methodCall.params || {};
-      const methodId = methodCall.methodId || 'activateScan';
+      let methodId;
+      let params;
+      if (installCall) {
+        const mod = installCall.args[0] || {};
+        methodId = mod.name || 'activateScan';
+        params = { range: mod.range, mode: mod.mode };
+      } else {
+        methodId = methodCall.methodId || 'activateScan';
+        params = methodCall.params || {};
+      }
       const range = params.range ?? moduleConfig.range ?? 20;
       this.isInstalled = true;
       this.scanRadius = range;

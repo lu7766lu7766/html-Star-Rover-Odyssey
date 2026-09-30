@@ -6,6 +6,7 @@ import { Level2Scene } from '../src/game/scenes/Level2Scene.js';
 import { Level1Scene } from '../src/game/scenes/Level1Scene.js';
 import { Level3Scene } from '../src/game/scenes/Level3Scene.js';
 import { Level4Scene } from '../src/game/scenes/Level4Scene.js';
+import { Level5Scene } from '../src/game/scenes/Level5Scene.js';
 import { Level8Scene } from '../src/game/scenes/Level8Scene.js';
 
 const mockStorage = {};
@@ -219,8 +220,7 @@ describe('Star Rover Odyssey 2.0 - Failure Alert Modal & Vehicle Restore Suite',
     expect(scene.currentStep.toY).toBe(1);
   });
 
-  it('Level4Scene: still animates from loopConfig blocks (blocks mode EXECUTE_START)', () => {
-    const scene = new Level4Scene();
+  it('Level4Scene: still animates from loopConfig blocks (blocks mode EXECUTE_START)', () => {    const scene = new Level4Scene();
     scene.build();
 
     scene.handleAction('EXECUTE_START', {
@@ -241,5 +241,58 @@ describe('Star Rover Odyssey 2.0 - Failure Alert Modal & Vehicle Restore Suite',
     expect(scene.isAnimating).toBe(true);
     const totalSteps = scene.animQueue.length + (scene.currentStep ? 1 : 0);
     expect(totalSteps).toBe(9);
+  });
+
+  it('Level1Scene: diagnoses from Worker setup trace (code mode EXECUTE_START)', () => {
+    const scene = new Level1Scene();
+    scene.build();
+
+    scene.handleAction('EXECUTE_START', {
+      levelId: 1,
+      payload: {
+        apiCalls: [{ api: 'rover.setup', args: ['星馳號', 90, true] }],
+        code: 'let...'
+      }
+    });
+
+    expect(scene.isDiagnosing).toBe(true);
+    expect(scene.targetPower).toBe(90);
+    expect(scene.isShieldOn).toBe(true);
+  });
+
+  it('Level2Scene: launches toward resolved distance from approachStation trace (code mode)', () => {
+    const scene = new Level2Scene();
+    scene.build();
+
+    scene.handleAction('EXECUTE_START', {
+      levelId: 2,
+      payload: {
+        apiCalls: [{ api: 'rover.approachStation', args: [{ distance: 24, speed: 3, remainingFuel: 100 }] }],
+        code: 'let...'
+      }
+    });
+
+    expect(scene.isLaunching).toBe(true);
+    expect(scene.targetDistance).toBe(24);
+    expect(scene.fuelRemaining).toBe(100);
+    expect(scene.launchSpeed).toBeCloseTo(9.6);
+  });
+
+  it('Level5Scene: installs the traced module method instead of defaulting (code mode)', () => {
+    const scene = new Level5Scene();
+    scene.build();
+
+    scene.handleAction('EXECUTE_START', {
+      levelId: 5,
+      payload: {
+        apiCalls: [{ api: 'rover.installModule', args: [{ name: 'focusScan', range: 20, mode: 'HIGH' }] }],
+        code: 'const...'
+      }
+    });
+
+    expect(scene.isInstalled).toBe(true);
+    expect(scene.activeMethod).toBe('focusScan');
+    expect(scene.scanRadius).toBe(20);
+    expect(scene.scannerDish.visible).toBe(true);
   });
 });

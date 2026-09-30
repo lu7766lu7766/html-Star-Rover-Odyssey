@@ -130,7 +130,14 @@ export class Level1Scene extends BaseGameScene {
 
     if (actionType === 'EXECUTE_START') {
       this.reset();
-      const vars = payload.payload?.variables || payload.variables || {};
+      const inner = payload.payload || payload || {};
+      let vars = inner.variables || {};
+      // 寫碼模式：Worker 真跑 rover.setup(name, battery, isActive) 的 trace
+      const setupCall = inner.apiCalls?.find((c) => c.api === 'rover.setup');
+      if (setupCall) {
+        const [roverName, powerLevel, shieldActive] = setupCall.args;
+        vars = { roverName, powerLevel, shieldActive };
+      }
       const { roverName = '奧德賽號', powerLevel = 0, shieldActive = false } = vars;
 
       this.isDiagnosing = true;
