@@ -34,9 +34,6 @@
           <span class="type-hint tag-boolean">Boolean 寫 true（不加引號）</span>
         </div>
         <div class="code-mode-actions">
-          <button class="btn btn-secondary btn-sm" @click="fillAnswerHint" title="填入提示數值">
-            <span>💡 填入提示值</span>
-          </button>
           <button
             class="btn btn-success execute-btn"
             :disabled="levelStore.isExecuting || !studentCode.trim()"
@@ -102,13 +99,6 @@ function runCodeExecution() {
 
 function resetCode() {
   studentCode.value = LEVEL_1_STARTER_CODE;
-}
-
-function fillAnswerHint() {
-  studentCode.value = studentCode.value
-    .replace('let roverName = ___;', 'let roverName = "奧德賽號";')
-    .replace('let powerLevel = ___;', 'let powerLevel = 100;')
-    .replace('let shieldActive = ___;', 'let shieldActive = true;');
 }
 </script>
 
@@ -472,7 +462,7 @@ function fillAnswerHint() {
 .code-mode-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 

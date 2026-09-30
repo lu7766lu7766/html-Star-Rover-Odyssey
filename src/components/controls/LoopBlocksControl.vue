@@ -28,9 +28,6 @@
           <CodeEditor v-model="studentCode" :level-id="4" @reset="resetCode" />
         </div>
         <div class="code-mode-actions">
-          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值（會降為 2 星起評）">
-            <span>💡 填入提示值</span>
-          </button>
           <button
             class="btn btn-success execute-btn"
             :disabled="levelStore.isExecuting || !studentCode.trim()"
@@ -99,14 +96,6 @@ function runCodeExecution() {
 
 function resetCode() {
   studentCode.value = LEVEL_4_STARTER_CODE;
-}
-
-function fillAnswerHint() {
-  // 提示值：2-3-2，但用提示後建議仍改成 for 才拿高星
-  studentCode.value = studentCode.value
-    .replace('i < ___', 'i < 2')
-    .replace('j < ___', 'j < 3')
-    .replace('k < ___', 'k < 2');
 }
 </script>
 
@@ -223,7 +212,7 @@ function fillAnswerHint() {
 .code-mode-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 

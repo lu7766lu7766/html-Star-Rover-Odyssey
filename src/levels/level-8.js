@@ -6,30 +6,35 @@
 import { DRONE_FLIGHT_LIMITS, WEATHER_STATIONS, BENCHMARK_STATION_DATA, resolveJsonPath, evaluateTelemetry } from '../services/weatherService.js';
 
 export const LEVEL_8_STARTER_CODE = `// 星際氣象站：把 ___ 補完，再按執行
-// 可用基地：station-tpe / station-tyo / station-lon / station-dxb / station-rkv
-// 安全窗口：風速 <= 25、降水 <= 20、氣溫 >= 0
-// 型別：站點 id 是 @type {"station-tpe" | "station-tyo" | "station-lon" | "station-dxb" | "station-rkv"}（五選一，字串加引號）
-//   風速／氣溫／降水取出來的是 @type {number}（點運算子路徑，不是字串，不加引號）；if (...) 裡填布林運算式；launch 填跟 fetch 同一站
+// 【API 方法】沙箱已內建，直接呼叫，不用 import：
+//   fetchStation(stationId) → 回傳該站氣象 JSON（非同步，前面一定要加 await）
+//   drone.launch(stationId) ／ drone.abortMission() → 發射或中止（launch 要傳跟 fetch 同一站）
+// 【data 是什麼】fetchStation 回傳的 data，就是下方「API 回傳原始 JSON 物件樹」那一份：
+//   最外層有 current 物件（風速、氣溫等數字鍵）和 hourly 物件（降水機率陣列等）
+//   鍵名不用背：照著下方 JSON 樹的層級，用 data.層級.鍵名 寫出，陣列要加 [0]
+// 【安全窗口】wind <= 25、rainProb <= 20、temp >= 0，三個都要過才 launch，否則 abort
+// 【站點】station-tpe / station-tyo / station-lon / station-dxb / station-rkv（先比對下方 5 站數據再選）
+// 型別：站點 id 是字串（加引號）；風速／氣溫／降水取出來的是 @type {number}（路徑寫法，不是字串，不加引號）
 
 async function evaluateAndLaunch(stationId) {
-  const data = await ___;   // 用 fetchStation 取回 JSON
+  const data = await fetchStation(___);   // 填站點：直接用參數 stationId，或字串如 "station-tpe"
 
-  const wind = data.___;                  // 風速路徑
-  const temp = data.___;                  // 氣溫路徑
-  const rainProb = data.___;              // 降水機率路徑（含 [0]）
+  const wind = data.___;                  // 風速路徑（對照下方 JSON 樹，current 底下的風速鍵）
+  const temp = data.___;                  // 氣溫路徑（對照下方 JSON 樹，current 底下的氣溫鍵）
+  const rainProb = data.___;              // 降水機率路徑（對照下方 JSON 樹，hourly 底下的陣列，記得加 [0]）
 
   console.log(\`基地遙測 ➔ 風速: \${wind}km/h | 氣溫: \${temp}°C | 降水率: \${rainProb}%\`);
 
-  if (___) {
+  if (___) {   // 用 wind、rainProb、temp 寫三合一安全判斷（提示：&& 串起來）
     console.log("符合安全標準，核准發射！");
-    drone.launch(___);
+    drone.launch(___);   // 填跟 fetch 同一站（stationId）
   } else {
     console.warn("大氣超標，禁止發射！");
     drone.abortMission();
   }
 }
 
-evaluateAndLaunch(___);
+evaluateAndLaunch(___);   // 填你要發射的安全站點 id（字串加引號）
 `;
 
 const CORRECT_PATHS = {
@@ -68,14 +73,14 @@ export default {
     '提示 2【陣列索引取值】：降水機率存放在 hourly 物件底下的陣列中，若要取得當前第 0 小時的預報值，使用中括號索引 hourly.precipitation_probability[0]。',
     '提示 3【全球航區決策】：切換全球觀測站比對氣候：東京風速高達 38 km/h 會吹翻機體、倫敦降雨高達 85% 易短路、雷克雅維克氣溫 -6°C 會結冰墜毀！請選定台北或杜拜等溫和基地發射。'
   ],
-  jsCodeExample: `// 💡 JavaScript 對照：使用 async/await fetch() 請求 API 並以點運算子解析 JSON
-async function evaluateAndLaunchDrone(stationUrl) {
-  // 1. 發送網路請求 (非同步等待伺服器回傳)
-  const response = await fetch(stationUrl);
-  // 2. 將 HTTP 回應內容解析為 JavaScript JSON 物件
-  const data = await response.json();
+  jsCodeExample: `// 💡 JavaScript 對照：用 async/await 呼叫 API 並以點運算子解析 JSON
+// 本關沙箱把「發請求＋解析」包成一個函式 fetchStation(stationId)，直接回傳 JSON 物件
+// 現實世界的寫法是兩段式：await fetch(url) 再 await response.json()，觀念完全一樣
+async function evaluateAndLaunchDrone(stationId) {
+  // 1. 發送請求並等待回傳（沙箱版：一行搞定；現實版：fetch + .json() 兩行）
+  const data = await fetchStation(stationId);
 
-  // 3. 依據 JSON 物件屬性路徑提取感測器數值
+  // 3. 依據 JSON 物件屬性路徑提取感測器數值（鍵名照下方 JSON 樹寫）
   const wind = data.current.wind_speed_10m;                  // 風速 (km/h)
   const temp = data.current.temperature_2m;                   // 氣溫 (°C)
   const rainProb = data.hourly.precipitation_probability[0];  // 降雨機率 (%)
@@ -85,13 +90,13 @@ async function evaluateAndLaunchDrone(stationUrl) {
   // 4. 嚴格航太安全規範複合判斷 (AND 邏輯)
   if (wind <= 25 && rainProb <= 20 && temp >= 0) {
     console.log("氣候完全符合飛行安全標準，無人機核准發射！");
-    drone.launch();
+    drone.launch(stationId);
   } else {
     console.warn("大氣超標或低溫結冰，安全協議禁止發射！");
     drone.abortMission();
   }
 }`,
-  conceptExplanation: `在現代網路軟體架構中，**API (應用程式介面)** 是系統之間溝通的標準橋樑，而 **JSON (JavaScript Object Notation)** 則是傳遞資料的通用格式。透過 \`await fetch(url)\` 與 \`await response.json()\`，我們能取得龐大的結構化資料樹，再使用**點運算子 (如 data.current.wind_speed_10m)** 與**陣列索引 (如 [0])** 精準提取所需的數值！`,
+  conceptExplanation: `在現代網路軟體架構中，**API (應用程式介面)** 是系統之間溝通的標準橋樑，而 **JSON (JavaScript Object Notation)** 則是傳遞資料的通用格式。本關沙箱把取數包裝成 \`await fetchStation(stationId)\`（直接回傳 JSON 物件，結構就是下方那棵 JSON 樹）；現實世界則是兩段式 \`await fetch(url)\` ＋ \`await response.json()\`，觀念相同。拿到資料樹後，再使用**點運算子 (如 data.current.wind_speed_10m)** 與**陣列索引 (如 [0])** 精準提取所需的數值！`,
   starterCode: LEVEL_8_STARTER_CODE,
   validate: (runResult) => {
     // 新鏈路：Worker 真跑 fetchStation + drone.launch/abort 的 trace

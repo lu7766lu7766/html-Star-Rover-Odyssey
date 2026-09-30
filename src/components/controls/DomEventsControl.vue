@@ -30,9 +30,6 @@
           <span>系統會自動點擊驗證：先解除警報再開門（門要開），以及警報中直接開門（門必須關著）。上方 2D 網頁僅供表單模式操作。</span>
         </div>
         <div class="code-mode-actions">
-          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值">
-            <span>💡 填入提示值</span>
-          </button>
           <button
             class="btn btn-success execute-btn"
             :disabled="levelStore.isExecuting || !studentCode.trim()"
@@ -96,21 +93,6 @@ function runCodeExecution() {
 
 function resetCode() {
   studentCode.value = LEVEL_6_STARTER_CODE;
-}
-
-function fillAnswerHint() {
-  studentCode.value = studentCode.value
-    .replace("document.querySelector(___);", 'document.querySelector("#disarm-btn");')
-    .replace("document.querySelector(___);", 'document.querySelector("#airlock-btn");')
-    .replace("document.querySelector(___);", 'document.querySelector("#status-indicator");')
-    .replace("document.querySelector(___);", 'document.querySelector("#airlock-door");')
-    .replace("addEventListener(___, () => {", 'addEventListener("click", () => {')
-    .replace("addEventListener(___, () => {", 'addEventListener("click", () => {')
-    .replace("statusEl.textContent = ___;", 'statusEl.textContent = "系統正常 (NORMAL)";')
-    .replace("statusEl.style.color = ___;", 'statusEl.style.color = "green";')
-    .replace("if (!___) {", "if (!isAlarmActive) {")
-    .replace("doorEl.classList.add(___);", 'doorEl.classList.add("open");')
-    .replace("doorEl.textContent = ___;", 'doorEl.textContent = "氣閘已開啟 (OPEN)";');
 }
 </script>
 
@@ -230,7 +212,7 @@ function fillAnswerHint() {
 .code-mode-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 

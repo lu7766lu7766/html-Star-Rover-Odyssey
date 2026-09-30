@@ -51,13 +51,30 @@
         <div class="code-editor-wrap">
           <CodeEditor v-model="studentCode" :level-id="8" @reset="resetCode" />
         </div>
+        <div class="api-ref-card">
+          <div class="api-ref-title">📡 本關可用 API（沙箱內建，直接呼叫，不用 import）</div>
+          <div class="api-ref-grid">
+            <div class="api-ref-item">
+              <code>fetchStation(stationId)</code>
+              <span>取回該站氣象 JSON，非同步，前面加 <code>await</code>；stationId 是字串五選一</span>
+            </div>
+            <div class="api-ref-item">
+              <code>drone.launch(stationId)</code>
+              <span>派遣無人機升空，要傳跟 fetch 同一站</span>
+            </div>
+            <div class="api-ref-item">
+              <code>drone.abortMission()</code>
+              <span>中止發射，判斷不安全時走這條</span>
+            </div>
+          </div>
+          <div class="api-ref-json">
+            <span><b>data 結構</b> ＝ 下方「API 回傳原始 JSON 物件樹」同一份：<code>data.current.…</code> 取風速／氣溫數字，<code>data.hourly.…[0]</code> 取第 0 小時降水機率（鍵名照樹抄）</span>
+          </div>
+        </div>
         <div class="code-mode-note">
-          <span>沙箱內建模擬氣象 API <b>fetchStation(id)</b> 與無人機 <b>drone.launch(id) / drone.abortMission()</b>。下方 JSON 樹可對照路徑（寫碼模式點擊只複習、不代填）。注意：不安全基地必須 abort，換安全基地再發射！</span>
+          <span>寫法順序：<b>await fetchStation</b> 取數 → 從 data 取出 wind／temp／rainProb → <b>if 三合一判斷</b> → 安全就 <b>drone.launch</b>，否則 <b>drone.abortMission</b>。下方 JSON 樹可隨時對照，寫碼模式點擊只複習、不代填。注意：不安全基地必須 abort，換安全基地再發射！</span>
         </div>
         <div class="code-mode-actions">
-          <button class="btn btn-secondary btn-sm" @click="fillAnswerHint" title="填入提示數值">
-            <span>💡 填入提示值</span>
-          </button>
           <button
             class="btn btn-success execute-btn"
             :disabled="isLoading || levelStore.isExecuting || !studentCode.trim()"
@@ -404,17 +421,6 @@ function runCodeExecution() {
 function resetCode() {
   studentCode.value = LEVEL_8_STARTER_CODE;
 }
-
-function fillAnswerHint() {
-  studentCode.value = studentCode.value
-    .replace('await ___;', 'await fetchStation(stationId);')
-    .replace('data.___;                  // 風速路徑', 'data.current.wind_speed_10m;                  // 風速路徑')
-    .replace('data.___;                  // 氣溫路徑', 'data.current.temperature_2m;                  // 氣溫路徑')
-    .replace('data.___;              // 降水機率路徑（含 [0]）', 'data.hourly.precipitation_probability[0];              // 降水機率路徑（含 [0]）')
-    .replace('if (___) {', 'if (wind <= 25 && rainProb <= 20 && temp >= 0) {')
-    .replace('drone.launch(___);', 'drone.launch(stationId);')
-    .replace('evaluateAndLaunch(___);', 'evaluateAndLaunch("station-tpe");');
-}
 </script>
 
 <style scoped>
@@ -531,8 +537,15 @@ function fillAnswerHint() {
 .label-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   min-width: 0;
+  flex: 1;
+}
+
+.stations-card .badge {
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .box-label {
@@ -543,7 +556,7 @@ function fillAnswerHint() {
 
 .stations-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.5rem;
   width: 100%;
   max-width: 100%;
@@ -606,6 +619,7 @@ function fillAnswerHint() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   margin-top: 2px;
   min-width: 0;
   gap: 0.25rem;
@@ -642,10 +656,10 @@ function fillAnswerHint() {
   border: 1px solid #e2e8f0;
 }
 
-/* 2. Workspace Grid (Bounded strictly to 50% / 50% without overflowing) */
+/* 2. JSON Inspector (single column: sensor form removed, tree takes full width) */
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   width: 100%;
   max-width: 100%;
@@ -656,6 +670,7 @@ function fillAnswerHint() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   margin-bottom: 0.5rem;
   gap: 0.5rem;
   min-width: 0;
@@ -739,6 +754,8 @@ function fillAnswerHint() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   width: 100%;
   min-width: 0;
 }
@@ -1323,10 +1340,65 @@ function fillAnswerHint() {
   line-height: 1.5;
 }
 
+.api-ref-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.api-ref-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1e40af;
+}
+
+.api-ref-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.api-ref-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.api-ref-item code {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+}
+
+.api-ref-json {
+  font-size: 0.72rem;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.api-ref-json code {
+  background: #dbeafe;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 700;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+}
+
 .code-mode-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 

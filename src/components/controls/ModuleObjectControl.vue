@@ -27,9 +27,6 @@
           <CodeEditor v-model="studentCode" :level-id="5" @reset="resetCode" />
         </div>
         <div class="code-mode-actions">
-          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值">
-            <span>💡 填入提示值</span>
-          </button>
           <button
             class="btn btn-success execute-btn"
             :disabled="levelStore.isExecuting || !studentCode.trim()"
@@ -115,14 +112,6 @@ function runCodeExecution() {
 
 function resetCode() {
   studentCode.value = LEVEL_5_STARTER_CODE;
-}
-
-function fillAnswerHint() {
-  studentCode.value = studentCode.value
-    .replace('range: ___,', 'range: 20,')
-    .replace('mode: ___', 'mode: "HIGH"')
-    .replace('name: ___,', 'name: "activateScan",')
-    .replace('return ___;', 'return "SCAN_COMPLETE";');
 }
 </script>
 
@@ -279,7 +268,7 @@ function fillAnswerHint() {
 .code-mode-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 

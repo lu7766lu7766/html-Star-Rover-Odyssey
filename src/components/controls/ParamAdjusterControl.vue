@@ -27,9 +27,6 @@
           <CodeEditor v-model="studentCode" :level-id="2" @reset="resetCode" />
         </div>
         <div class="code-mode-actions">
-          <button class="btn btn-secondary btn-sm" @click="fillAnswerHint" title="填入提示數值">
-            <span>💡 填入提示值</span>
-          </button>
           <button
             class="btn btn-success execute-btn"
             :disabled="levelStore.isExecuting || !studentCode.trim()"
@@ -93,14 +90,6 @@ function runCodeExecution() {
 
 function resetCode() {
   studentCode.value = LEVEL_2_STARTER_CODE;
-}
-
-function fillAnswerHint() {
-  studentCode.value = studentCode.value
-    .replace('let initialFuel = ___;', 'let initialFuel = 300;')
-    .replace('const burnRate = ___;', 'const burnRate = 25;')
-    .replace('const count = ___;', 'const count = 8;')
-    .replace('const speed = ___;', 'const speed = 3;');
 }
 </script>
 
@@ -276,7 +265,7 @@ function fillAnswerHint() {
 .code-mode-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 

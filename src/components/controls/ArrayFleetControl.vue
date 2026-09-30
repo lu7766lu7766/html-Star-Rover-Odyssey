@@ -27,9 +27,6 @@
           <CodeEditor v-model="studentCode" :level-id="7" @reset="resetCode" />
         </div>
         <div class="code-mode-actions">
-          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值">
-            <span>💡 填入提示值</span>
-          </button>
           <button
             class="btn btn-success execute-btn"
             :disabled="levelStore.isExecuting || !studentCode.trim()"
@@ -139,13 +136,6 @@ function runCodeExecution() {
 
 function resetCode() {
   studentCode.value = LEVEL_7_STARTER_CODE;
-}
-
-function fillAnswerHint() {
-  studentCode.value = studentCode.value
-    .replace('drone.battery < ___', 'drone.battery < 20')
-    .replace('drone.order = ___;   // 低電量：返航充電', 'drone.order = "RETURN_BASE";   // 低電量：返航充電')
-    .replace('drone.order = ___;   // 高電量：空域巡邏', 'drone.order = "PATROL";   // 高電量：空域巡邏');
 }
 </script>
 
@@ -323,7 +313,7 @@ function fillAnswerHint() {
 .code-mode-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.5rem;
 }
 
