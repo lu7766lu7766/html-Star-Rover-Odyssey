@@ -3,7 +3,42 @@
  * 核心概念：API 與外部資料交換、JSON 物件解析、多站點氣候決策
  */
 
-import { DRONE_FLIGHT_LIMITS, resolveJsonPath } from '../services/weatherService.js';
+import { DRONE_FLIGHT_LIMITS, WEATHER_STATIONS, BENCHMARK_STATION_DATA, resolveJsonPath, evaluateTelemetry } from '../services/weatherService.js';
+
+export const LEVEL_8_STARTER_CODE = `// 星際氣象站：把 ___ 補完，再按執行
+// 可用基地：station-tpe / station-tyo / station-lon / station-dxb / station-rkv
+// 安全窗口：風速 <= 25、降水 <= 20、氣溫 >= 0
+
+async function evaluateAndLaunch(stationId) {
+  const data = await ___;   // 用 fetchStation 取回 JSON
+
+  const wind = data.___;                  // 風速路徑
+  const temp = data.___;                  // 氣溫路徑
+  const rainProb = data.___;              // 降水機率路徑（含 [0]）
+
+  console.log(\`基地遙測 ➔ 風速: \${wind}km/h | 氣溫: \${temp}°C | 降水率: \${rainProb}%\`);
+
+  if (___) {
+    console.log("符合安全標準，核准發射！");
+    drone.launch(___);
+  } else {
+    console.warn("大氣超標，禁止發射！");
+    drone.abortMission();
+  }
+}
+
+evaluateAndLaunch(___);
+`;
+
+const CORRECT_PATHS = {
+  windPath: 'current.wind_speed_10m',
+  tempPath: 'current.temperature_2m',
+  precipPath: 'hourly.precipitation_probability[0]'
+};
+
+function stationName(id) {
+  return WEATHER_STATIONS.find((s) => s.id === id)?.name || id || '當前基地';
+}
 
 export default {
   id: 8,
@@ -55,7 +90,112 @@ async function evaluateAndLaunchDrone(stationUrl) {
   }
 }`,
   conceptExplanation: `在現代網路軟體架構中，**API (應用程式介面)** 是系統之間溝通的標準橋樑，而 **JSON (JavaScript Object Notation)** 則是傳遞資料的通用格式。透過 \`await fetch(url)\` 與 \`await response.json()\`，我們能取得龐大的結構化資料樹，再使用**點運算子 (如 data.current.wind_speed_10m)** 與**陣列索引 (如 [0])** 精準提取所需的數值！`,
+  starterCode: LEVEL_8_STARTER_CODE,
   validate: (runResult) => {
+    // 新鏈路：Worker 真跑 fetchStation + drone.launch/abort 的 trace
+    if (runResult.apiCalls && Array.isArray(runResult.apiCalls)) {
+      const code = runResult.code || '';
+      const fetches = runResult.apiCalls
+        .filter((c) => c.api === 'fetchStation')
+        .map((c) => c.args[0]);
+      const launches = runResult.apiCalls
+        .filter((c) => c.api === 'drone.launch')
+        .map((c) => c.args[0]);
+
+      // 1. 感測器路徑必須手寫進程式碼（擋「直接 launch 安全基地」的抄捷徑）
+      const needKeys = ['wind_speed_10m', 'temperature_2m', 'precipitation_probability'];
+      const missingKeys = needKeys.filter((k) => !code.includes(k));
+      if (missingKeys.length > 0) {
+        return {
+          pass: false,
+          failReason: 'DISCONNECT',
+          error: `感測器取值路徑沒寫進程式碼！缺了 ${missingKeys.join('、')}。請從 data 用點運算子取出三個數值（例如 data.current.wind_speed_10m），不能跳過解析直接發射！`
+        };
+      }
+
+      if (fetches.length === 0) {
+        return {
+          pass: false,
+          failReason: 'DISCONNECT',
+          error: '沒有呼叫 fetchStation！請先 await fetchStation("station-...") 取回氣象 JSON，再解析判斷。'
+        };
+      }
+
+      // 2. 只 abort 沒 launch：判斷對了但任務沒完成 → 引導換站
+      if (launches.length === 0) {
+        const lastFetch = fetches[fetches.length - 1];
+        const data = BENCHMARK_STATION_DATA[lastFetch];
+        if (data) {
+          const t = evaluateTelemetry(data, CORRECT_PATHS);
+          if (!t.canLaunch) {
+            return {
+              pass: false,
+              failReason: t.failReason,
+              error: `【${stationName(lastFetch)}】確實不安全（${t.summary}），你的 abort 正確！但任務是找到安全基地發射——換一站（提示：台北 / 杜拜）再試。`
+            };
+          }
+        }
+        return {
+          pass: false,
+          failReason: 'DISCONNECT',
+          error: '資料安全卻還沒發射！確認三項全過後，呼叫 drone.launch("station-...") 派遣無人機升空。'
+        };
+      }
+
+      // 3. 發射的基地必須是本次 fetch 過的（擋「fetch 一站、亂槍發射另一站」）
+      const stationId = launches[launches.length - 1];
+      if (!fetches.includes(stationId)) {
+        return {
+          pass: false,
+          failReason: 'DISCONNECT',
+          error: `發射了 ${stationId}，但本次根本沒 fetch 它的資料！先 fetchStation("${stationId}") 拿到 JSON 再判斷，不能憑空發射。`
+        };
+      }
+
+      const data = BENCHMARK_STATION_DATA[stationId];
+      if (!data) {
+        return {
+          pass: false,
+          failReason: 'DISCONNECT',
+          error: `未知觀測站 "${stationId}"！可用：station-tpe / station-tyo / station-lon / station-dxb / station-rkv。`
+        };
+      }
+
+      // 4. 用正確路徑評估該站真實安規
+      const t = evaluateTelemetry(data, CORRECT_PATHS);
+      if (!t.canLaunch) {
+        const reasonMsg = t.failReason === 'WIND'
+          ? `【${stationName(stationId)}】風速高達 ${t.wind} km/h，超出 25 km/h 安全極限！強風將導致機體偏航翻滾。`
+          : t.failReason === 'PRECIP'
+            ? `【${stationName(stationId)}】降水機率高達 ${t.precip}%，超出 20% 防雨極限！儀器會受潮短路。`
+            : `【${stationName(stationId)}】氣溫僅 ${t.temp}°C，低於 0°C 防結冰極限！機翼會結霜墜毀。`;
+        return {
+          pass: false,
+          failReason: t.failReason,
+          data: { station: stationName(stationId), wind: t.wind, temp: t.temp, precip: t.precip },
+          error: `${reasonMsg}請換安全基地（提示：台北 / 杜拜）重跑。`
+        };
+      }
+
+      // 星級：async/await + console.log + && 複合判斷
+      const hasAsync = code.includes('async') && code.includes('await');
+      const hasLog = code.includes('console.log');
+      const hasAnd = code.includes('&&');
+      let stars, suffix;
+      if (hasAsync && hasLog && hasAnd) {
+        stars = 3;
+        suffix = '（3星：async/await + 遙測 log + && 複合判斷，完整 API 流程！）';
+      } else {
+        stars = 2;
+        suffix = '（2星：過關！補上 async/await、console.log 遙測與 && 複合判斷拿 3 星！）';
+      }
+      return {
+        pass: true,
+        data: { station: stationName(stationId), wind: t.wind, temp: t.temp, precip: t.precip, stars, fromCode: true },
+        feedback: `API 遙測解析與基地決策大獲全勝！【${stationName(stationId)}】風速 ${t.wind} km/h、氣溫 ${t.temp}°C、降水 ${t.precip}% 均處於完美安全窗口，無人機穿破雲層完成高空行星測繪！${suffix}`
+      };
+    }
+
     const weatherSession = runResult.weatherSession || {};
     const {
       rawJson,
@@ -139,9 +279,11 @@ async function evaluateAndLaunchDrone(stationUrl) {
         wind: windVal,
         temp: tempVal,
         precip: precipVal,
-        isRealData: weatherSession.isRealData
+        isRealData: weatherSession.isRealData,
+        stars: 2,
+        fromCode: false
       },
-      feedback: `API 遙測解析與基地決策大獲全勝！【${station.name}】風速 ${windVal} km/h、氣溫 ${tempVal}°C、降水 ${precipVal}% 均處於完美安全窗口，無人機穿破雲層完成高空行星測繪！`
+      feedback: `API 遙測解析與基地決策大獲全勝！【${station.name}】風速 ${windVal} km/h、氣溫 ${tempVal}°C、降水 ${precipVal}% 均處於完美安全窗口，無人機穿破雲層完成高空行星測繪！（2星：表單模式上限，切「寫碼」手寫 async/await 拿 3 星）`
     };
   }
 };

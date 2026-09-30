@@ -52,6 +52,11 @@ export function createLevelCompletions(levelId) {
       { label: 'droneFleet.deploy', type: 'function', detail: '(drones) 部署無人機編隊', apply: 'droneFleet.deploy(drones);' },
       { label: 'drone.battery', type: 'property', detail: '無人機電量百分比' },
       { label: 'drone.status', type: 'property', detail: '設定為 "PATROL" 或 "WARNING"' }
+    ],
+    8: [
+      { label: 'fetchStation', type: 'function', detail: '(id) 取回觀測站氣象 JSON', apply: 'fetchStation("station-tpe");' },
+      { label: 'drone.launch', type: 'function', detail: '(id) 派遣無人機升空', apply: 'drone.launch(stationId);' },
+      { label: 'drone.abortMission', type: 'function', detail: '() 中止發射任務', apply: 'drone.abortMission();' }
     ]
   };
 

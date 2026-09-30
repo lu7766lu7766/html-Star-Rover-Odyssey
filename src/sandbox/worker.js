@@ -5,6 +5,7 @@
 
 import { MockDocument, MockElement } from './mockDOM.js';
 import { MSG_TYPE } from './protocol.js';
+import { BENCHMARK_STATION_DATA } from '../services/weatherService.js';
 
 const workerSelf = self;
 
@@ -242,6 +243,38 @@ workerSelf.onmessage = function (e) {
       }
     };
 
+    // Level 8 simulated weather API (teaches async/await + JSON paths offline)
+    const fetchStation = async (stationId) => {
+      recordedAPICalls.push({ api: 'fetchStation', args: [stationId] });
+      workerSelf.postMessage({
+        type: MSG_TYPE.GAME_API_CALL,
+        payload: { api: 'fetchStation', args: [stationId] }
+      });
+      const bench = BENCHMARK_STATION_DATA[stationId];
+      if (!bench) {
+        throw new Error(`未知觀測站 "${stationId}"！可用：station-tpe / station-tyo / station-lon / station-dxb / station-rkv`);
+      }
+      return JSON.parse(JSON.stringify(bench));
+    };
+
+    // Level 8 drone launch control
+    const drone = {
+      launch: (stationId) => {
+        recordedAPICalls.push({ api: 'drone.launch', args: [stationId] });
+        workerSelf.postMessage({
+          type: MSG_TYPE.GAME_API_CALL,
+          payload: { api: 'drone.launch', args: [stationId] }
+        });
+      },
+      abortMission: () => {
+        recordedAPICalls.push({ api: 'drone.abortMission', args: [] });
+        workerSelf.postMessage({
+          type: MSG_TYPE.GAME_API_CALL,
+          payload: { api: 'drone.abortMission', args: [] }
+        });
+      }
+    };
+
     try {
       // Create execution scope with strict forbidden globals
       // NOTE: 'eval' and 'arguments' are NOT allowed as formal parameter names in strict mode!
@@ -253,6 +286,8 @@ workerSelf.onmessage = function (e) {
         'document',
         'drones',
         'droneFleet',
+        'fetchStation',
+        'drone',
         'window',
         'self',
         'globalThis',
@@ -272,6 +307,8 @@ workerSelf.onmessage = function (e) {
         currentMockDoc,
         drones,
         droneFleet,
+        fetchStation,
+        drone,
         undefined, // window
         undefined, // self
         undefined, // globalThis
@@ -281,15 +318,23 @@ workerSelf.onmessage = function (e) {
         undefined  // Function
       );
 
-      workerSelf.postMessage({
-        type: MSG_TYPE.EXECUTION_SUCCESS,
-        payload: {
-          result,
-          logs: capturedLogs,
-          apiCalls: recordedAPICalls,
-          domState: currentMockDoc.getSnapshot()
-        }
-      });
+      // Execute student code, then flush async continuations (L8 async/await):
+      // floating promises (e.g. evaluateAndLaunch()) resolve as microtasks,
+      // so wait a macrotask beat before snapshotting apiCalls/logs.
+      Promise.resolve(result)
+        .catch(() => {})
+        .then(() => new Promise((res) => setTimeout(res, 400)))
+        .then(() => {
+          workerSelf.postMessage({
+            type: MSG_TYPE.EXECUTION_SUCCESS,
+            payload: {
+              result: null,
+              logs: capturedLogs,
+              apiCalls: recordedAPICalls,
+              domState: currentMockDoc.getSnapshot()
+            }
+          });
+        });
     } catch (err) {
       workerSelf.postMessage({
         type: MSG_TYPE.EXECUTION_ERROR,

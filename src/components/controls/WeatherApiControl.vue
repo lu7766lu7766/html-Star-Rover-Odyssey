@@ -7,6 +7,25 @@
         <h3 class="deck-title">外部氣象 API 連線、JSON 解析與航區決策 · Weather API & Station Selection</h3>
       </div>
       <div class="deck-header-actions">
+        <!-- Code/Blocks Toggle -->
+        <div class="mode-toggle-group">
+          <button
+            class="mode-btn"
+            :class="{ active: mode === 'code' }"
+            @click="mode = 'code'"
+            title="手寫 JS 模式（async/await 拿 3 星）"
+          >
+            ⌨️ 寫碼
+          </button>
+          <button
+            class="mode-btn"
+            :class="{ active: mode === 'blocks' }"
+            @click="mode = 'blocks'"
+            title="表單模式（新手友善，上限 2 星）"
+          >
+            🧩 表單
+          </button>
+        </div>
         <!-- Dual Mode Toggle -->
         <div class="mode-toggle-group">
           <button
@@ -39,6 +58,47 @@
     </div>
 
     <div class="deck-content custom-scrollbar">
+      <!-- 0. Code mode（L8：手寫 async/await + JSON 路徑，走 Worker 模擬 API） -->
+      <div v-if="mode === 'code'" class="code-mode-card card">
+        <div class="code-mode-header">
+          <div class="code-mode-title">
+            <Code2 :size="15" class="text-brand" />
+            <span>手寫 JS 挑戰 · 把 ___ 補完再執行</span>
+          </div>
+          <span class="badge badge-info">async/await = 3星</span>
+        </div>
+        <div class="code-editor-wrap">
+          <CodeEditor v-model="studentCode" :level-id="8" @reset="resetCode" />
+        </div>
+        <div class="code-mode-note">
+          <span>沙箱內建模擬氣象 API <b>fetchStation(id)</b> 與無人機 <b>drone.launch(id) / drone.abortMission()</b>。下方 JSON 樹可對照路徑（寫碼模式點擊只複習、不代填）。注意：不安全基地必須 abort，換安全基地再發射！</span>
+        </div>
+        <div class="code-mode-actions">
+          <button class="btn btn-secondary btn-sm" @click="fillAnswerHint" title="填入提示數值">
+            <span>💡 填入提示值</span>
+          </button>
+          <button
+            class="btn btn-success execute-btn"
+            :disabled="isLoading || levelStore.isExecuting || !studentCode.trim()"
+            @click="runCodeExecution"
+          >
+            <Loader2 v-if="levelStore.isExecuting" :size="16" class="spin-icon" />
+            <Send v-else :size="16" />
+            <span>{{ levelStore.isExecuting ? '模擬 API 連線中...' : '執行 JS 並評估發射' }}</span>
+          </button>
+        </div>
+        <div class="code-mode-logs" v-if="levelStore.executionLogs.length > 0">
+          <div
+            v-for="log in levelStore.executionLogs.slice(-4)"
+            :key="log.id"
+            class="mini-log"
+            :class="'mini-log-' + log.type"
+          >
+            {{ log.message }}
+          </div>
+        </div>
+      </div>
+
       <!-- 1. Global Stations Selector Bar -->
       <div class="stations-card card">
         <div class="stations-header">
@@ -209,7 +269,7 @@
         </div>
 
         <!-- Right: Sensor Path Mapping Slots with Clear High-Contrast Pass/Fail Indicators -->
-        <div class="mapping-column">
+        <div v-if="mode === 'blocks'" class="mapping-column">
           <!-- Sensor Slots Card -->
           <div class="sensor-slots-card card">
             <div class="card-title-bar">
@@ -390,7 +450,7 @@
 
     <!-- Execution Footer -->
     <div class="deck-footer">
-      <div class="footer-hint">
+      <div v-if="mode === 'blocks'" class="footer-hint">
         <span>飛行發射指引：</span>
         <span class="step-tag" :class="{ 'step-done': allSensorsValid }">
           1. 綁定感測器 JSON 路徑
@@ -402,8 +462,12 @@
           3. 批准無人機升空
         </span>
       </div>
+      <div v-else class="footer-hint">
+        <span>寫碼模式：在上方編輯器按執行（先 fetch 取數，再判斷發射）</span>
+      </div>
 
       <button
+        v-if="mode === 'blocks'"
         class="btn btn-success execute-btn"
         :disabled="isLoading || levelStore.isExecuting || !currentRawJson"
         @click="runExecution"
@@ -432,9 +496,15 @@ import {
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { soundManager } from '../../game/core/SoundManager.js';
+import { LEVEL_8_STARTER_CODE } from '../../levels/level-8.js';
+import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
+
+// 混合漸進：預設寫碼模式（填空），表單當鷹架
+const mode = ref('code');
+const studentCode = ref(LEVEL_8_STARTER_CODE);
 
 // State
 const selectedStationId = ref('station-tpe');
@@ -443,10 +513,10 @@ const isLoading = ref(false);
 const stationCache = ref({}); // { [stationId]: { rawJson, isRealData, timestamp } }
 const copied = ref(false);
 
-// JSON Path Inputs for Drone Telemetry Sensors
-const windPath = ref('current.wind_speed_10m');
-const tempPath = ref('current.temperature_2m');
-const precipPath = ref('hourly.precipitation_probability[0]');
+// JSON Path Inputs for Drone Telemetry Sensors（預設留空，學生需自己綁定）
+const windPath = ref('');
+const tempPath = ref('');
+const precipPath = ref('');
 
 const activeSensorField = ref('wind');
 const isCodeExpanded = ref(true);
@@ -458,18 +528,23 @@ const isFolded = ref({
 
 onMounted(async () => {
   const saved = progressStore.getSavedOperation(8);
-  if (saved && saved.weatherSession) {
-    const ws = saved.weatherSession;
-    if (ws.paths) {
-      windPath.value = ws.paths.windPath ?? 'current.wind_speed_10m';
-      tempPath.value = ws.paths.tempPath ?? 'current.temperature_2m';
-      precipPath.value = ws.paths.precipPath ?? 'hourly.precipitation_probability[0]';
+  if (saved) {
+    if (typeof saved.code === 'string' && saved.code.length > 0) {
+      studentCode.value = saved.code;
     }
-    if (ws.selectedStationId) {
-      selectedStationId.value = ws.selectedStationId;
-    }
-    if (ws.useBenchmark !== undefined) {
-      useBenchmark.value = ws.useBenchmark;
+    if (saved.weatherSession) {
+      const ws = saved.weatherSession;
+      if (ws.paths) {
+        windPath.value = ws.paths.windPath ?? '';
+        tempPath.value = ws.paths.tempPath ?? '';
+        precipPath.value = ws.paths.precipPath ?? '';
+      }
+      if (ws.selectedStationId) {
+        selectedStationId.value = ws.selectedStationId;
+      }
+      if (ws.useBenchmark !== undefined) {
+        useBenchmark.value = ws.useBenchmark;
+      }
     }
   }
 
@@ -579,6 +654,7 @@ function toggleFold(key) {
 }
 
 function assignToSensor(sensor, path) {
+  if (mode.value !== 'blocks') return; // 寫碼模式點擊只複習、不代填
   soundManager.playClick();
   if (sensor === 'wind') windPath.value = path;
   if (sensor === 'temp') tempPath.value = path;
@@ -586,6 +662,7 @@ function assignToSensor(sensor, path) {
 }
 
 function quickFillPath(path) {
+  if (mode.value !== 'blocks') return; // 寫碼模式點擊只複習、不代填
   soundManager.playClick();
   if (activeSensorField.value === 'wind') windPath.value = path;
   else if (activeSensorField.value === 'temp') tempPath.value = path;
@@ -655,6 +732,27 @@ function runExecution() {
       launched: true
     }
   });
+}
+
+function runCodeExecution() {
+  levelStore.executeLevel({
+    code: studentCode.value
+  });
+}
+
+function resetCode() {
+  studentCode.value = LEVEL_8_STARTER_CODE;
+}
+
+function fillAnswerHint() {
+  studentCode.value = studentCode.value
+    .replace('await ___;', 'await fetchStation(stationId);')
+    .replace('data.___;                  // 風速路徑', 'data.current.wind_speed_10m;                  // 風速路徑')
+    .replace('data.___;                  // 氣溫路徑', 'data.current.temperature_2m;                  // 氣溫路徑')
+    .replace('data.___;              // 降水機率路徑（含 [0]）', 'data.hourly.precipitation_probability[0];              // 降水機率路徑（含 [0]）')
+    .replace('if (___) {', 'if (wind <= 25 && rainProb <= 20 && temp >= 0) {')
+    .replace('drone.launch(___);', 'drone.launch(stationId);')
+    .replace('evaluateAndLaunch(___);', 'evaluateAndLaunch("station-tpe");');
 }
 </script>
 
@@ -1519,5 +1617,84 @@ function runExecution() {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* L8: code mode */
+.code-mode-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.code-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.code-mode-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.code-editor-wrap {
+  height: 300px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.code-mode-note {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-panel-hover);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
+  line-height: 1.5;
+}
+
+.code-mode-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.code-mode-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mini-log {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-hover);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.mini-log-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.mini-log-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
 }
 </style>

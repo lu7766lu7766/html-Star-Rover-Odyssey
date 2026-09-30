@@ -659,4 +659,45 @@ for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
     // no wiring at all -> fail (old form shape has no bindings)
     expect(level6.validate({}).pass).toBe(false);
   });
+
+  // L8 code mode: fetchStation + launch trace with station safety
+  it('Level 8 code mode: validates fetch/launch trace and station safety', () => {
+    const callsFor = (fetches, launches) => ([
+      ...fetches.map((id) => ({ api: 'fetchStation', args: [id] })),
+      ...launches.map((id) => ({ api: 'drone.launch', args: [id] }))
+    ]);
+    const fullCode = 'async function evaluateAndLaunch(stationId) { const data = await fetchStation(stationId); const wind = data.current.wind_speed_10m; const temp = data.current.temperature_2m; const rainProb = data.hourly.precipitation_probability[0]; console.log(wind); if (wind <= 25 && rainProb <= 20 && temp >= 0) { drone.launch(stationId); } else { drone.abortMission(); } }';
+
+    const best = level8.validate({ apiCalls: callsFor(['station-tpe'], ['station-tpe']), code: fullCode });
+    expect(best.pass).toBe(true);
+    expect(best.data.stars).toBe(3);
+    expect(best.data.station).toContain('台北');
+
+    // unsafe launch (tokyo wind) -> WIND fail
+    const windy = level8.validate({ apiCalls: callsFor(['station-tyo'], ['station-tyo']), code: fullCode });
+    expect(windy.pass).toBe(false);
+    expect(windy.failReason).toBe('WIND');
+
+    // abort only on unsafe station -> guidance to switch (not pass)
+    const aborted = level8.validate({
+      apiCalls: [{ api: 'fetchStation', args: ['station-tyo'] }],
+      code: fullCode
+    });
+    expect(aborted.pass).toBe(false);
+    expect(aborted.error).toContain('換一站');
+
+    // launch without fetching that station -> fail
+    const ghost = level8.validate({ apiCalls: callsFor(['station-tpe'], ['station-dxb']), code: fullCode });
+    expect(ghost.pass).toBe(false);
+    expect(ghost.error).toContain('沒 fetch');
+
+    // missing sensor paths in code -> fail
+    const noPaths = level8.validate({ apiCalls: callsFor(['station-tpe'], ['station-tpe']), code: 'drone.launch("station-tpe");' });
+    expect(noPaths.pass).toBe(false);
+    expect(noPaths.error).toContain('取值路徑');
+
+    // no fetch at all -> fail
+    const noFetch = level8.validate({ apiCalls: [{ api: 'drone.launch', args: ['station-tpe'] }], code: fullCode });
+    expect(noFetch.pass).toBe(false);
+  });
 });
