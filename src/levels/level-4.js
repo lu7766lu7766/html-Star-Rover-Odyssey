@@ -3,6 +3,27 @@
  * 核心概念：for 迴圈結構、重複路徑模組化與演算法最佳化
  */
 
+export const LEVEL_4_STARTER_CODE = `// 迷宮巡航：把下面 ___ 補完，再按執行
+// 目標：從 (1,0) 出發，抵達 (4,4)，避開岩石
+// 提示：先用 for 包重複前進，再轉彎
+
+for (let i = 0; i < ___; i++) {
+  rover.moveForward(); // 北上第 1 段
+}
+
+rover.turnRight(); // 右轉朝東
+
+for (let j = 0; j < ___; j++) {
+  rover.moveForward(); // 東行穿越
+}
+
+rover.turnLeft(); // 左轉朝北
+
+for (let k = 0; k < ___; k++) {
+  rover.moveForward(); // 北上進駐基地
+}
+`;
+
 export const LEVEL_4_MAP = {
   gridSize: { width: 6, height: 6 },
   start: { x: 1, y: 0, dir: 0 }, // dir: 0=North(+y), 1=East(+x), 2=South(-y), 3=West(-x)
@@ -61,16 +82,59 @@ for (let i = 0; i < 2; i++) {
   rover.moveForward(); // 向前 2 格進駐目的地基地！
 }`,
   conceptExplanation: `**迴圈 (for loop)** 是程式設計中最核心的抽象能力。當我們需要讓角色連續前進 3 步或 10 步時，不需要重複寫 10 行相同程式碼，只要透過 \`for (let i = 0; i < N; i++)\` 即可高效率完成。在積木程式中，這能讓我們的拼圖數量大幅減少，達成「最優解」！`,
+  starterCode: LEVEL_4_STARTER_CODE,
   validate: (runResult) => {
-    const loopConfig = runResult.loopConfig || runResult || {};
-    const blocks = loopConfig.blocks || [];
     const map = LEVEL_4_MAP;
+    const code = runResult.code || '';
+    const apiCalls = runResult.apiCalls || null;
 
-    if (!blocks || blocks.length === 0) {
-      return {
-        pass: false,
-        error: '拼圖序列為空！請從工具箱加入前進、轉彎或迴圈積木。'
+    let blocks = [];
+    let flatActions = [];
+    let fromCode = false;
+
+    if (apiCalls && Array.isArray(apiCalls)) {
+      // 新鏈路：Worker 真跑 JS 的 apiCalls trace
+      fromCode = true;
+      const apiToAction = {
+        'rover.moveForward': 'FORWARD',
+        'rover.moveBackward': 'BACKWARD',
+        'rover.turnLeft': 'TURN_LEFT',
+        'rover.turnRight': 'TURN_RIGHT'
       };
+      flatActions = apiCalls
+        .map((c, idx) => {
+          const action = apiToAction[c.api];
+          return action ? { action, sourceBlockId: `code-${idx}` } : null;
+        })
+        .filter(Boolean);
+
+      if (flatActions.length === 0) {
+        return {
+          pass: false,
+          error: '沒有偵測到任何移動指令！請呼叫 rover.moveForward() / turnRight() / turnLeft()。'
+        };
+      }
+    } else {
+      const loopConfig = runResult.loopConfig || runResult || {};
+      blocks = loopConfig.blocks || [];
+      if (!blocks || blocks.length === 0) {
+        return {
+          pass: false,
+          error: '拼圖序列為空！請從工具箱加入前進、轉彎或迴圈積木，或切到寫碼模式執行。'
+        };
+      }
+      // Expand blocks (including loops) into a flat simulation step sequence
+      for (const b of blocks) {
+        if (b.type === 'LOOP') {
+          const count = Math.max(1, Math.min(b.count || 2, 10));
+          const actionType = b.action || 'FORWARD';
+          for (let i = 0; i < count; i++) {
+            flatActions.push({ action: actionType, sourceBlockId: b.id });
+          }
+        } else {
+          flatActions.push({ action: b.type, sourceBlockId: b.id });
+        }
+      }
     }
 
     // Directions: 0=North(dy=+1), 1=East(dx=+1), 2=South(dy=-1), 3=West(dx=-1)
@@ -80,20 +144,6 @@ for (let i = 0; i < 2; i++) {
       { dx: 0, dy: -1, name: '南' },
       { dx: -1, dy: 0, name: '西' }
     ];
-
-    // Expand blocks (including loops) into a flat simulation step sequence
-    const flatActions = [];
-    for (const b of blocks) {
-      if (b.type === 'LOOP') {
-        const count = Math.max(1, Math.min(b.count || 2, 10));
-        const actionType = b.action || 'FORWARD';
-        for (let i = 0; i < count; i++) {
-          flatActions.push({ action: actionType, sourceBlockId: b.id });
-        }
-      } else {
-        flatActions.push({ action: b.type, sourceBlockId: b.id });
-      }
-    }
 
     let x = map.start.x;
     let y = map.start.y;
@@ -163,14 +213,40 @@ for (let i = 0; i < 2; i++) {
 
     // Check Destination Arrival
     if (x === map.target.x && y === map.target.y) {
-      const blockCount = blocks.length;
-      const isOptimal = blockCount <= map.optimalBlockCount;
-
+      let blockCount;
+      let isOptimal;
+      let stars;
       let feedbackMsg = `🎉 導航成功！探測船成功避開所有障礙物，抵達目的地基地 (4, 4)！`;
-      if (isOptimal) {
-        feedbackMsg += `\n🌟 卓越評價：僅使用了 ${blockCount} 塊積木，完美達成最優解（${map.optimalBlockCount} 塊）！`;
+
+      if (fromCode) {
+        const forCount = (code.match(/for\s*\(/g) || []).length;
+        blockCount = forCount + 2; // 2 turns baseline, loops counted via for
+        if (forCount >= 3) {
+          isOptimal = true;
+          stars = 3;
+          feedbackMsg += `\n🌟 卓越評價：用了 ${forCount} 個 for 迴圈，完美達成最優解！（3星）`;
+        } else if (forCount >= 1) {
+          isOptimal = false;
+          stars = 2;
+          feedbackMsg += `\n✓ 通關合格！用了 ${forCount} 個 for 迴圈（2星），試著把 3 段直行都包成 for 挑戰 3 星最優解！`;
+        } else {
+          isOptimal = false;
+          stars = 1;
+          feedbackMsg += `\n✓ 通關合格！但完全沒用 for 迴圈（1星），把重複前進包成 for 可拿 3 星！`;
+        }
       } else {
-        feedbackMsg += `\n✓ 通關合格！目前使用 ${blockCount} 塊積木（最優解參考只需 ${map.optimalBlockCount} 塊，可嘗試用迴圈精簡重複指令）。`;
+        blockCount = blocks.length;
+        isOptimal = blockCount <= map.optimalBlockCount;
+        if (isOptimal) {
+          stars = 3;
+          feedbackMsg += `\n🌟 卓越評價：僅使用了 ${blockCount} 塊積木，完美達成最優解（${map.optimalBlockCount} 塊）！（3星）`;
+        } else if (blockCount <= 7) {
+          stars = 2;
+          feedbackMsg += `\n✓ 通關合格！目前使用 ${blockCount} 塊積木（2星，最優解只需 ${map.optimalBlockCount} 塊，可用迴圈精簡）。`;
+        } else {
+          stars = 1;
+          feedbackMsg += `\n✓ 通關合格！目前使用 ${blockCount} 塊積木（1星，散裝過關，最優解只需 ${map.optimalBlockCount} 塊）。`;
+        }
       }
 
       return {
@@ -179,6 +255,8 @@ for (let i = 0; i < 2; i++) {
           finalPos: { x, y },
           blockCount,
           isOptimal,
+          stars,
+          fromCode,
           flatActions
         },
         feedback: feedbackMsg

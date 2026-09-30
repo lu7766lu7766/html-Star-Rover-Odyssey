@@ -31,7 +31,10 @@ export function createLevelCompletions(levelId) {
       { label: '"FULL_SPEED"', type: 'constant', detail: '全速前進' }
     ],
     4: [
-      { label: 'drill.dig', type: 'function', detail: '(depthIndex) 執行指定深度鑽探', apply: 'drill.dig(i);' }
+      { label: 'rover.moveForward', type: 'function', detail: '() 前進 1 格', apply: 'rover.moveForward();' },
+      { label: 'rover.moveBackward', type: 'function', detail: '() 後退 1 格', apply: 'rover.moveBackward();' },
+      { label: 'rover.turnLeft', type: 'function', detail: '() 左轉 90°', apply: 'rover.turnLeft();' },
+      { label: 'rover.turnRight', type: 'function', detail: '() 右轉 90°', apply: 'rover.turnRight();' }
     ],
     5: [
       { label: 'rover.installModule', type: 'function', detail: '(moduleObject) 安裝科技模組', apply: 'rover.installModule(scanModule);' },

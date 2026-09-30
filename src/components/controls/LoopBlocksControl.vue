@@ -7,6 +7,22 @@
         <h3 class="deck-title">迷宮拼圖路徑規劃 · Maze Path Puzzle & Loops</h3>
       </div>
       <div class="header-actions">
+        <button
+          class="btn btn-sm"
+          :class="mode === 'blocks' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'blocks'"
+          title="積木拼裝模式（新手友善）"
+        >
+          <span>🧩 積木</span>
+        </button>
+        <button
+          class="btn btn-sm"
+          :class="mode === 'code' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'code'"
+          title="手寫 JS 模式（拿 3 星必須用 for）"
+        >
+          <span>⌨️ 寫碼</span>
+        </button>
         <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
           <span>還原</span>
@@ -15,6 +31,43 @@
     </div>
 
     <div class="deck-content">
+      <!-- 0. Code mode (L4 MVP: 真寫 JS，走 Worker 驗 trace) -->
+      <div v-if="mode === 'code'" class="code-mode-card card">
+        <div class="code-mode-header">
+          <div class="code-mode-title">
+            <Code :size="15" class="text-brand" />
+            <span>手寫 JS 挑戰 · 把 ___ 補成數字再執行</span>
+          </div>
+          <span class="badge badge-info">for 迴圈 ×3 = 3星</span>
+        </div>
+        <div class="code-editor-wrap">
+          <CodeEditor v-model="studentCode" :level-id="4" @reset="resetCode" />
+        </div>
+        <div class="code-mode-actions">
+          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值（會降為 2 星起評）">
+            <span>💡 填入提示值</span>
+          </button>
+          <button
+            class="btn btn-success execute-btn"
+            :disabled="levelStore.isExecuting || !studentCode.trim()"
+            @click="runCodeExecution"
+          >
+            <Play :size="16" />
+            <span>{{ levelStore.isExecuting ? '沙箱執行中...' : '執行 JS 程式碼' }}</span>
+          </button>
+        </div>
+        <div class="code-mode-logs" v-if="levelStore.executionLogs.length > 0">
+          <div
+            v-for="log in levelStore.executionLogs.slice(-4)"
+            :key="log.id"
+            class="mini-log"
+            :class="'mini-log-' + log.type"
+          >
+            {{ log.message }}
+          </div>
+        </div>
+      </div>
+
       <!-- 1. Real-time Block Count & Optimal Comparison Banner -->
       <div class="benchmark-card card">
         <div class="benchmark-top">
@@ -53,7 +106,7 @@
       </div>
 
       <!-- 2. Block Palette (拼圖工具箱) -->
-      <div class="palette-section">
+      <div v-if="mode === 'blocks'" class="palette-section">
         <div class="section-label">
           <span>拼圖工具箱（點擊加入路徑）：</span>
         </div>
@@ -91,7 +144,7 @@
       </div>
 
       <!-- 3. Puzzle Assembly Workspace (已拼裝路徑清單) -->
-      <div class="workspace-section">
+      <div v-if="mode === 'blocks'" class="workspace-section">
         <div class="workspace-header">
           <div class="workspace-title-group">
             <span class="section-label">已拼裝路徑清單 ({{ blocks.length }} 塊)：</span>
@@ -204,22 +257,26 @@
         </div>
       </div>
 
-      <!-- 4. Real-time Path Simulation Radar & Projection -->
+      <!-- 4. Path Simulation Radar（跑後才揭曉，避免照抄） -->
       <div class="radar-card card">
         <div class="radar-header">
           <div class="radar-title">
             <Compass :size="15" class="text-brand" />
-            <span>2D 航向雷達與即時路徑預演</span>
+            <span>2D 航向雷達與路徑預演（執行後揭曉）</span>
           </div>
           <span
             class="badge"
-            :class="simulationResult.statusClass"
+            :class="hasRunOnce ? simulationResult.statusClass : 'badge-info'"
           >
-            {{ simulationResult.statusText }}
+            {{ hasRunOnce ? simulationResult.statusText : '🔒 尚未執行' }}
           </span>
         </div>
 
-        <div class="radar-body">
+        <div v-if="!hasRunOnce" class="radar-locked">
+          <span>🔒 先按「執行 JS 程式碼」或「啟動巡航測試」，跑完才顯示終點、步數與撞牆位置。先想，再驗證。</span>
+        </div>
+
+        <div v-else class="radar-body">
           <!-- 6x6 Mini Grid -->
           <div class="mini-grid">
             <div
@@ -273,7 +330,7 @@
       </div>
 
       <!-- 5. Dynamic JavaScript Code Preview -->
-      <div class="code-preview-card card">
+      <div v-if="mode === 'blocks'" class="code-preview-card card">
         <div class="code-preview-header">
           <span class="code-preview-title">JavaScript 對照程式碼預覽：</span>
           <span class="code-badge">ES6 Syntax</span>
@@ -285,10 +342,12 @@
     <!-- Footer Controls -->
     <div class="deck-footer">
       <div class="footer-left">
+        <span v-if="mode === 'code'" class="footer-hint">寫碼模式：在上方編輯器按「執行 JS 程式碼」</span>
       </div>
 
       <div class="footer-right">
         <button
+          v-if="mode === 'blocks'"
           class="btn btn-success execute-btn"
           :disabled="levelStore.isExecuting || blocks.length === 0"
           @click="runExecution"
@@ -314,14 +373,21 @@ import {
   Play,
   Info,
   Compass,
-  HelpCircle
+  HelpCircle,
+  Code
 } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
-import { LEVEL_4_MAP } from '../../levels/level-4.js';
+import { LEVEL_4_MAP, LEVEL_4_STARTER_CODE } from '../../levels/level-4.js';
+import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
+
+// 混合漸進：預設寫碼模式，積木當鷹架
+const mode = ref('code');
+const studentCode = ref(LEVEL_4_STARTER_CODE);
+const hasRunOnce = ref(false);
 
 let uid = 100;
 
@@ -332,8 +398,13 @@ const blocks = ref([
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(4);
-  if (saved && saved.loopConfig && Array.isArray(saved.loopConfig.blocks) && saved.loopConfig.blocks.length > 0) {
-    blocks.value = JSON.parse(JSON.stringify(saved.loopConfig.blocks));
+  if (saved) {
+    if (typeof saved.code === 'string' && saved.code.length > 0) {
+      studentCode.value = saved.code;
+    }
+    if (saved.loopConfig && Array.isArray(saved.loopConfig.blocks) && saved.loopConfig.blocks.length > 0) {
+      blocks.value = JSON.parse(JSON.stringify(saved.loopConfig.blocks));
+    }
   }
 });
 
@@ -382,11 +453,31 @@ function resetDefaults() {
 }
 
 function runExecution() {
+  hasRunOnce.value = true;
   levelStore.executeLevel({
     loopConfig: {
       blocks: JSON.parse(JSON.stringify(blocks.value))
     }
   });
+}
+
+function runCodeExecution() {
+  hasRunOnce.value = true;
+  levelStore.executeLevel({
+    code: studentCode.value
+  });
+}
+
+function resetCode() {
+  studentCode.value = LEVEL_4_STARTER_CODE;
+}
+
+function fillAnswerHint() {
+  // 提示值：2-3-2，但用提示後建議仍改成 for 才拿高星
+  studentCode.value = studentCode.value
+    .replace('i < ___', 'i < 2')
+    .replace('j < ___', 'j < 3')
+    .replace('k < ___', 'k < 2');
 }
 
 function getBlockLabel(type) {
@@ -1321,5 +1412,87 @@ const generatedJsCode = computed(() => {
   padding: 0.5rem 1.4rem;
   font-size: 0.92rem;
   font-weight: 700;
+}
+
+/* L4 MVP: code mode + locked radar */
+.code-mode-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.code-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.code-mode-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.code-editor-wrap {
+  height: 260px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.code-mode-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.code-mode-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mini-log {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-hover);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.mini-log-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.mini-log-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.radar-locked {
+  padding: 0.8rem;
+  background: var(--bg-panel-hover);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.footer-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 </style>

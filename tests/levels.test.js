@@ -367,8 +367,7 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
   });
 
   // Strict Pedagogical Rule: No Level Passes Without Active Student Interaction & Tuning!
-  it('Anti-Spoil Audit: verifies that ALL 8 levels fail validation in their initial/unconfigured state', () => {
-    // Level 1 initial state (empty name, 0 power, false shield) -> FAILS
+  it('Anti-Spoil Audit: verifies that ALL 8 levels fail validation in their initial/unconfigured state', () => {    // Level 1 initial state (empty name, 0 power, false shield) -> FAILS
     expect(level1.validate({ variables: level1.initialVariables }).pass).toBe(false);
 
     // Level 2 initial state (150 fuel, 30 burn, 3 thrust, 2 speed => distance 6 < 24) -> FAILS
@@ -402,5 +401,47 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
     // Level 8 initial state (no weather data fetched) -> FAILS
     const l8Res = level8.validate({ weatherSession: { weatherData: null, conditions: { maxWindSpeed: 10, maxPrecipitation: 10 }, launched: false } });
     expect(l8Res.pass).toBe(false);
+  });
+
+  // L4 MVP: code-trace validation (Worker apiCalls) + stars
+  it('Level 4 code mode: validates apiCalls trace and awards stars by for usage', () => {
+    const toCalls = (actions) => actions.map((a) => ({ api: `rover.${a}`, args: [] }));
+    // Canonical 2-3-2 path: 2F, R, 3F, L, 2F = 9 calls
+    const optimalActions = [
+      'moveForward', 'moveForward',
+      'turnRight',
+      'moveForward', 'moveForward', 'moveForward',
+      'turnLeft',
+      'moveForward', 'moveForward'
+    ];
+    const optimalCode = `for (let i = 0; i < 2; i++) { rover.moveForward(); }
+rover.turnRight();
+for (let j = 0; j < 3; j++) { rover.moveForward(); }
+rover.turnLeft();
+for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
+
+    const optimalRes = level4.validate({ apiCalls: toCalls(optimalActions), code: optimalCode });
+    expect(optimalRes.pass).toBe(true);
+    expect(optimalRes.data.stars).toBe(3);
+    expect(optimalRes.data.isOptimal).toBe(true);
+    expect(optimalRes.data.fromCode).toBe(true);
+
+    // Same arrival without for -> 1 star (discourages hard-coded spam)
+    const spamCode = optimalActions.map((a) => `rover.${a}();`).join('\n');
+    const spamRes = level4.validate({ apiCalls: toCalls(optimalActions), code: spamCode });
+    expect(spamRes.pass).toBe(true);
+    expect(spamRes.data.stars).toBe(1);
+
+    // Empty trace -> fail
+    const emptyRes = level4.validate({ apiCalls: [], code: '' });
+    expect(emptyRes.pass).toBe(false);
+
+    // Crash into rock: 3x forward from start hits (1,3)
+    const crashRes = level4.validate({
+      apiCalls: toCalls(['moveForward', 'moveForward', 'moveForward']),
+      code: 'for (let i = 0; i < 3; i++) { rover.moveForward(); }'
+    });
+    expect(crashRes.pass).toBe(false);
+    expect(crashRes.error).toContain('撞擊岩石');
   });
 });

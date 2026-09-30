@@ -7,6 +7,13 @@ import { defineStore } from 'pinia';
 import { getLevelById } from '../levels/index.js';
 import { useProgressStore } from './progressStore.js';
 import { soundManager } from '../game/core/SoundManager.js';
+import { sandboxRuntime } from '../sandbox/runtime.js';
+
+function extractLine(stack) {
+  if (!stack || typeof stack !== 'string') return '?';
+  const m = stack.match(/<anonymous>:(\d+):\d+/) || stack.match(/:(\d+):\d+/);
+  return m ? m[1] : '?';
+}
 
 export const useLevelStore = defineStore('level', {
   state: () => ({
@@ -143,9 +150,53 @@ export const useLevelStore = defineStore('level', {
       // Save operation in progress store
       progressStore.saveOperation(currentLevel.id, payload);
 
+      // 新鏈路：payload.code 代表學生手寫 JS，先丟 Worker 真跑
+      let tracePayload = payload;
+      if (typeof payload.code === 'string') {
+        this.appendLog({ type: 'info', message: '🖥️ 沙箱執行學生程式碼中...' });
+        const runRes = await sandboxRuntime.execute({
+          code: payload.code,
+          levelId: currentLevel.id,
+          initialData: payload.initialData || {},
+          onLog: (log) => {
+            this.appendLog({ type: log.type === 'error' ? 'error' : 'info', message: `console.${log.type}: ${log.args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}` });
+          },
+          onApiCall: () => {}
+        });
+
+        if (!runRes.success) {
+          const errResult = {
+            pass: false,
+            error: `程式執行失敗：第 ${extractLine(runRes.stack)} 行附近 → ${runRes.error}`,
+            details: { stack: runRes.stack, logs: runRes.logs }
+          };
+          this.lastRunResult = errResult;
+          this.appendLog({ type: 'error', message: `⚠️ [未通過] ${errResult.error}` });
+          if (this.sceneActionTrigger) {
+            this.sceneActionTrigger('LEVEL_FAIL', { levelId: currentLevel.id, evaluation: errResult });
+          }
+          if (this.failModalTimer) clearTimeout(this.failModalTimer);
+          this.failModalTimer = setTimeout(() => { this.isFailModalOpen = true; }, 750);
+          this.isExecuting = false;
+          return errResult;
+        }
+
+        // Worker 跑出來的 logs 轉進遙測 console
+        for (const l of runRes.logs || []) {
+          this.appendLog({ type: l.type === 'error' ? 'error' : 'info', message: `console.${l.type}: ${l.args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}` });
+        }
+
+        tracePayload = {
+          ...payload,
+          apiCalls: runRes.apiCalls || [],
+          domState: runRes.domState || undefined,
+          workerResult: runRes.result
+        };
+      }
+
       // Notify 3D scene that execution has started
       if (this.sceneActionTrigger) {
-        this.sceneActionTrigger('EXECUTE_START', { levelId: currentLevel.id, payload });
+        this.sceneActionTrigger('EXECUTE_START', { levelId: currentLevel.id, payload: tracePayload });
       }
 
       // Calculate realistic animation duration for each level
@@ -157,12 +208,16 @@ export const useLevelStore = defineStore('level', {
       } else if (currentLevel.id === 3) {
         animDuration = 2000;
       } else if (currentLevel.id === 4) {
-        const blocks = payload.loopConfig?.blocks || [];
-        let totalSteps = 0;
-        for (const b of blocks) {
-          totalSteps += (b.type === 'LOOP' ? (b.count || 2) : 1);
+        if (tracePayload.apiCalls) {
+          animDuration = Math.max(1200, Math.min(tracePayload.apiCalls.length * 420, 5000));
+        } else {
+          const blocks = payload.loopConfig?.blocks || [];
+          let totalSteps = 0;
+          for (const b of blocks) {
+            totalSteps += (b.type === 'LOOP' ? (b.count || 2) : 1);
+          }
+          animDuration = Math.max(1200, Math.min(totalSteps * 420, 5000));
         }
-        animDuration = Math.max(1200, Math.min(totalSteps * 420, 5000));
       } else if (currentLevel.id === 5) {
         animDuration = 1500;
       } else if (currentLevel.id === 7) {
@@ -175,7 +230,7 @@ export const useLevelStore = defineStore('level', {
       await new Promise(resolve => setTimeout(resolve, animDuration));
 
       try {
-        const evaluation = currentLevel.validate(payload);
+        const evaluation = currentLevel.validate(tracePayload);
         this.lastRunResult = evaluation;
 
         if (evaluation.pass) {

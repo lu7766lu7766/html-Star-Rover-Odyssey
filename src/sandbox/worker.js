@@ -83,6 +83,35 @@ workerSelf.onmessage = function (e) {
           payload: { api: 'rover.setup', args: [name, battery, isActive] }
         });
       },
+      // L4 maze navigation (records trace for level-4 validate)
+      moveForward: () => {
+        recordedAPICalls.push({ api: 'rover.moveForward', args: [] });
+        workerSelf.postMessage({
+          type: MSG_TYPE.GAME_API_CALL,
+          payload: { api: 'rover.moveForward', args: [] }
+        });
+      },
+      moveBackward: () => {
+        recordedAPICalls.push({ api: 'rover.moveBackward', args: [] });
+        workerSelf.postMessage({
+          type: MSG_TYPE.GAME_API_CALL,
+          payload: { api: 'rover.moveBackward', args: [] }
+        });
+      },
+      turnLeft: () => {
+        recordedAPICalls.push({ api: 'rover.turnLeft', args: [] });
+        workerSelf.postMessage({
+          type: MSG_TYPE.GAME_API_CALL,
+          payload: { api: 'rover.turnLeft', args: [] }
+        });
+      },
+      turnRight: () => {
+        recordedAPICalls.push({ api: 'rover.turnRight', args: [] });
+        workerSelf.postMessage({
+          type: MSG_TYPE.GAME_API_CALL,
+          payload: { api: 'rover.turnRight', args: [] }
+        });
+      },
       launch: (remainingFuel) => {
         recordedAPICalls.push({ api: 'rover.launch', args: [remainingFuel] });
         workerSelf.postMessage({
