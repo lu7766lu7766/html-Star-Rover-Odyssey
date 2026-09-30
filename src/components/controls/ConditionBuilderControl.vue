@@ -6,22 +6,6 @@
         <h3 class="deck-title">條件判斷邏輯樹 · Decision Branching</h3>
       </div>
       <div class="header-actions">
-        <button
-          class="btn btn-sm"
-          :class="mode === 'blocks' ? 'btn-success' : 'btn-ghost'"
-          @click="mode = 'blocks'"
-          title="條件積木模式（新手友善）"
-        >
-          <span>🧩 積木</span>
-        </button>
-        <button
-          class="btn btn-sm"
-          :class="mode === 'code' ? 'btn-success' : 'btn-ghost'"
-          @click="mode = 'code'"
-          title="手寫 JS 模式（含隱藏邊界拿 3 星）"
-        >
-          <span>⌨️ 寫碼</span>
-        </button>
         <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
           <span>還原</span>
@@ -30,8 +14,8 @@
     </div>
 
     <div class="deck-content">
-      <!-- 0. Code mode（L3：手寫 autoPilot，走 Worker 真測 + 隱藏邊界） -->
-      <div v-if="mode === 'code'" class="code-mode-card card">
+      <!-- 手寫 autoPilot，走 Worker 真測 + 隱藏邊界 -->
+      <div class="code-mode-card card">
         <div class="code-mode-header">
           <div class="code-mode-title">
             <Code :size="15" class="text-brand" />
@@ -66,118 +50,13 @@
           </div>
         </div>
       </div>
-
-      <!-- Visual Condition Blocks -->
-      <div v-if="mode === 'blocks'" class="conditions-flow">
-        <!-- Branch 1: if distance < threshold1 -->
-        <div class="branch-block card branch-if">
-          <div class="branch-header">
-            <span class="keyword-badge badge-blue">如果 (if)</span>
-            <div class="condition-expression">
-              <span>隕石距離 (distance) &lt;</span>
-              <input
-                v-model.number="rule1Threshold"
-                type="number"
-                min="1"
-                max="20"
-                class="num-input"
-              />
-              <span>單位</span>
-            </div>
-          </div>
-          <div class="branch-action-row">
-            <span class="action-arrow">➔ 執行動作：</span>
-            <select v-model="rule1Action" class="action-select">
-              <option value="" disabled>請選擇動作…</option>
-              <option value="STOP">緊急停止避碰 (STOP)</option>
-              <option value="SLOW_DOWN">減速巡航慢行 (SLOW_DOWN)</option>
-              <option value="FULL_SPEED">全速前進巡航 (FULL_SPEED)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Branch 2: else if distance < threshold2 -->
-        <div class="branch-block card branch-elif">
-          <div class="branch-header">
-            <span class="keyword-badge badge-purple">否則如果 (else if)</span>
-            <div class="condition-expression">
-              <span>隕石距離 (distance) &lt;</span>
-              <input
-                v-model.number="rule2Threshold"
-                type="number"
-                min="5"
-                max="30"
-                class="num-input"
-              />
-              <span>單位</span>
-            </div>
-          </div>
-          <div class="branch-action-row">
-            <span class="action-arrow">➔ 執行動作：</span>
-            <select v-model="rule2Action" class="action-select">
-              <option value="" disabled>請選擇動作…</option>
-              <option value="STOP">緊急停止避碰 (STOP)</option>
-              <option value="SLOW_DOWN">減速巡航慢行 (SLOW_DOWN)</option>
-              <option value="FULL_SPEED">全速前進巡航 (FULL_SPEED)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Branch 3: else -->
-        <div class="branch-block card branch-else">
-          <div class="branch-header">
-            <span class="keyword-badge badge-warning">否則 (else)</span>
-            <span class="condition-fallback-label">前方空域開闊安全時</span>
-          </div>
-          <div class="branch-action-row">
-            <span class="action-arrow">➔ 執行動作：</span>
-            <select v-model="fallbackAction" class="action-select">
-              <option value="" disabled>請選擇動作…</option>
-              <option value="STOP">緊急停止避碰 (STOP)</option>
-              <option value="SLOW_DOWN">減速巡航慢行 (SLOW_DOWN)</option>
-              <option value="FULL_SPEED">全速前進巡航 (FULL_SPEED)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Live Simulator / Test Distances Preview（跑後才揭曉） -->
-      <div class="preview-card card">
-        <h4 class="preview-title">雷達測距測試情境 (Telemetry Test Preview) · 執行後揭曉</h4>
-        <div v-if="!hasRunOnce" class="preview-locked">
-          <span>🔒 先按「執行 JS 程式碼」或「啟動避障巡航測試」，跑完才顯示各距離判定。先想，再驗證。</span>
-        </div>
-        <div v-else class="preview-grid">
-          <div
-            v-for="dist in [3, 10, 22]"
-            :key="dist"
-            class="dist-test-item"
-            :class="getDecisionClass(dist)"
-          >
-            <span class="dist-val">測距: {{ dist }} 單位</span>
-            <div class="dist-result">
-              <span>判定行為: </span>
-              <strong>{{ getDecisionText(dist) }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        {{ mode === 'code' ? '寫碼模式：在上方編輯器按「執行 JS 程式碼」（含 5/15 隱藏邊界）' : '需依序通過 3 單位、10 單位與 22 單位的雷達避障測試' }}
+        寫碼模式：在上方編輯器按「執行 JS 程式碼」（含 5/15 隱藏邊界）
       </div>
-      <button
-        v-if="mode === 'blocks'"
-        class="btn btn-success execute-btn"
-        :disabled="levelStore.isExecuting"
-        @click="runExecution"
-      >
-        <Play :size="16" />
-        <span>{{ levelStore.isExecuting ? '避障自駕測試中...' : '啟動避障巡航測試' }}</span>
-      </button>
     </div>
   </div>
 </template>
@@ -193,76 +72,20 @@ import CodeEditor from '../editor/CodeEditor.vue';
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-// 混合漸進：預設寫碼模式，積木當鷹架
-const mode = ref('code');
 const studentCode = ref(LEVEL_3_STARTER_CODE);
-const hasRunOnce = ref(false);
-
-const rule1Threshold = ref(5);
-const rule1Action = ref('');
-
-const rule2Threshold = ref(15);
-const rule2Action = ref('');
-
-const fallbackAction = ref('');
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(3);
-  if (saved) {
-    if (typeof saved.code === 'string' && saved.code.length > 0) {
-      studentCode.value = saved.code;
-    }
-    if (saved.rules) {
-      rule1Threshold.value = saved.rules.rule1Threshold ?? 5;
-      rule1Action.value = saved.rules.rule1Action ?? '';
-      rule2Threshold.value = saved.rules.rule2Threshold ?? 15;
-      rule2Action.value = saved.rules.rule2Action ?? '';
-      fallbackAction.value = saved.rules.fallbackAction ?? '';
-    }
+  if (saved && typeof saved.code === 'string' && saved.code.length > 0) {
+    studentCode.value = saved.code;
   }
 });
-
-function evaluateDecision(dist) {
-  if (dist < rule1Threshold.value) return rule1Action.value;
-  if (dist < rule2Threshold.value) return rule2Action.value;
-  return fallbackAction.value;
-}
-
-function getDecisionText(dist) {
-  const act = evaluateDecision(dist);
-  if (!act) return '未選擇動作';
-  if (act === 'STOP') return '緊急停止 (STOP)';
-  if (act === 'SLOW_DOWN') return '減速慢行 (SLOW_DOWN)';
-  if (act === 'FULL_SPEED') return '全速前進 (FULL_SPEED)';
-  return act;
-}
-
-function getDecisionClass(dist) {
-  const act = evaluateDecision(dist);
-  if (act === 'STOP') return 'tag-danger-bg';
-  if (act === 'SLOW_DOWN') return 'tag-warning-bg';
-  return 'tag-success-bg';
-}
 
 function resetDefaults() {
   levelStore.resetCurrentLevel();
 }
 
-function runExecution() {
-  hasRunOnce.value = true;
-  levelStore.executeLevel({
-    rules: {
-      rule1Threshold: rule1Threshold.value,
-      rule1Action: rule1Action.value,
-      rule2Threshold: rule2Threshold.value,
-      rule2Action: rule2Action.value,
-      fallbackAction: fallbackAction.value
-    }
-  });
-}
-
 function runCodeExecution() {
-  hasRunOnce.value = true;
   levelStore.executeLevel({
     code: studentCode.value
   });

@@ -6,22 +6,6 @@
         <h3 class="deck-title">函式呼叫與物件參數 · f(x)</h3>
       </div>
       <div class="header-actions">
-        <button
-          class="btn btn-sm"
-          :class="mode === 'blocks' ? 'btn-success' : 'btn-ghost'"
-          @click="mode = 'blocks'"
-          title="點選模式（新手友善，上限 2 星）"
-        >
-          <span>🧩 點選</span>
-        </button>
-        <button
-          class="btn btn-sm"
-          :class="mode === 'code' ? 'btn-success' : 'btn-ghost'"
-          @click="mode = 'code'"
-          title="手寫 JS 模式（自己定義物件 + 方法拿 3 星）"
-        >
-          <span>⌨️ 寫碼</span>
-        </button>
         <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
           <span>還原</span>
@@ -30,8 +14,8 @@
     </div>
 
     <div class="deck-content">
-      <!-- 0. Code mode（L5：手寫物件 + 方法，走 Worker 真調用） -->
-      <div v-if="mode === 'code'" class="code-mode-card card">
+      <!-- 0. Code mode（手寫物件 + 方法，走 Worker 真調用） -->
+      <div class="code-mode-card card">
         <div class="code-mode-header">
           <div class="code-mode-title">
             <Code :size="15" class="text-brand" />
@@ -67,16 +51,14 @@
         </div>
       </div>
 
-      <!-- 1. Select Function (verb) -->
+      <!-- 1. Function reference cards（方法對照表：讀懂三個 f 的差別再選） -->
       <div class="module-select-box">
-        <span class="box-label">選擇要呼叫的函式 f（動詞・三選一）：</span>
+        <span class="box-label">函式對照表 f（讀懂行為差異，寫碼時選對函式）：</span>
         <div class="module-cards-grid">
           <div
             v-for="m in availableMethods"
             :key="m.id"
             class="mod-option-card card"
-            :class="{ 'card-active': selectedMethodId === m.id }"
-            @click="selectedMethodId = m.id"
           >
             <div class="mod-top">
               <strong class="mono">{{ m.signature }}</strong>
@@ -89,199 +71,43 @@
           </div>
         </div>
       </div>
-
-      <!-- 2. Configure Object Argument (object) -->
-      <div v-if="mode === 'blocks'" class="properties-box card">
-        <h4 class="prop-title">配置參數物件 scanParams（受詞・傳進函式的原料包）</h4>
-
-        <div class="prop-row">
-          <div class="prop-info">
-            <span class="prop-key">scanParams.range（廣域覆蓋半徑／activateScan 用）：</span>
-            <strong class="prop-val">{{ scanRange }} 單位</strong>
-          </div>
-          <input
-            v-model.number="scanRange"
-            type="range"
-            min="10"
-            max="25"
-            step="1"
-            class="slider"
-          />
-          <span class="prop-hint">深空最遠目標位於 18 單位處，range 必須 &ge; 18（只對 activateScan 有效）</span>
-        </div>
-
-        <div class="prop-row">
-          <div class="prop-info">
-            <span class="prop-key">scanParams.mode（頻譜解析度／activateScan 用）：</span>
-            <div class="mode-toggles">
-              <button
-                class="btn btn-xs"
-                :class="scanMode === 'HIGH' ? 'btn-primary' : 'btn-outline'"
-                @click="scanMode = 'HIGH'"
-              >
-                HIGH (高解析)
-              </button>
-              <button
-                class="btn btn-xs"
-                :class="scanMode === 'NORMAL' ? 'btn-primary' : 'btn-outline'"
-                @click="scanMode = 'NORMAL'"
-              >
-                NORMAL (普通)
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="prop-row param-duo">
-          <div class="duo-item">
-            <span class="prop-key">scanParams.target（集束目標／focusScan 用）：</span>
-            <select v-model="target" class="select">
-              <option value="NEAR-01">NEAR-01（近距離）</option>
-              <option value="FAR-07">FAR-07（遠端隱藏天體）</option>
-            </select>
-          </div>
-          <div class="duo-item">
-            <span class="prop-key">功率 power：</span>
-            <strong class="prop-val">{{ power }}%</strong>
-            <input v-model.number="power" type="range" min="10" max="100" step="5" class="slider" />
-          </div>
-        </div>
-
-        <div class="prop-row">
-          <div class="prop-info">
-            <span class="prop-key">scanParams.duration（回波时长秒／pingEcho 用）：</span>
-            <strong class="prop-val">{{ duration }}s</strong>
-          </div>
-          <input v-model.number="duration" type="range" min="1" max="5" step="1" class="slider" />
-        </div>
-      </div>
-
-      <!-- 3. Call preview（點選模式專用，寫碼模式不預演） -->
-      <div v-if="mode === 'blocks'" class="object-preview card">
-        <span class="preview-label">即將執行的函式呼叫：</span>
-        <div class="code-view">
-          <pre><code>{{ callPreview }}</code></pre>
-        </div>
-      </div>
     </div>
 
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        {{ mode === 'code' ? '寫碼模式：在上方編輯器按「執行 JS 程式碼」（先選對 f，再配對 x）' : '先選對 f，再配對 x' }}
+        寫碼模式：在上方編輯器按「執行 JS 程式碼」（先選對 f，再配對 x）
       </div>
-      <button
-        v-if="mode === 'blocks'"
-        class="btn btn-success execute-btn"
-        :disabled="levelStore.isExecuting"
-        @click="runExecution"
-      >
-        <Radio :size="16" />
-        <span>{{ levelStore.isExecuting ? '執行中...' : `呼叫 ${selectedMethodId}(scanParams)` }}</span>
-      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Cpu, RotateCcw, Radio, Code } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
-import level5, { AVAILABLE_METHODS, INITIAL_METHOD_CALL, LEVEL_5_STARTER_CODE } from '../../levels/level-5.js';
+import { AVAILABLE_METHODS, LEVEL_5_STARTER_CODE } from '../../levels/level-5.js';
 import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-// 混合漸進：預設寫碼模式（填空），點選當鷹架
-const mode = ref('code');
-const studentCode = ref(LEVEL_5_STARTER_CODE);
-const hasRunOnce = ref(false);
-
 const availableMethods = AVAILABLE_METHODS;
-
-const selectedMethodId = ref(INITIAL_METHOD_CALL.methodId);
-const scanRange = ref(INITIAL_METHOD_CALL.params.range);
-const scanMode = ref(INITIAL_METHOD_CALL.params.mode);
-const target = ref(INITIAL_METHOD_CALL.params.target);
-const power = ref(INITIAL_METHOD_CALL.params.power);
-const duration = ref(INITIAL_METHOD_CALL.params.duration);
-
-function applyMethodCall(mc) {
-  if (!mc) return;
-  if (mc.methodId) selectedMethodId.value = mc.methodId;
-  const p = mc.params || {};
-  if (p.range !== undefined) scanRange.value = p.range;
-  if (p.mode !== undefined) scanMode.value = p.mode;
-  if (p.target !== undefined) target.value = p.target;
-  if (p.power !== undefined) power.value = p.power;
-  if (p.duration !== undefined) duration.value = p.duration;
-}
+const studentCode = ref(LEVEL_5_STARTER_CODE);
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(5);
-  if (saved) {
-    if (typeof saved.code === 'string' && saved.code.length > 0) {
-      studentCode.value = saved.code;
-    }
-    if (saved.methodCall) {
-      applyMethodCall(saved.methodCall);
-    } else if (saved.moduleConfig) {
-    // 舊存檔遷移：quantum-scanner 視為選對方法，其餘視為選錯
-    const mc = saved.moduleConfig;
-    if (mc.moduleId === 'quantum-scanner') {
-      selectedMethodId.value = 'activateScan';
-      scanRange.value = mc.range ?? 10;
-      scanMode.value = mc.mode ?? 'NORMAL';
-    } else {
-      selectedMethodId.value = 'pingEcho';
-      scanRange.value = mc.range ?? 10;
-      scanMode.value = mc.mode ?? 'NORMAL';
-    }
-    }
+  if (saved && typeof saved.code === 'string' && saved.code.length > 0) {
+    studentCode.value = saved.code;
   }
-});
-
-const callPreview = computed(() => {
-  if (selectedMethodId.value === 'activateScan') {
-    return `${selectedMethodId.value}({ range: ${scanRange.value}, mode: "${scanMode.value}" });`;
-  } else if (selectedMethodId.value === 'focusScan') {
-    return `${selectedMethodId.value}({ target: "${target.value}", power: ${power.value} });`;
-  }
-  return `${selectedMethodId.value}({ duration: ${duration.value} });`;
 });
 
 function resetDefaults() {
   levelStore.resetCurrentLevel();
 }
 
-function runExecution() {
-  hasRunOnce.value = true;
-  const params = {
-    range: scanRange.value,
-    mode: scanMode.value,
-    target: target.value,
-    power: power.value,
-    duration: duration.value
-  };
-  levelStore.executeLevel({
-    methodCall: {
-      methodId: selectedMethodId.value,
-      params
-    },
-    // 供 3D 場景向下相容讀取
-    moduleConfig: {
-      moduleId: 'quantum-scanner',
-      range: scanRange.value,
-      mode: scanMode.value,
-      isMethodInvoked: true
-    }
-  });
-}
-
 function runCodeExecution() {
-  hasRunOnce.value = true;
   levelStore.executeLevel({
     code: studentCode.value
   });
@@ -335,6 +161,12 @@ function fillAnswerHint() {
   color: var(--text-primary);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .deck-content {
   flex: 1;
   overflow-y: auto;
@@ -363,22 +195,10 @@ function fillAnswerHint() {
 }
 
 .mod-option-card {
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.75rem;
-  transition: all var(--transition-fast);
-}
-
-.mod-option-card:hover {
-  border-color: var(--primary-blue);
-}
-
-.card-active {
-  border-color: var(--primary-blue);
-  background: var(--primary-blue-light);
-  box-shadow: 0 0 0 2px var(--primary-blue-glow);
 }
 
 .mod-top {
@@ -403,105 +223,6 @@ function fillAnswerHint() {
   color: var(--text-secondary);
 }
 
-.properties-box {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  background: var(--bg-panel-hover);
-}
-
-.prop-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.prop-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.prop-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.prop-key {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.prop-val {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--primary-blue);
-}
-
-.slider {
-  width: 100%;
-  accent-color: var(--primary-blue);
-  cursor: pointer;
-}
-
-.prop-hint {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.mode-toggles {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.param-duo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.duo-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.select {
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: #fff;
-  font-size: 0.8rem;
-}
-
-/* Call Preview */
-.object-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  background: #ffffff;
-}
-
-.preview-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.code-view {
-  background: #0f172a;
-  border-radius: var(--radius-sm);
-  padding: 0.65rem 0.85rem;
-}
-
-.code-view code {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: #38bdf8;
-  line-height: 1.45;
-}
-
 .deck-footer {
   height: 52px;
   min-height: 52px;
@@ -524,12 +245,6 @@ function fillAnswerHint() {
 }
 
 /* L5: code mode */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
 .code-mode-card {
   background: #ffffff;
   border: 1px solid var(--border-subtle);

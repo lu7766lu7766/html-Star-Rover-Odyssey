@@ -7,22 +7,6 @@
         <h3 class="deck-title">變數宣告與記憶體配置 · Variable Declaration</h3>
       </div>
       <div class="deck-actions">
-        <button
-          class="btn btn-sm"
-          :class="mode === 'blocks' ? 'btn-success' : 'btn-secondary'"
-          @click="mode = 'blocks'"
-          title="表單模式（新手友善，上限 2 星）"
-        >
-          <span>🧩 表單</span>
-        </button>
-        <button
-          class="btn btn-sm"
-          :class="mode === 'code' ? 'btn-success' : 'btn-secondary'"
-          @click="mode = 'code'"
-          title="手寫 JS 模式（用 let 宣告拿 3 星）"
-        >
-          <span>⌨️ 寫碼</span>
-        </button>
         <button class="btn btn-secondary btn-sm" @click="handleRestore" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
           <span>還原</span>
@@ -32,8 +16,8 @@
 
     <!-- Main Deck Grid -->
     <div class="deck-content">
-      <!-- 0. Code mode（L1：手寫 let + rover.setup，走 Worker 真跑） -->
-      <div v-if="mode === 'code'" class="code-mode-card card">
+      <!-- 手寫 let + rover.setup，走 Worker 真跑 -->
+      <div class="code-mode-card card">
         <div class="code-mode-header">
           <div class="code-mode-title">
             <Code :size="15" class="text-brand" />
@@ -73,237 +57,41 @@
           </div>
         </div>
       </div>
-
-      <!-- Variable 1: roverName (String) -->
-      <div v-if="mode === 'blocks'" class="var-card card" :class="{ 'card-valid': isNameValid, 'card-pending': !isNameValid }">
-        <div class="var-header">
-          <div class="var-title-wrap">
-            <span class="keyword">let</span>
-            <strong class="var-name">roverName</strong>
-            <span class="type-tag tag-string">String (字串)</span>
-          </div>
-          <div class="header-right">
-            <span v-if="isNameValid" class="status-badge badge-safe">✓ 字串已設定</span>
-            <span v-else class="status-badge badge-warn">⚠️ 待命名</span>
-          </div>
-        </div>
-
-        <div class="var-body">
-          <div class="input-with-quotes">
-            <span class="quote">"</span>
-            <input
-              v-model="roverName"
-              type="text"
-              class="text-input"
-              placeholder="輸入船艦名稱，例如: 奧德賽號"
-              maxlength="16"
-            />
-            <span class="quote">"</span>
-          </div>
-
-          <div class="quick-chips">
-            <span class="chips-label">快速代號：</span>
-            <button
-              v-for="name in presetNames"
-              :key="name"
-              class="btn btn-xs chip-btn"
-              :class="{ 'chip-active': roverName === name }"
-              @click="selectPresetName(name)"
-            >
-              {{ name }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Variable 2: powerLevel (Number) -->
-      <div v-if="mode === 'blocks'" class="var-card card" :class="{ 'card-valid': isPowerValid, 'card-pending': !isPowerValid }">
-        <div class="var-header">
-          <div class="var-title-wrap">
-            <span class="keyword">let</span>
-            <strong class="var-name">powerLevel</strong>
-            <span class="type-tag tag-number">Number (數值)</span>
-          </div>
-          <div class="header-right">
-            <span v-if="isPowerValid" class="status-badge badge-safe">✓ 功率合格 (80~100%)</span>
-            <span v-else class="status-badge badge-warn">⚠️ 需 80%~100%</span>
-          </div>
-        </div>
-
-        <div class="var-body">
-          <div class="slider-row">
-            <input
-              v-model.number="powerLevel"
-              type="range"
-              min="0"
-              max="110"
-              step="5"
-              class="slider"
-            />
-            <div class="power-badge" :class="powerStatusClass">
-              <strong>{{ powerLevel }}</strong>
-              <span class="unit">%</span>
-            </div>
-          </div>
-
-          <div class="power-feedback">
-            <span v-if="powerLevel === 0" class="text-muted">⚪ 系統無供電（黑屏停機）</span>
-            <span v-else-if="powerLevel < 80" class="text-warning">⚠️ 功率不足（最低需 80% 啟動反應爐）</span>
-            <span v-else-if="powerLevel <= 100" class="text-success">✓ 功率安全合格（額定範圍內）</span>
-            <span v-else class="text-danger">⚠️ 電壓超載危險（超過 100% 額定上限）</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Variable 3: shieldActive (Boolean) -->
-      <div v-if="mode === 'blocks'" class="var-card card" :class="{ 'card-valid': isShieldValid, 'card-pending': !isShieldValid }">
-        <div class="var-header">
-          <div class="var-title-wrap">
-            <span class="keyword">let</span>
-            <strong class="var-name">shieldActive</strong>
-            <span class="type-tag tag-boolean">Boolean (布林值)</span>
-          </div>
-          <div class="header-right">
-            <span v-if="isShieldValid" class="status-badge badge-safe">✓ 力場已啟動 (true)</span>
-            <span v-else class="status-badge badge-warn">❌ 未開啟 (需為 true)</span>
-          </div>
-        </div>
-
-        <div class="var-body">
-          <div class="boolean-toggle-row">
-            <button
-              class="btn btn-sm bool-btn"
-              :class="shieldActive === true ? 'btn-primary active-glow' : 'btn-outline'"
-              @click="setShield(true)"
-            >
-              <ShieldCheck :size="16" />
-              <span>true (開啟防護罩)</span>
-            </button>
-
-            <button
-              class="btn btn-sm bool-btn"
-              :class="shieldActive === false ? 'btn-secondary' : 'btn-outline'"
-              @click="setShield(false)"
-            >
-              <ShieldAlert :size="16" />
-              <span>false (關閉防護罩)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Live JavaScript Code Preview Card -->
-      <div v-if="mode === 'blocks'" class="code-preview-card card">
-        <div class="preview-header">
-          <Code :size="14" class="text-brand" />
-          <span>即時記憶體狀態 (Live JavaScript Scope)</span>
-        </div>
-        <pre class="js-pre"><code><span class="keyword">let</span> roverName = <span class="string">"{{ roverName || '未命名' }}"</span>;
-<span class="keyword">let</span> powerLevel = <span class="number">{{ powerLevel }}</span>;
-<span class="keyword">let</span> shieldActive = <span class="boolean">{{ shieldActive }}</span>;
-
-rover.<span class="func">systemCheck</span>({ roverName, powerLevel, shieldActive });</code></pre>
-      </div>
     </div>
 
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        <span v-if="mode === 'code'" class="text-muted">
+        <span class="text-muted">
           寫碼模式：在上方編輯器按「執行 JS 程式碼」（型態錯會直接報錯）
         </span>
-        <span v-else-if="allVariablesValid" class="text-success font-semibold">
-          ✓ 3 項核心狀態變數皆已就緒！點擊啟動通電自檢（表單上限 2 星）
-        </span>
-        <span v-else class="text-muted">
-          請設定完成船名、80%~100% 功率與開啟防護罩 ➔ 點擊執行通電自檢
-        </span>
       </div>
-      <button
-        v-if="mode === 'blocks'"
-        class="btn execute-btn"
-        :class="allVariablesValid ? 'btn-success pulse-glow' : 'btn-primary'"
-        :disabled="levelStore.isExecuting"
-        @click="runExecution"
-      >
-        <Zap :size="16" />
-        <span>{{ levelStore.isExecuting ? '通電自檢運行中...' : (allVariablesValid ? '啟動通電自檢 (就緒 ✓)' : '執行通電自檢 (rover.systemCheck)') }}</span>
-      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { Variable, RotateCcw, ShieldCheck, ShieldAlert, Code, Zap } from 'lucide-vue-next';
+import { ref, onMounted } from 'vue';
+import { Variable, RotateCcw, Code, Zap } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
-import { soundManager } from '../../game/core/SoundManager.js';
 import { LEVEL_1_STARTER_CODE } from '../../levels/level-1.js';
 import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-// 混合漸進：預設寫碼模式（填空），表單當鷹架
-const mode = ref('code');
 const studentCode = ref(LEVEL_1_STARTER_CODE);
-
-const presetNames = ['奧德賽號', '星馳號', '先鋒探索者', '阿波羅極光'];
-
-// Initial state starts with uninitialized factory default (requires student tuning to pass)
-const roverName = ref('');
-const powerLevel = ref(0);
-const shieldActive = ref(false);
-
-const isNameValid = computed(() => !!roverName.value.trim());
-const isPowerValid = computed(() => powerLevel.value >= 80 && powerLevel.value <= 100);
-const isShieldValid = computed(() => shieldActive.value === true);
-const allVariablesValid = computed(() => isNameValid.value && isPowerValid.value && isShieldValid.value);
-
-const powerStatusClass = computed(() => {
-  if (powerLevel.value === 0) return 'badge-muted';
-  if (powerLevel.value < 80) return 'badge-warn';
-  if (powerLevel.value <= 100) return 'badge-safe';
-  return 'badge-danger';
-});
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(1);
-  if (saved) {
-    if (typeof saved.code === 'string' && saved.code.length > 0) {
-      studentCode.value = saved.code;
-    }
-    if (saved.variables) {
-      roverName.value = saved.variables.roverName ?? '';
-      powerLevel.value = saved.variables.powerLevel ?? 0;
-      shieldActive.value = saved.variables.shieldActive ?? false;
-    }
+  if (saved && typeof saved.code === 'string' && saved.code.length > 0) {
+    studentCode.value = saved.code;
   }
 });
 
-function selectPresetName(name) {
-  soundManager.playClick();
-  roverName.value = name;
-}
-
-function setShield(val) {
-  soundManager.playClick();
-  shieldActive.value = val;
-}
-
 function handleRestore() {
   levelStore.resetCurrentLevel();
-}
-
-function runExecution() {
-  levelStore.executeLevel({
-    variables: {
-      roverName: roverName.value,
-      powerLevel: powerLevel.value,
-      shieldActive: shieldActive.value
-    }
-  });
 }
 
 function runCodeExecution() {

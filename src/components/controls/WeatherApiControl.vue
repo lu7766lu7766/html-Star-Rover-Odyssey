@@ -7,25 +7,6 @@
         <h3 class="deck-title">外部氣象 API 連線、JSON 解析與航區決策 · Weather API & Station Selection</h3>
       </div>
       <div class="deck-header-actions">
-        <!-- Code/Blocks Toggle -->
-        <div class="mode-toggle-group">
-          <button
-            class="mode-btn"
-            :class="{ active: mode === 'code' }"
-            @click="mode = 'code'"
-            title="手寫 JS 模式（async/await 拿 3 星）"
-          >
-            ⌨️ 寫碼
-          </button>
-          <button
-            class="mode-btn"
-            :class="{ active: mode === 'blocks' }"
-            @click="mode = 'blocks'"
-            title="表單模式（新手友善，上限 2 星）"
-          >
-            🧩 表單
-          </button>
-        </div>
         <!-- Dual Mode Toggle -->
         <div class="mode-toggle-group">
           <button
@@ -58,8 +39,8 @@
     </div>
 
     <div class="deck-content custom-scrollbar">
-      <!-- 0. Code mode（L8：手寫 async/await + JSON 路徑，走 Worker 模擬 API） -->
-      <div v-if="mode === 'code'" class="code-mode-card card">
+      <!-- 0. Code mode（手寫 async/await + JSON 路徑，走 Worker 模擬 API） -->
+      <div class="code-mode-card card">
         <div class="code-mode-header">
           <div class="code-mode-title">
             <Code2 :size="15" class="text-brand" />
@@ -180,7 +161,7 @@
           </div>
 
           <div class="json-instruction-hint">
-            💡 <strong>使用指引：</strong>點擊下方 JSON 屬性名稱可直接代入右側感測器，或觀察其層級鍵名使用點運算子取值（例如 <code>current.wind_speed_10m</code>）。
+            💡 <strong>使用指引：</strong>對照下方 JSON 屬性層級，用點運算子寫出取值路徑（例如 <code>current.wind_speed_10m</code>），再到上方編輯器手寫程式。
           </div>
 
           <div class="json-tree-container custom-scrollbar">
@@ -191,40 +172,40 @@
               
               <!-- Latitude / Longitude -->
               <div class="tree-line indent-1">
-                <span class="json-key" @click="quickFillPath('latitude')">"latitude"</span>: <span class="json-number">{{ currentRawJson?.latitude ?? currentStation.latitude }}</span>,
+                <span class="json-key">"latitude"</span>: <span class="json-number">{{ currentRawJson?.latitude ?? currentStation.latitude }}</span>,
               </div>
               <div class="tree-line indent-1">
-                <span class="json-key" @click="quickFillPath('longitude')">"longitude"</span>: <span class="json-number">{{ currentRawJson?.longitude ?? currentStation.longitude }}</span>,
+                <span class="json-key">"longitude"</span>: <span class="json-number">{{ currentRawJson?.longitude ?? currentStation.longitude }}</span>,
               </div>
 
               <!-- Current Object -->
               <div class="tree-group">
                 <div class="tree-line indent-1 tree-fold-header" @click="toggleFold('current')">
                   <component :is="isFolded.current ? ChevronRight : ChevronDown" :size="13" class="fold-arrow" />
-                  <span class="json-key" @click.stop="quickFillPath('current')">"current"</span>: <span class="json-brace">{</span>
+                  <span class="json-key">"current"</span>: <span class="json-brace">{</span>
                 </div>
 
                 <div v-show="!isFolded.current" class="fold-body">
                   <div class="tree-line indent-2">
-                    <span class="json-key" @click="quickFillPath('current.time')">"time"</span>: <span class="json-string">"{{ currentRawJson?.current?.time ?? '2026-09-29T15:00' }}"</span>,
+                    <span class="json-key">"time"</span>: <span class="json-string">"{{ currentRawJson?.current?.time ?? '2026-09-29T15:00' }}"</span>,
                   </div>
-                  <div class="tree-line indent-2 highlight-node" :class="{ 'node-active': tempPath === 'current.temperature_2m' }">
-                    <span class="json-key node-btn" @click="assignToSensor('temp', 'current.temperature_2m')" title="點擊綁定至氣溫感測器">
+                  <div class="tree-line indent-2 highlight-node">
+                    <span class="json-key" title="氣溫鍵名：current.temperature_2m">
                       "temperature_2m"
                     </span>: <span class="json-number">{{ currentRawJson?.current?.temperature_2m ?? '--' }}</span>,
                     <span class="inline-badge">🌡️ 氣溫 (°C)</span>
                   </div>
                   <div class="tree-line indent-2">
-                    <span class="json-key" @click="quickFillPath('current.relative_humidity_2m')">"relative_humidity_2m"</span>: <span class="json-number">{{ currentRawJson?.current?.relative_humidity_2m ?? 65 }}</span>,
+                    <span class="json-key">"relative_humidity_2m"</span>: <span class="json-number">{{ currentRawJson?.current?.relative_humidity_2m ?? 65 }}</span>,
                   </div>
-                  <div class="tree-line indent-2 highlight-node" :class="{ 'node-active': precipPath === 'current.precipitation' }">
-                    <span class="json-key node-btn" @click="assignToSensor('precip', 'current.precipitation')" title="點擊綁定至降雨感測器">
+                  <div class="tree-line indent-2 highlight-node">
+                    <span class="json-key" title="降水量鍵名：current.precipitation">
                       "precipitation"
                     </span>: <span class="json-number">{{ currentRawJson?.current?.precipitation ?? '--' }}</span>,
                     <span class="inline-badge">🌧️ 降水量 (mm)</span>
                   </div>
-                  <div class="tree-line indent-2 highlight-node" :class="{ 'node-active': windPath === 'current.wind_speed_10m' }">
-                    <span class="json-key node-btn" @click="assignToSensor('wind', 'current.wind_speed_10m')" title="點擊綁定至風速感測器">
+                  <div class="tree-line indent-2 highlight-node">
+                    <span class="json-key" title="風速鍵名：current.wind_speed_10m">
                       "wind_speed_10m"
                     </span>: <span class="json-number">{{ currentRawJson?.current?.wind_speed_10m ?? '--' }}</span>
                     <span class="inline-badge">💨 風速 (km/h)</span>
@@ -239,21 +220,21 @@
               <div class="tree-group">
                 <div class="tree-line indent-1 tree-fold-header" @click="toggleFold('hourly')">
                   <component :is="isFolded.hourly ? ChevronRight : ChevronDown" :size="13" class="fold-arrow" />
-                  <span class="json-key" @click.stop="quickFillPath('hourly')">"hourly"</span>: <span class="json-brace">{</span>
+                  <span class="json-key">"hourly"</span>: <span class="json-brace">{</span>
                 </div>
 
                 <div v-show="!isFolded.hourly" class="fold-body">
-                  <div class="tree-line indent-2 highlight-node" :class="{ 'node-active': precipPath === 'hourly.precipitation_probability[0]' }">
-                    <span class="json-key node-btn" @click="assignToSensor('precip', 'hourly.precipitation_probability[0]')" title="點擊綁定至降水機率">
+                  <div class="tree-line indent-2 highlight-node">
+                    <span class="json-key" title="降水機率鍵名：hourly.precipitation_probability[0]">
                       "precipitation_probability"
                     </span>: [ <span class="json-number">{{ currentRawJson?.hourly?.precipitation_probability?.[0] ?? '--' }}</span>, <span class="json-number">{{ currentRawJson?.hourly?.precipitation_probability?.[1] ?? '--' }}</span>, ... ],
                     <span class="inline-badge">🌧️ 降水機率 (%)</span>
                   </div>
                   <div class="tree-line indent-2">
-                    <span class="json-key" @click="quickFillPath('hourly.wind_speed_10m[0]')">"wind_speed_10m"</span>: [ <span class="json-number">{{ currentRawJson?.hourly?.wind_speed_10m?.[0] ?? '--' }}</span>, ... ],
+                    <span class="json-key">"wind_speed_10m"</span>: [ <span class="json-number">{{ currentRawJson?.hourly?.wind_speed_10m?.[0] ?? '--' }}</span>, ... ],
                   </div>
                   <div class="tree-line indent-2">
-                    <span class="json-key" @click="quickFillPath('hourly.temperature_2m[0]')">"temperature_2m"</span>: [ <span class="json-number">{{ currentRawJson?.hourly?.temperature_2m?.[0] ?? '--' }}</span>, ... ]
+                    <span class="json-key">"temperature_2m"</span>: [ <span class="json-number">{{ currentRawJson?.hourly?.temperature_2m?.[0] ?? '--' }}</span>, ... ]
                   </div>
                 </div>
                 <div class="tree-line indent-1">
@@ -268,214 +249,15 @@
           </div>
         </div>
 
-        <!-- Right: Sensor Path Mapping Slots with Clear High-Contrast Pass/Fail Indicators -->
-        <div v-if="mode === 'blocks'" class="mapping-column">
-          <!-- Sensor Slots Card -->
-          <div class="sensor-slots-card card">
-            <div class="card-title-bar">
-              <div class="title-with-icon">
-                <Sparkles :size="16" class="text-brand" />
-                <span class="card-title-text">無人機感測器路徑對應 (JSON Path Binding)</span>
-              </div>
-              <span class="station-indicator-pill">
-                目前檢視基地: <strong>{{ currentStation.name.split(' ')[0] }}</strong>
-              </span>
-            </div>
-
-            <!-- Sensor 1: Wind Speed -->
-            <div
-              class="sensor-slot-item"
-              :class="{
-                'slot-pass': isSensorValid('wind') && windPass,
-                'slot-fail': isSensorValid('wind') && !windPass,
-                'slot-disconnected': !isSensorValid('wind')
-              }"
-            >
-              <div class="slot-header">
-                <div class="slot-label-group">
-                  <Wind :size="16" class="text-brand" />
-                  <strong class="slot-title">1. 風速感測器 (windSpeed)</strong>
-                  <span class="slot-limit-badge">安全標準 &le; 25 km/h</span>
-                </div>
-
-                <!-- Pass/Fail Status Reading Badge -->
-                <span v-if="!isSensorValid('wind')" class="status-reading reading-disconnected">
-                  ❌ undefined (離線)
-                </span>
-                <span v-else-if="windPass" class="status-reading reading-pass">
-                  ✓ {{ resolvedValues.wind }} km/h · 合格
-                </span>
-                <span v-else class="status-reading reading-fail">
-                  ⚠️ {{ resolvedValues.wind }} km/h · 超標
-                </span>
-              </div>
-
-              <div class="input-row">
-                <span class="prefix-text">const wind = data.</span>
-                <input
-                  v-model="windPath"
-                  type="text"
-                  class="path-input"
-                  placeholder="請輸入屬性路徑，如 current.wind_speed_10m"
-                  @focus="activeSensorField = 'wind'"
-                />
-              </div>
-
-              <!-- Quick Path Chips -->
-              <div class="quick-chips">
-                <span class="chip-label">快捷候選：</span>
-                <button class="chip-btn" @click="windPath = 'current.wind_speed_10m'">current.wind_speed_10m</button>
-                <button class="chip-btn" @click="windPath = 'hourly.wind_speed_10m[0]'">hourly.wind_speed_10m[0]</button>
-                <button class="chip-btn chip-distractor" @click="windPath = 'current.wind'">current.wind ❌</button>
-              </div>
-            </div>
-
-            <!-- Sensor 2: Temperature -->
-            <div
-              class="sensor-slot-item"
-              :class="{
-                'slot-pass': isSensorValid('temp') && tempPass,
-                'slot-fail': isSensorValid('temp') && !tempPass,
-                'slot-disconnected': !isSensorValid('temp')
-              }"
-            >
-              <div class="slot-header">
-                <div class="slot-label-group">
-                  <Thermometer :size="16" class="text-brand" />
-                  <strong class="slot-title">2. 地表氣溫感測器 (temperature)</strong>
-                  <span class="slot-limit-badge">安全標準 &ge; 0°C (防結冰)</span>
-                </div>
-
-                <!-- Pass/Fail Status Reading Badge -->
-                <span v-if="!isSensorValid('temp')" class="status-reading reading-disconnected">
-                  ❌ undefined (離線)
-                </span>
-                <span v-else-if="tempPass" class="status-reading reading-pass">
-                  ✓ {{ resolvedValues.temp }} °C · 合格
-                </span>
-                <span v-else class="status-reading reading-fail">
-                  ⚠️ {{ resolvedValues.temp }} °C · 超標 (結冰危險)
-                </span>
-              </div>
-
-              <div class="input-row">
-                <span class="prefix-text">const temp = data.</span>
-                <input
-                  v-model="tempPath"
-                  type="text"
-                  class="path-input"
-                  placeholder="請輸入屬性路徑，如 current.temperature_2m"
-                  @focus="activeSensorField = 'temp'"
-                />
-              </div>
-
-              <!-- Quick Path Chips -->
-              <div class="quick-chips">
-                <span class="chip-label">快捷候選：</span>
-                <button class="chip-btn" @click="tempPath = 'current.temperature_2m'">current.temperature_2m</button>
-                <button class="chip-btn" @click="tempPath = 'hourly.temperature_2m[0]'">hourly.temperature_2m[0]</button>
-                <button class="chip-btn chip-distractor" @click="tempPath = 'temperature'">temperature ❌</button>
-              </div>
-            </div>
-
-            <!-- Sensor 3: Precipitation -->
-            <div
-              class="sensor-slot-item"
-              :class="{
-                'slot-pass': isSensorValid('precip') && precipPass,
-                'slot-fail': isSensorValid('precip') && !precipPass,
-                'slot-disconnected': !isSensorValid('precip')
-              }"
-            >
-              <div class="slot-header">
-                <div class="slot-label-group">
-                  <CloudRain :size="16" class="text-brand" />
-                  <strong class="slot-title">3. 降水感測器 (precipitation)</strong>
-                  <span class="slot-limit-badge">安全標準 &le; 20% (防短路)</span>
-                </div>
-
-                <!-- Pass/Fail Status Reading Badge -->
-                <span v-if="!isSensorValid('precip')" class="status-reading reading-disconnected">
-                  ❌ undefined (離線)
-                </span>
-                <span v-else-if="precipPass" class="status-reading reading-pass">
-                  ✓ {{ resolvedValues.precip }}% · 合格
-                </span>
-                <span v-else class="status-reading reading-fail">
-                  ⚠️ {{ resolvedValues.precip }}% · 超標 (暴雨危險)
-                </span>
-              </div>
-
-              <div class="input-row">
-                <span class="prefix-text">const precip = data.</span>
-                <input
-                  v-model="precipPath"
-                  type="text"
-                  class="path-input"
-                  placeholder="請輸入屬性路徑，如 hourly.precipitation_probability[0]"
-                  @focus="activeSensorField = 'precip'"
-                />
-              </div>
-
-              <!-- Quick Path Chips -->
-              <div class="quick-chips">
-                <span class="chip-label">快捷候選：</span>
-                <button class="chip-btn" @click="precipPath = 'hourly.precipitation_probability[0]'">hourly.precipitation_probability[0]</button>
-                <button class="chip-btn" @click="precipPath = 'current.precipitation'">current.precipitation</button>
-                <button class="chip-btn chip-distractor" @click="precipPath = 'precipitation'">precipitation ❌</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Live JavaScript Async/Await Code View (Auto-wrapping inside card) -->
-          <div class="code-preview-card card">
-            <div class="code-header" @click="isCodeExpanded = !isCodeExpanded">
-              <div class="code-title-group">
-                <Code2 :size="15" class="text-brand" />
-                <span class="code-title">非同步 API 處理程式碼預覽 (Live Code Preview)</span>
-              </div>
-              <button class="btn btn-ghost btn-xs">
-                <span>{{ isCodeExpanded ? '收合' : '展開' }}</span>
-                <component :is="isCodeExpanded ? ChevronDown : ChevronRight" :size="13" />
-              </button>
-            </div>
-
-            <div v-show="isCodeExpanded" class="code-body">
-              <pre class="code-block font-mono"><code>{{ liveGeneratedJsCode }}</code></pre>
-            </div>
-          </div>
-        </div>
+        <!-- 感測器表單已移除（改手寫 JS：async/await + JSON 路徑），左側 JSON 樹保留對照 -->
       </div>
     </div>
 
     <!-- Execution Footer -->
     <div class="deck-footer">
-      <div v-if="mode === 'blocks'" class="footer-hint">
-        <span>飛行發射指引：</span>
-        <span class="step-tag" :class="{ 'step-done': allSensorsValid }">
-          1. 綁定感測器 JSON 路徑
-        </span> ➔
-        <span class="step-tag" :class="{ 'step-done': allSensorsPass }">
-          2. 切換基地比對 (3 項均為綠色合格)
-        </span> ➔
-        <span class="step-tag">
-          3. 批准無人機升空
-        </span>
-      </div>
-      <div v-else class="footer-hint">
+      <div class="footer-hint">
         <span>寫碼模式：在上方編輯器按執行（先 fetch 取數，再判斷發射）</span>
       </div>
-
-      <button
-        v-if="mode === 'blocks'"
-        class="btn btn-success execute-btn"
-        :disabled="isLoading || levelStore.isExecuting || !currentRawJson"
-        @click="runExecution"
-      >
-        <Loader2 v-if="levelStore.isExecuting" :size="16" class="spin-icon" />
-        <Send v-else :size="16" />
-        <span>{{ levelStore.isExecuting ? '無人機升空程序中...' : '派遣探測無人機升空' }}</span>
-      </button>
     </div>
   </div>
 </template>
@@ -483,15 +265,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import {
-  Globe, DownloadCloud, Loader2, Thermometer, Wind, CloudRain,
-  Send, RotateCcw, Code2, Database, Sparkles, ChevronDown, ChevronRight,
+  Globe, DownloadCloud, Loader2,
+  Send, RotateCcw, Code2, Database, ChevronDown, ChevronRight,
   Copy, Check
 } from 'lucide-vue-next';
 import {
   WEATHER_STATIONS,
-  DRONE_FLIGHT_LIMITS,
-  fetchStationWeather,
-  resolveJsonPath
+  fetchStationWeather
 } from '../../services/weatherService.js';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
@@ -502,8 +282,7 @@ import CodeEditor from '../editor/CodeEditor.vue';
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-// 混合漸進：預設寫碼模式（填空），表單當鷹架
-const mode = ref('code');
+// 寫碼模式：學生手寫 async/await + JSON 路徑
 const studentCode = ref(LEVEL_8_STARTER_CODE);
 
 // State
@@ -512,14 +291,6 @@ const useBenchmark = ref(true); // Default to benchmark for guaranteed reliable 
 const isLoading = ref(false);
 const stationCache = ref({}); // { [stationId]: { rawJson, isRealData, timestamp } }
 const copied = ref(false);
-
-// JSON Path Inputs for Drone Telemetry Sensors（預設留空，學生需自己綁定）
-const windPath = ref('');
-const tempPath = ref('');
-const precipPath = ref('');
-
-const activeSensorField = ref('wind');
-const isCodeExpanded = ref(true);
 
 const isFolded = ref({
   current: false,
@@ -534,11 +305,6 @@ onMounted(async () => {
     }
     if (saved.weatherSession) {
       const ws = saved.weatherSession;
-      if (ws.paths) {
-        windPath.value = ws.paths.windPath ?? '';
-        tempPath.value = ws.paths.tempPath ?? '';
-        precipPath.value = ws.paths.precipPath ?? '';
-      }
       if (ws.selectedStationId) {
         selectedStationId.value = ws.selectedStationId;
       }
@@ -577,96 +343,9 @@ async function copyApiUrl() {
   }
 }
 
-// Real-time resolved values for current station
-const resolvedValues = computed(() => {
-  if (!currentRawJson.value) return { wind: undefined, temp: undefined, precip: undefined };
-  return {
-    wind: resolveJsonPath(currentRawJson.value, windPath.value),
-    temp: resolveJsonPath(currentRawJson.value, tempPath.value),
-    precip: resolveJsonPath(currentRawJson.value, precipPath.value)
-  };
-});
-
-function isSensorValid(sensorKey) {
-  const val = resolvedValues.value[sensorKey];
-  return typeof val === 'number' && !isNaN(val);
-}
-
-const allSensorsValid = computed(() => {
-  return isSensorValid('wind') && isSensorValid('temp') && isSensorValid('precip');
-});
-
-// Individual Sensor Compliance Checks
-const windPass = computed(() => {
-  const val = resolvedValues.value.wind;
-  return typeof val === 'number' && !isNaN(val) && val <= DRONE_FLIGHT_LIMITS.maxWindSpeed;
-});
-
-const tempPass = computed(() => {
-  const val = resolvedValues.value.temp;
-  return typeof val === 'number' && !isNaN(val) && val >= DRONE_FLIGHT_LIMITS.minTemperature;
-});
-
-const precipPass = computed(() => {
-  const val = resolvedValues.value.precip;
-  return typeof val === 'number' && !isNaN(val) && val <= DRONE_FLIGHT_LIMITS.maxPrecipitation;
-});
-
-const allSensorsPass = computed(() => {
-  return windPass.value && tempPass.value && precipPass.value;
-});
-
-// Dynamically generated JS code
-const liveGeneratedJsCode = computed(() => {
-  const windP = windPath.value || 'current.wind_speed_10m';
-  const tempP = tempPath.value || 'current.temperature_2m';
-  const precipP = precipPath.value || 'hourly.precipitation_probability[0]';
-
-  return `// 🛰️ JavaScript 非同步 API 連線與航太安全決策
-async function evaluateAndLaunchDrone() {
-  const stationUrl = 
-    "${actualApiUrl.value}";
-
-  // 1. 發送網路請求 (非同步等待回傳)
-  const response = await fetch(stationUrl);
-  // 2. 將回傳資料轉為 JavaScript JSON 物件
-  const data = await response.json();
-
-  // 3. 依據設定路徑解析感測器數值
-  const windSpeed = data.${windP};     // ${isSensorValid('wind') ? `${resolvedValues.value.wind} km/h` : 'undefined'}
-  const temperature = data.${tempP};   // ${isSensorValid('temp') ? `${resolvedValues.value.temp} °C` : 'undefined'}
-  const precipProb = data.${precipP};  // ${isSensorValid('precip') ? `${resolvedValues.value.precip}%` : 'undefined'}
-
-  // 4. 航太硬體三道複合安全門檻驗證
-  if (windSpeed <= ${DRONE_FLIGHT_LIMITS.maxWindSpeed} && precipProb <= ${DRONE_FLIGHT_LIMITS.maxPrecipitation} && temperature >= ${DRONE_FLIGHT_LIMITS.minTemperature}) {
-    console.log("【${currentStation.value.name}】氣象符合安全標準，無人機核准發射！");
-    drone.launch("${currentStation.value.id}");
-  } else {
-    console.warn("大氣超標或低溫結冰，安全協議禁止發射！");
-    drone.abortMission();
-  }
-}`;
-});
-
 // Actions
 function toggleFold(key) {
   isFolded.value[key] = !isFolded.value[key];
-}
-
-function assignToSensor(sensor, path) {
-  if (mode.value !== 'blocks') return; // 寫碼模式點擊只複習、不代填
-  soundManager.playClick();
-  if (sensor === 'wind') windPath.value = path;
-  if (sensor === 'temp') tempPath.value = path;
-  if (sensor === 'precip') precipPath.value = path;
-}
-
-function quickFillPath(path) {
-  if (mode.value !== 'blocks') return; // 寫碼模式點擊只複習、不代填
-  soundManager.playClick();
-  if (activeSensorField.value === 'wind') windPath.value = path;
-  else if (activeSensorField.value === 'temp') tempPath.value = path;
-  else if (activeSensorField.value === 'precip') precipPath.value = path;
 }
 
 function selectStation(stationId) {
@@ -714,24 +393,6 @@ async function fetchAllStations() {
 
 function handleRestore() {
   levelStore.resetCurrentLevel();
-}
-
-function runExecution() {
-  levelStore.executeLevel({
-    weatherSession: {
-      rawJson: currentRawJson.value,
-      station: currentStation.value,
-      paths: {
-        windPath: windPath.value,
-        tempPath: tempPath.value,
-        precipPath: precipPath.value
-      },
-      selectedStationId: selectedStationId.value,
-      useBenchmark: useBenchmark.value,
-      isRealData: stationCache.value[selectedStationId.value]?.isRealData ?? false,
-      launched: true
-    }
-  });
 }
 
 function runCodeExecution() {

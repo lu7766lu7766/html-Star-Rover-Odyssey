@@ -6,22 +6,6 @@
         <h3 class="deck-title">陣列清單檢視與批次遍歷 · Array Fleet Dispatch</h3>
       </div>
       <div class="header-actions">
-        <button
-          class="btn btn-sm"
-          :class="mode === 'blocks' ? 'btn-success' : 'btn-ghost'"
-          @click="mode = 'blocks'"
-          title="表單模式（新手友善，上限 2 星）"
-        >
-          <span>🧩 表單</span>
-        </button>
-        <button
-          class="btn btn-sm"
-          :class="mode === 'code' ? 'btn-success' : 'btn-ghost'"
-          @click="mode = 'code'"
-          title="手寫 JS 模式（用 forEach 拿 3 星）"
-        >
-          <span>⌨️ 寫碼</span>
-        </button>
         <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
           <span>還原</span>
@@ -30,8 +14,8 @@
     </div>
 
     <div class="deck-content">
-      <!-- 0. Code mode（L7：手寫 forEach + deploy，走 Worker 真跑） -->
-      <div v-if="mode === 'code'" class="code-mode-card card">
+      <!-- 手寫 forEach + deploy，走 Worker 真跑 -->
+      <div class="code-mode-card card">
         <div class="code-mode-header">
           <div class="code-mode-title">
             <Code :size="15" class="text-brand" />
@@ -67,7 +51,7 @@
         </div>
       </div>
 
-      <!-- 1. Array Inspector Table -->
+      <!-- Array Inspector Table（唯讀資料集：讀出每架電量再寫 forEach） -->
       <div class="array-card card">
         <div class="array-header">
           <span class="box-label">無人機陣列清單 (const drones = [ ... ])：</span>
@@ -82,79 +66,26 @@
                 <th>機體代號 (id)</th>
                 <th>名稱 (name)</th>
                 <th>目前電量 (battery)</th>
-                <th v-if="mode === 'blocks'">判定處置 (Action)</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(drone, idx) in dronesData"
                 :key="drone.id"
-                :class="drone.battery < batteryThreshold ? 'row-low-battery' : 'row-normal-battery'"
               >
                 <td class="font-mono">[{{ idx }}]</td>
                 <td class="font-mono">{{ drone.id }}</td>
                 <td><strong>{{ drone.name }}</strong></td>
                 <td>
                   <div class="battery-cell">
-                    <span
-                      class="battery-pill"
-                      :class="drone.battery < 20 ? 'pill-danger' : 'pill-success'"
-                    >
-                      <BatteryCharging v-if="drone.battery < 20" :size="12" />
-                      <BatteryMedium v-else :size="12" />
+                    <span class="battery-pill">
                       <span>{{ drone.battery }}%</span>
                     </span>
                   </div>
                 </td>
-                <td v-if="mode === 'blocks'">
-                  <span
-                    class="badge"
-                    :class="drone.battery < batteryThreshold ? 'badge-warning' : 'badge-blue'"
-                  >
-                    {{ drone.battery < batteryThreshold ? '返航充電 (RETURN)' : '空域巡邏 (PATROL)' }}
-                  </span>
-                </td>
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- 2. Dispatch Logic & Threshold Rules（表單模式專用） -->
-      <div v-if="mode === 'blocks'" class="rules-card card">
-        <h4 class="rules-title">批次處理規則 (Array forEach Logic)</h4>
-        
-        <div class="rule-inputs-row">
-          <div class="rule-item">
-            <span class="rule-label">安全防護電量閾值：</span>
-            <div class="flex-row">
-              <span class="code-sym">if (drone.battery &lt; </span>
-              <input
-                v-model.number="batteryThreshold"
-                type="number"
-                min="10"
-                max="40"
-                class="num-input"
-              />
-              <span class="code-sym">%)</span>
-            </div>
-          </div>
-
-          <div class="rule-item">
-            <span class="rule-label">低電量指派：</span>
-            <select v-model="lowBatteryAction" class="rule-select">
-              <option value="RETURN_BASE">返航充電 (RETURN_BASE)</option>
-              <option value="PATROL">強行巡邏 (PATROL) ⚠️危險</option>
-            </select>
-          </div>
-
-          <div class="rule-item">
-            <span class="rule-label">充足電量指派：</span>
-            <select v-model="normalBatteryAction" class="rule-select">
-              <option value="PATROL">執行巡邏 (PATROL)</option>
-              <option value="RETURN_BASE">原地待命 (RETURN_BASE)</option>
-            </select>
-          </div>
         </div>
       </div>
     </div>
@@ -162,24 +93,15 @@
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        {{ mode === 'code' ? '寫碼模式：在上方編輯器按「執行 JS 程式碼」（forEach 逐架判斷）' : '低電量 (< 20%) 需安排返航 · 充足電量安排巡邏' }}
+        寫碼模式：在上方編輯器按「執行 JS 程式碼」（forEach 逐架判斷）
       </div>
-      <button
-        v-if="mode === 'blocks'"
-        class="btn btn-success execute-btn"
-        :disabled="levelStore.isExecuting"
-        @click="runExecution"
-      >
-        <Play :size="16" />
-        <span>{{ levelStore.isExecuting ? '編隊調度中...' : '執行編隊派遣 (Dispatch)' }}</span>
-      </button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { ListFilter, RotateCcw, Play, BatteryCharging, BatteryMedium, Code } from 'lucide-vue-next';
+import { ListFilter, RotateCcw, Play, Code } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { LEVEL_7_STARTER_CODE } from '../../levels/level-7.js';
@@ -188,10 +110,6 @@ import CodeEditor from '../editor/CodeEditor.vue';
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-// 混合漸進：預設寫碼模式（填空），表單當鷹架
-const mode = ref('code');
-const studentCode = ref(LEVEL_7_STARTER_CODE);
-
 const dronesData = [
   { id: 'DRONE-01', name: '游隼號', battery: 85, model: 'Recon-X' },
   { id: 'DRONE-02', name: '夜梟號', battery: 15, model: 'Stealth-V' },
@@ -199,37 +117,17 @@ const dronesData = [
   { id: 'DRONE-04', name: '雀鷹號', battery: 12, model: 'Scout-M' }
 ];
 
-const batteryThreshold = ref(10);
-const lowBatteryAction = ref('PATROL');
-const normalBatteryAction = ref('RETURN_BASE');
+const studentCode = ref(LEVEL_7_STARTER_CODE);
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(7);
-  if (saved) {
-    if (typeof saved.code === 'string' && saved.code.length > 0) {
-      studentCode.value = saved.code;
-    }
-    if (saved.fleetConfig) {
-      batteryThreshold.value = saved.fleetConfig.batteryThreshold ?? 10;
-      lowBatteryAction.value = saved.fleetConfig.lowBatteryAction ?? 'PATROL';
-      normalBatteryAction.value = saved.fleetConfig.normalBatteryAction ?? 'RETURN_BASE';
-    }
+  if (saved && typeof saved.code === 'string' && saved.code.length > 0) {
+    studentCode.value = saved.code;
   }
 });
 
 function resetDefaults() {
   levelStore.resetCurrentLevel();
-}
-
-function runExecution() {
-  levelStore.executeLevel({
-    fleetConfig: {
-      batteryThreshold: batteryThreshold.value,
-      lowBatteryAction: lowBatteryAction.value,
-      normalBatteryAction: normalBatteryAction.value,
-      dispatched: true
-    }
-  });
 }
 
 function runCodeExecution() {
@@ -284,6 +182,12 @@ function fillAnswerHint() {
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .deck-content {
@@ -341,10 +245,6 @@ function fillAnswerHint() {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.row-low-battery {
-  background: #fffbeb;
-}
-
 .font-mono {
   font-family: var(--font-mono);
 }
@@ -362,80 +262,9 @@ function fillAnswerHint() {
   border-radius: 9999px;
   font-weight: 700;
   font-size: 0.75rem;
-}
-
-.pill-danger {
-  background: var(--danger-light);
-  color: var(--danger-dark);
-}
-
-.pill-success {
-  background: var(--success-light);
-  color: var(--success-dark);
-}
-
-/* Rules Card */
-.rules-card {
   background: var(--bg-panel-hover);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.rules-title {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 700;
   color: var(--text-primary);
-}
-
-.rule-inputs-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
-}
-
-.rule-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.rule-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.flex-row {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.code-sym {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.num-input {
-  width: 50px;
-  padding: 0.25rem 0.4rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-medium);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.rule-select {
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-medium);
-  font-size: 0.8rem;
-  outline: none;
-  background: #ffffff;
+  border: 1px solid var(--border-subtle);
 }
 
 .deck-footer {
@@ -460,12 +289,6 @@ function fillAnswerHint() {
 }
 
 /* L7: code mode */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
 .code-mode-card {
   background: #ffffff;
   border: 1px solid var(--border-subtle);
