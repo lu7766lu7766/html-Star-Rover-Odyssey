@@ -176,13 +176,6 @@
               <p>按下「啟動執行」觀察探測船或機器的即時 3D 反應；若失敗隨時可重試修正策略！</p>
             </div>
           </div>
-          <div class="guide-step">
-            <div class="step-num">4</div>
-            <div>
-              <strong>展開 JavaScript 對照</strong>
-              <p>完成任務後，可展開下方對照區，了解剛才的操作如何對應到現實的 JavaScript 語法！</p>
-            </div>
-          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-primary" @click="showGuide = false">我明白了，開始出發！</button>

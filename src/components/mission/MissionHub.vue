@@ -61,42 +61,6 @@
         </div>
       </section>
 
-      <!-- Live Scope & Variable Inspector (collapsed by default to prioritize controls) -->
-      <section class="inspector-card card collapsible">
-        <div class="inspector-header collapsible-header" @click="toggleSection('scope')">
-          <div class="inspector-title">
-            <Eye :size="15" class="text-brand" />
-            <span>即時記憶體變數監視器 (Scope Watch)</span>
-          </div>
-          <div class="header-right-group">
-            <span class="live-pulse">LIVE</span>
-            <ChevronUp v-if="openSections.scope" :size="15" class="text-muted" />
-            <ChevronDown v-else :size="15" class="text-muted" />
-          </div>
-        </div>
-
-        <div v-show="openSections.scope" class="inspector-table-wrapper">
-          <table class="inspector-table">
-            <thead>
-              <tr>
-                <th>變數名稱</th>
-                <th>型態 (typeof)</th>
-                <th>當前數值</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="v in activeScopeVariables" :key="v.name">
-                <td class="col-name font-mono">{{ v.name }}</td>
-                <td class="col-type">
-                  <span class="type-pill" :class="'type-' + v.type">{{ v.type }}</span>
-                </td>
-                <td class="col-val font-mono" :class="'val-' + v.type">{{ v.value }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
       <!-- Core Concept Card (collapsed to reduce scroll) -->
       <section class="concept-card card collapsible">
         <div class="concept-header collapsible-header" @click="toggleSection('concept')">
@@ -110,37 +74,6 @@
         <p v-show="openSections.concept" class="concept-text">{{ level.conceptExplanation }}</p>
       </section>
 
-      <!-- JavaScript Code Peek (Collapsible by default as per PRD 4.2) -->
-      <section class="code-peek-card card">
-        <div class="peek-header" @click="levelStore.toggleCodePeek">
-          <div class="peek-title">
-            <Code2 :size="16" class="text-brand" />
-            <span>JavaScript 程式碼語法對照</span>
-          </div>
-          <div class="peek-actions">
-            <button
-              v-if="levelStore.isCodePeekOpen"
-              class="btn btn-ghost btn-xs copy-btn"
-              @click.stop="copyCodeExample"
-              title="複製範例程式碼"
-            >
-              <Copy :size="13" />
-              <span>{{ copyStatusText }}</span>
-            </button>
-            <ChevronUp v-if="levelStore.isCodePeekOpen" :size="16" class="text-muted" />
-            <ChevronDown v-else :size="16" class="text-muted" />
-          </div>
-        </div>
-
-        <transition name="expand">
-          <div v-if="levelStore.isCodePeekOpen" class="peek-body">
-            <div class="code-box">
-              <pre><code>{{ level.jsCodeExample }}</code></pre>
-            </div>
-            <span class="code-tip">💡 提示：左側所有遊戲操作，背後都對應著這段簡潔嚴謹的 JavaScript 語法。</span>
-          </div>
-        </transition>
-      </section>
     </div>
 
     <!-- Socratic Hint Modal Component -->
@@ -155,8 +88,8 @@
 <script setup>
 import { ref, computed } from 'vue';
 import {
-  Target, CheckCircle2, Circle, AlertCircle, BookOpen, Code2,
-  ChevronDown, ChevronUp, Lightbulb, Eye, Copy
+  Target, CheckCircle2, Circle, AlertCircle, BookOpen,
+  ChevronDown, ChevronUp, Lightbulb
 } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
@@ -183,96 +116,15 @@ const failureHint = computed(() => {
   return '請調整左側控制項參數後再次點擊測試。';
 });
 
-const copyStatusText = ref('複製程式碼');
-
-const openSections = ref({ scope: false, concept: false });
-function toggleSection(key) {
-  openSections.value[key] = !openSections.value[key];
-}
-
 function openHints() {
   levelStore.toggleHintModal(true);
 }
 
-async function copyCodeExample() {
-  if (level.value?.jsCodeExample) {
-    try {
-      await navigator.clipboard.writeText(level.value.jsCodeExample);
-      copyStatusText.value = '已複製 ✓';
-      setTimeout(() => { copyStatusText.value = '複製程式碼'; }, 2000);
-    } catch (e) {
-      copyStatusText.value = '複製失敗';
-    }
-  }
+// 概念卡收合狀態（監視器與語法對照已刪除，僅保留概念卡）
+const openSections = ref({ concept: false });
+function toggleSection(key) {
+  openSections.value[key] = !openSections.value[key];
 }
-
-// Generate dynamic Live Scope variables based on current level state & saved operations
-const activeScopeVariables = computed(() => {
-  const currentId = level.value.id;
-  const saved = progressStore.getSavedOperation(currentId);
-
-  if (currentId === 1) {
-    const vars = saved?.variables || {};
-    return [
-      { name: 'roverName', type: 'string', value: vars.roverName ? `"${vars.roverName}"` : '""' },
-      { name: 'powerLevel', type: 'number', value: vars.powerLevel ?? 0 },
-      { name: 'shieldActive', type: 'boolean', value: String(vars.shieldActive ?? false) }
-    ];
-  } else if (currentId === 2) {
-    const p = saved?.params || {};
-    return [
-      { name: 'initialFuel', type: 'number', value: p.initialFuel ?? 300 },
-      { name: 'thrustCount', type: 'number', value: p.thrustCount ?? 6 },
-      { name: 'speed', type: 'number', value: p.speed ?? 4 },
-      { name: 'totalDistance', type: 'number', value: (p.thrustCount || 6) * (p.speed || 4) }
-    ];
-  } else if (currentId === 3) {
-    const r = saved?.rules || {};
-    return [
-      { name: 'threshold1', type: 'number', value: r.rule1Threshold ?? 2 },
-      { name: 'action1', type: 'string', value: `"${r.rule1Action || 'FULL_SPEED'}"` },
-      { name: 'fallback', type: 'string', value: `"${r.fallbackAction || 'SLOW_DOWN'}"` }
-    ];
-  } else if (currentId === 4) {
-    const lc = saved?.loopConfig || {};
-    return [
-      { name: 'loopCount', type: 'number', value: lc.loopCount ?? 3 },
-      { name: 'action', type: 'string', value: `"${lc.action || 'HARVEST_CRYSTAL'}"` },
-      { name: 'isLooping', type: 'boolean', value: String(levelStore.isExecuting) }
-    ];
-  } else if (currentId === 5) {
-    const mc = saved?.methodCall || null;
-    const legacy = saved?.moduleConfig || {};
-    const methodId = mc?.methodId || (legacy.moduleId === 'quantum-scanner' ? 'activateScan' : 'pingEcho');
-    const p = mc?.params || {};
-    return [
-      { name: 'call', type: 'function', value: `${methodId || 'pingEcho'}(scanParams)` },
-      { name: 'scanParams.range', type: 'number', value: p.range ?? legacy.range ?? 10 },
-      { name: 'scanParams.mode', type: 'string', value: `"${p.mode || legacy.mode || 'NORMAL'}"` }
-    ];
-  } else if (currentId === 6) {
-    const ds = saved?.domState || {};
-    return [
-      { name: 'disarmEvent', type: 'string', value: `"${ds.bindings?.disarmEvent || 'mouseover'}"` },
-      { name: 'isAlarmActive', type: 'boolean', value: String(!ds.disarmed) },
-      { name: 'airlockOpen', type: 'boolean', value: String(ds.airlockOpen ?? false) }
-    ];
-  } else if (currentId === 7) {
-    const fc = saved?.fleetConfig || {};
-    return [
-      { name: 'fleet.length', type: 'number', value: 4 },
-      { name: 'batteryThreshold', type: 'number', value: fc.batteryThreshold ?? 10 },
-      { name: 'lowBatteryOrder', type: 'string', value: `"${fc.lowBatteryAction || 'PATROL'}"` }
-    ];
-  } else {
-    const ws = saved?.weatherSession || {};
-    return [
-      { name: 'windSpeed', type: 'number', value: ws.weatherData?.windSpeed ?? 18 },
-      { name: 'maxWindSpeed', type: 'number', value: ws.conditions?.maxWindSpeed ?? 10 },
-      { name: 'canLaunch', type: 'boolean', value: String(ws.launched ?? false) }
-    ];
-  }
-});
 </script>
 
 <style scoped>
@@ -480,91 +332,6 @@ const activeScopeVariables = computed(() => {
   margin-top: 0.25rem;
 }
 
-/* Live Scope Inspector Card */
-.inspector-card {
-  background: #ffffff;
-  border: 1px solid #bfdbfe;
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.inspector-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.inspector-title {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #1e40af;
-}
-
-.live-pulse {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #10b981;
-  background: #ecfdf5;
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.inspector-table-wrapper {
-  overflow-x: auto;
-}
-
-.inspector-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.75rem;
-}
-
-.inspector-table th {
-  text-align: left;
-  padding: 0.35rem 0.45rem;
-  background: #f8fafc;
-  color: var(--text-muted);
-  font-weight: 600;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.inspector-table td {
-  padding: 0.35rem 0.45rem;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.col-name {
-  color: #334155;
-  font-weight: 600;
-}
-
-.type-pill {
-  font-size: 0.68rem;
-  padding: 0.1rem 0.35rem;
-  border-radius: 3px;
-  font-family: var(--font-mono);
-}
-
-.type-string { background: #fdf2f8; color: #db2777; }
-.type-number { background: #eff6ff; color: #2563eb; }
-.type-boolean { background: #ecfdf5; color: #059669; }
-
-.val-string { color: #db2777; }
-.val-number { color: #2563eb; font-weight: 600; }
-.val-boolean { color: #059669; font-weight: 600; }
-
 /* Concept Card */
 .concept-card {
   background: #faf5ff;
@@ -595,80 +362,9 @@ const activeScopeVariables = computed(() => {
   margin: 0;
 }
 
-/* Code Peek Card */
-.code-peek-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: #ffffff;
-  border: 1px solid var(--border-subtle);
-  padding: 0.75rem 1rem;
-}
-
-.peek-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  user-select: none;
-}
-
-.peek-title {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.peek-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.copy-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
-  color: var(--brand-600);
-}
-
-.code-box {
-  background: #f8fafc;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 0.75rem;
-  margin-top: 0.5rem;
-  overflow-x: auto;
-}
-
-.code-box pre {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: #1e293b;
-  line-height: 1.5;
-}
-
-.code-tip {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin-top: 0.35rem;
-}
-
 .collapsible-header {
   cursor: pointer;
   user-select: none;
-}
-
-.header-right-group {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
 }
 
 .collapse-icon {

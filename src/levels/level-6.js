@@ -3,9 +3,18 @@
  * 核心概念：事件與 DOM (Events & DOM - addEventListener)
  */
 
-export const LEVEL_6_STARTER_CODE = `// 太空艙控制中心：把 ___ 補完，再按執行
-// 系統會自動依序點擊驗證：先解除警報，再開氣閘
-// （也會偷測：警報沒解除就開門，門必須保持關閉！）
+export const LEVEL_6_STARTER_CODE = `// 太空艙控制中心：把下面 ___ 補完，再按「執行 JS 並模擬點擊」
+// ------------------------------------------------------------
+// 【情境】2D 儀表板網頁上有 4 個元素：解除警報按鈕、氣閘按鈕、狀態燈、氣閘艙門
+//  每個元素的 id 都寫在 2D 網頁該元素上方的 <code> 標籤裡，右側 DevTools 也有 DOM TREE 即時預覽
+// 【驗證】系統自動兩路點擊：(1)先解除警報再開門→艙門必須滑開；(2)警報中直接開門→艙門必須保持關閉（守衛判斷）
+// 【觀念】querySelector 選元素；addEventListener 接事件線；回呼裡用 textContent / style / classList 改寫畫面
+// 【找答案】正確字串都不用背，都藏在 2D 網頁裡：元素 id、含 NORMAL 的狀態文字、正常燈號顏色、艙門的 class 提示
+
+// —— 第 1 步：選取 4 個元素 ——
+// TODO: 把 4 個 ___ 換成對應的 CSS 選擇器（字串加引號，id 前面加 #）
+//  - 去 2D 網頁找：每顆按鈕／狀態燈／艙門上方都有 <code> 標籤寫著它的 id
+//  - 順序不可調換：第 1 行必須是解除警報按鈕，第 2 行是氣閘按鈕，第 3 行是狀態燈，第 4 行是艙門
 
 const disarmButton = document.querySelector(___);
 const airlockButton = document.querySelector(___);
@@ -14,11 +23,24 @@ const doorEl = document.querySelector(___);
 
 let isAlarmActive = true;
 
+// —— 第 2 步：解除警報回呼 ——
+// TODO: 把 3 個 ___ 補完
+//  - 事件：日常按鈕最直覺的是哪一種？（三選一：click / mouseover / dblclick）
+//  - 狀態文字：改成「正常」的顯示（去 2D 網頁狀態燈找含 NORMAL 的那一行，整行照抄，含中文與括號）
+//  - 燈號顏色：警報是紅燈，正常應該轉什麼顏色的燈？（去 2D 網頁狀態燈或 DevTools 找）
+
 disarmButton.addEventListener(___, () => {
   isAlarmActive = false;
   statusEl.textContent = ___;
   statusEl.style.color = ___;
 });
+
+// —— 第 3 步：氣閘開門回呼（含守衛判斷） ——
+// TODO: 把 4 個 ___ 補完
+//  - 事件：跟第 2 步一樣，日常按鈕用哪一種？
+//  - if 條件：只有「警報已經解除」才能開門。isAlarmActive 為 true 表示警報中，為 false 表示已解除，條件該怎麼寫才會在「已解除」時放行？
+//  - 艙門 class：加上讓門滑開的 CSS class（去 2D 艙門區找「classList 已加 …」的提示，或看 DevTools DOM TREE 裡艙門的 class）
+//  - 艙門文字：改成「已開啟」的顯示（去 2D 網頁找含 OPEN 的那一行，整行照抄）
 
 airlockButton.addEventListener(___, () => {
   if (!___) {
@@ -36,10 +58,11 @@ export default {
   concepts: ['DOM 元素選擇', '事件監聽器 (addEventListener)', 'textContent / style 即時改寫'],
   description: `太空艙的控制「網頁」當機了！上方 2D 視窗就是一整個故障中的儀表板網頁：警報燈狂閃、氣閘門鎖死。兩顆按鈕「#disarm-btn」與「#airlock-btn」的電線（addEventListener）被拔掉了。請在下方操作區幫它們接回正確的事件（click）與動作，然後親自到 2D 網頁上點擊按鈕，看著 textContent、顏色、艙門 class 即時被你的 JS 改寫！`,
   targetRequirements: [
-    '為 #disarm-btn 接回 "click" 事件，觸發「解除安全警報」',
-    '為 #airlock-btn 接回 "click" 事件，觸發「解鎖並開啟氣閘」',
-    '到上方 2D 網頁親自點擊「解除警報」，看 #status-indicator 轉綠色正常',
-    '再點擊「開啟氣閘」，看 #airlock-door 滑開並完成驗證'
+    '用 querySelector 選取 4 個元素：解除警報按鈕、氣閘按鈕、狀態燈 #status-indicator、艙門 #airlock-door（id 寫在 2D 網頁各元素上方）',
+    '為兩顆按鈕接回 "click" 事件（日常按鈕最直覺的選擇，mouseover / dblclick 不算）',
+    '解除警報回呼：把 isAlarmActive 改為 false，並改寫狀態燈文字與顏色（正常顯示去 2D 網頁找）',
+    '氣閘回呼：先用 if 守衛判斷「警報已解除」才放行，再為艙門加上滑開用的 CSS class 並改寫門文字（class 名去 2D 艙門區找）',
+    '通過兩路驗證：正常順序（先解除再開門）艙門滑開；警報中直接開門，艙門必須保持關閉'
   ],
   controlType: 'dom-events',
   initialBindings: {
@@ -53,9 +76,10 @@ export default {
     { id: 'EMERGENCY_LOCK', label: '全艙緊急封鎖 (emergencyLock)' }
   ],
   hints: [
-    '提示 1【DOM 與事件】：addEventListener(事件, 回呼) 只是「先幫按鈕接好電線」。上方 2D 網頁按鈕上的 👂 徽章就是目前接的線。',
-    '提示 2【動手實驗】：故意把事件改成 mouseover 或 dblclick，再去 2D 網頁懸停 / 雙擊按鈕，看看 click 為何是日常網頁最直覺的選擇。',
-    '提示 3【順序有意義】：開門的 JS 裡有 if (!isAlarmActive) 判斷。警報沒解除就開門會被擋下，先解除警報再開門才是正確流程。'
+    '提示 1【DOM 與事件】：addEventListener(事件, 回呼) 只是「先幫按鈕接好電線」。querySelector 則是用 CSS 選擇器把元素選出來，id 選擇器寫法是加引號、# 開頭，id 本尊寫在 2D 網頁每個元素上方的 <code> 標籤裡。',
+    '提示 2【動手實驗】：故意把事件改成 mouseover 或 dblclick 再執行，看看報錯怎麼說。日常網頁按鈕最直覺的就是 click，驗證只認 click。',
+    '提示 3【順序有意義】：開門的 JS 裡有 if (!isAlarmActive) 守衛判斷。警報沒解除（變數仍為 true）就開門會被擋下，先解除警報讓變數變 false 再開門才是正確流程。',
+    '提示 4【字串去哪找】：狀態燈文字、燈號顏色、艙門 class 名都不用背——2D 網頁上都寫著：狀態卡顯示正常時的文字與顏色，氣閘按鈕下方小字會顯示「classList 已加 …」的提示，右側 DevTools 的 DOM TREE 也會即時顯示艙門目前的 class。照著填進 ___ 即可。'
   ],
   jsCodeExample: `// 💡 JavaScript 對照：你在下方接的線，就是這段程式碼
 const disarmButton = document.querySelector('#disarm-btn');

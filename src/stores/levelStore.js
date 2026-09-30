@@ -25,7 +25,6 @@ export const useLevelStore = defineStore('level', {
     successModalTimer: null,
     isFailModalOpen: false,
     failModalTimer: null,
-    isCodePeekOpen: false, // JavaScript peek toggle
     isHintModalOpen: false,
     resetNonce: 0
   }),
@@ -103,11 +102,6 @@ export const useLevelStore = defineStore('level', {
       this.sceneActionTrigger = triggerFn;
     },
 
-    toggleCodePeek() {
-      this.isCodePeekOpen = !this.isCodePeekOpen;
-      soundManager.playClick();
-    },
-
     toggleHintModal(open = null) {
       this.isHintModalOpen = open !== null ? open : !this.isHintModalOpen;
       soundManager.playClick();
@@ -134,8 +128,6 @@ export const useLevelStore = defineStore('level', {
 
       this.isExecuting = true;
       this.clearLogs();
-      // 課堂模式：執行開始先收合 JS 對照，讓學生專注操作；通關後再自動展開
-      this.isCodePeekOpen = false;
       try {
         soundManager.playLaunch();
       } catch (e) {
@@ -278,8 +270,6 @@ export const useLevelStore = defineStore('level', {
           }
 
           progressStore.markLevelCompleted(currentLevel.id);
-          // 課堂 A 模式：免寫碼但一定看到碼 — 通關自動展開 JS 語法對照
-          this.isCodePeekOpen = true;
           this.appendLog({
             type: 'success',
             message: `🌟 [任務通關] ${evaluation.feedback}`

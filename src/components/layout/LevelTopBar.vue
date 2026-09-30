@@ -28,17 +28,6 @@
     </div>
 
     <div class="topbar-right">
-      <!-- JavaScript Code Peek Toggle (PRD: Collapsible) -->
-      <button
-        class="btn btn-sm"
-        :class="levelStore.isCodePeekOpen ? 'btn-purple' : 'btn-outline'"
-        @click="levelStore.toggleCodePeek"
-        title="查看/收合 JavaScript 語法對照"
-      >
-        <Code2 :size="16" />
-        <span>JS 語法對照</span>
-      </button>
-
       <!-- Stepwise Hints -->
       <button class="btn btn-outline btn-sm" @click="levelStore.toggleHintModal" title="分步提示">
         <HelpCircle :size="16" class="text-warning" />
@@ -62,7 +51,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Map, Code2, HelpCircle, RotateCcw, Volume2, VolumeX } from 'lucide-vue-next';
+import { Map, HelpCircle, RotateCcw, Volume2, VolumeX } from 'lucide-vue-next';
 import { ALL_LEVELS } from '../../levels/index.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { useLevelStore } from '../../stores/levelStore.js';
