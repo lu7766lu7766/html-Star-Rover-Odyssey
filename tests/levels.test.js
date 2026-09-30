@@ -444,4 +444,33 @@ for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
     expect(crashRes.pass).toBe(false);
     expect(crashRes.error).toContain('撞擊岩石');
   });
+
+  // L3 code mode: setAutoPilot trace + hidden boundaries
+  it('Level 3 code mode: validates setAutoPilot trace with hidden 5/15 boundaries', () => {
+    const pilotCall = (fn) => {
+      const testResults = { 3: fn(3), 5: fn(5), 7: fn(7), 10: fn(10), 15: fn(15), 20: fn(20), 30: fn(30) };
+      return [{ api: 'rover.setAutoPilot', isFunction: true, fnError: null, testResults }];
+    };
+    const correct = (d) => (d < 5 ? 'STOP' : d < 15 ? 'SLOW_DOWN' : 'FULL_SPEED');
+
+    const best = level3.validate({ apiCalls: pilotCall(correct), code: 'if...else if...else' });
+    expect(best.pass).toBe(true);
+    expect(best.data.stars).toBe(3);
+
+    // off-by-one: <= 5 makes dist=5 STOP instead of SLOW_DOWN -> 2 stars
+    const offByOne = (d) => (d <= 5 ? 'STOP' : d < 15 ? 'SLOW_DOWN' : 'FULL_SPEED');
+    const two = level3.validate({ apiCalls: pilotCall(offByOne), code: 'if...' });
+    expect(two.pass).toBe(true);
+    expect(two.data.stars).toBe(2);
+    expect(two.feedback).toContain('邊界');
+
+    // wrong core logic -> fail
+    const wrong = (d) => 'FULL_SPEED';
+    expect(level3.validate({ apiCalls: pilotCall(wrong), code: '' }).pass).toBe(false);
+
+    // no setAutoPilot call -> fail with guidance
+    const missing = level3.validate({ apiCalls: [{ api: 'rover.setup', args: [] }], code: '' });
+    expect(missing.pass).toBe(false);
+    expect(missing.error).toContain('setAutoPilot');
+  });
 });

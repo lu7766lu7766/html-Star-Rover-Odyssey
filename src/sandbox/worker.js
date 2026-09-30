@@ -124,10 +124,15 @@ workerSelf.onmessage = function (e) {
         let fnError = null;
         if (typeof pilotFn === 'function') {
           try {
+            // 可見情境 3/10/20 + 隱藏邊界 5/7/15/30（驗 </<= 觀念）
             testResults = {
               3: pilotFn(3),
+              5: pilotFn(5),
+              7: pilotFn(7),
               10: pilotFn(10),
-              20: pilotFn(20)
+              15: pilotFn(15),
+              20: pilotFn(20),
+              30: pilotFn(30)
             };
           } catch (e) {
             fnError = e.message;

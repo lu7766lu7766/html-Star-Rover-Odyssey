@@ -5,15 +5,70 @@
         <GitBranch :size="18" class="text-brand" />
         <h3 class="deck-title">條件判斷邏輯樹 · Decision Branching</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
-        <RotateCcw :size="14" />
-        <span>還原</span>
-      </button>
+      <div class="header-actions">
+        <button
+          class="btn btn-sm"
+          :class="mode === 'blocks' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'blocks'"
+          title="條件積木模式（新手友善）"
+        >
+          <span>🧩 積木</span>
+        </button>
+        <button
+          class="btn btn-sm"
+          :class="mode === 'code' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'code'"
+          title="手寫 JS 模式（含隱藏邊界拿 3 星）"
+        >
+          <span>⌨️ 寫碼</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
+          <RotateCcw :size="14" />
+          <span>還原</span>
+        </button>
+      </div>
     </div>
 
     <div class="deck-content">
+      <!-- 0. Code mode（L3：手寫 autoPilot，走 Worker 真測 + 隱藏邊界） -->
+      <div v-if="mode === 'code'" class="code-mode-card card">
+        <div class="code-mode-header">
+          <div class="code-mode-title">
+            <Code :size="15" class="text-brand" />
+            <span>手寫 JS 挑戰 · 把 ___ 補成數字再執行</span>
+          </div>
+          <span class="badge badge-info">邊界全對 = 3星</span>
+        </div>
+        <div class="code-editor-wrap">
+          <CodeEditor v-model="studentCode" :level-id="3" @reset="resetCode" />
+        </div>
+        <div class="code-mode-actions">
+          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值">
+            <span>💡 填入提示值</span>
+          </button>
+          <button
+            class="btn btn-success execute-btn"
+            :disabled="levelStore.isExecuting || !studentCode.trim()"
+            @click="runCodeExecution"
+          >
+            <Play :size="16" />
+            <span>{{ levelStore.isExecuting ? '沙箱執行中...' : '執行 JS 程式碼' }}</span>
+          </button>
+        </div>
+        <div class="code-mode-logs" v-if="levelStore.executionLogs.length > 0">
+          <div
+            v-for="log in levelStore.executionLogs.slice(-4)"
+            :key="log.id"
+            class="mini-log"
+            :class="'mini-log-' + log.type"
+          >
+            {{ log.message }}
+          </div>
+        </div>
+      </div>
+
       <!-- Visual Condition Blocks -->
-      <div class="conditions-flow">
+      <div v-if="mode === 'blocks'" class="conditions-flow">
         <!-- Branch 1: if distance < threshold1 -->
         <div class="branch-block card branch-if">
           <div class="branch-header">
@@ -86,10 +141,13 @@
         </div>
       </div>
 
-      <!-- Live Simulator / Test Distances Preview -->
+      <!-- Live Simulator / Test Distances Preview（跑後才揭曉） -->
       <div class="preview-card card">
-        <h4 class="preview-title">雷達測距測試情境 (Telemetry Test Preview)</h4>
-        <div class="preview-grid">
+        <h4 class="preview-title">雷達測距測試情境 (Telemetry Test Preview) · 執行後揭曉</h4>
+        <div v-if="!hasRunOnce" class="preview-locked">
+          <span>🔒 先按「執行 JS 程式碼」或「啟動避障巡航測試」，跑完才顯示各距離判定。先想，再驗證。</span>
+        </div>
+        <div v-else class="preview-grid">
           <div
             v-for="dist in [3, 10, 22]"
             :key="dist"
@@ -109,9 +167,10 @@
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        需依序通過 3 單位、10 單位與 22 單位的雷達避障測試
+        {{ mode === 'code' ? '寫碼模式：在上方編輯器按「執行 JS 程式碼」（含 5/15 隱藏邊界）' : '需依序通過 3 單位、10 單位與 22 單位的雷達避障測試' }}
       </div>
       <button
+        v-if="mode === 'blocks'"
         class="btn btn-success execute-btn"
         :disabled="levelStore.isExecuting"
         @click="runExecution"
@@ -125,12 +184,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { GitBranch, RotateCcw, Play } from 'lucide-vue-next';
+import { GitBranch, RotateCcw, Play, Code } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
+import { LEVEL_3_STARTER_CODE } from '../../levels/level-3.js';
+import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
+
+// 混合漸進：預設寫碼模式，積木當鷹架
+const mode = ref('code');
+const studentCode = ref(LEVEL_3_STARTER_CODE);
+const hasRunOnce = ref(false);
 
 const rule1Threshold = ref(5);
 const rule1Action = ref('');
@@ -142,12 +208,17 @@ const fallbackAction = ref('');
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(3);
-  if (saved && saved.rules) {
-    rule1Threshold.value = saved.rules.rule1Threshold ?? 5;
-    rule1Action.value = saved.rules.rule1Action ?? '';
-    rule2Threshold.value = saved.rules.rule2Threshold ?? 15;
-    rule2Action.value = saved.rules.rule2Action ?? '';
-    fallbackAction.value = saved.rules.fallbackAction ?? '';
+  if (saved) {
+    if (typeof saved.code === 'string' && saved.code.length > 0) {
+      studentCode.value = saved.code;
+    }
+    if (saved.rules) {
+      rule1Threshold.value = saved.rules.rule1Threshold ?? 5;
+      rule1Action.value = saved.rules.rule1Action ?? '';
+      rule2Threshold.value = saved.rules.rule2Threshold ?? 15;
+      rule2Action.value = saved.rules.rule2Action ?? '';
+      fallbackAction.value = saved.rules.fallbackAction ?? '';
+    }
   }
 });
 
@@ -178,6 +249,7 @@ function resetDefaults() {
 }
 
 function runExecution() {
+  hasRunOnce.value = true;
   levelStore.executeLevel({
     rules: {
       rule1Threshold: rule1Threshold.value,
@@ -187,6 +259,23 @@ function runExecution() {
       fallbackAction: fallbackAction.value
     }
   });
+}
+
+function runCodeExecution() {
+  hasRunOnce.value = true;
+  levelStore.executeLevel({
+    code: studentCode.value
+  });
+}
+
+function resetCode() {
+  studentCode.value = LEVEL_3_STARTER_CODE;
+}
+
+function fillAnswerHint() {
+  studentCode.value = studentCode.value
+    .replace('distance < ___', 'distance < 5')
+    .replace('distance < ___', 'distance < 15');
 }
 </script>
 
@@ -223,6 +312,89 @@ function runExecution() {
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* L3: code mode + locked preview */
+.code-mode-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.code-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.code-mode-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.code-editor-wrap {
+  height: 260px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.code-mode-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.code-mode-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mini-log {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-hover);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.mini-log-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.mini-log-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.preview-locked {
+  padding: 0.8rem;
+  background: var(--bg-panel-hover);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
 }
 
 .deck-content {

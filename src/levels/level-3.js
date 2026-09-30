@@ -3,6 +3,22 @@
  * 核心概念：條件判斷 (Conditionals - if / else if / else)
  */
 
+export const LEVEL_3_STARTER_CODE = `// 隕石避障：把下面 ___ 補完，再按執行
+// 規則：距離 < 5 → STOP，距離 < 15 → SLOW_DOWN，否則 → FULL_SPEED
+
+function autoPilot(distance) {
+  if (distance < ___) {
+    return 'STOP';
+  } else if (distance < ___) {
+    return 'SLOW_DOWN';
+  } else {
+    return 'FULL_SPEED';
+  }
+}
+
+rover.setAutoPilot(autoPilot);
+`;
+
 export default {
   id: 3,
   title: '隕石避障',
@@ -46,7 +62,61 @@ function autoPilotDecision(distance) {
   }
 }`,
   conceptExplanation: `**條件判斷 (Conditional)** 是程式具備「智慧」的基石。透過 \`if\`、\`else if\` 與 \`else\`，電腦能檢視環境數據（例如距離、電量、分數），並根據比較的結果自動走進不同的處理分支，做出最佳反應。`,
+  starterCode: LEVEL_3_STARTER_CODE,
   validate: (runResult) => {
+    // 新鏈路：Worker 真跑 rover.setAutoPilot(autoPilot) 的 trace
+    if (runResult.apiCalls && Array.isArray(runResult.apiCalls)) {
+      const call = runResult.apiCalls.find((c) => c.api === 'rover.setAutoPilot');
+      if (!call || !call.isFunction) {
+        return {
+          pass: false,
+          error: '沒有偵測到 rover.setAutoPilot(函式)！請定義 autoPilot(distance) 並註冊。'
+        };
+      }
+      if (call.fnError) {
+        return {
+          pass: false,
+          error: `自動導航函式執行出錯：${call.fnError}。請檢查 return 值是否為 'STOP' / 'SLOW_DOWN' / 'FULL_SPEED' 字串。`
+        };
+      }
+      const r = call.testResults || {};
+      const visible = [
+        { dist: 3, expected: 'STOP', reason: '距離 3（極近距離），應緊急煞停避免撞擊！' },
+        { dist: 10, expected: 'SLOW_DOWN', reason: '距離 10（警戒範圍），應減速巡航謹慎通過！' },
+        { dist: 20, expected: 'FULL_SPEED', reason: '距離 20（安全距離），應全速前進！' }
+      ];
+      for (const test of visible) {
+        if (r[test.dist] !== test.expected) {
+          return {
+            pass: false,
+            error: `在測距為 ${test.dist} 單位時，探測船選擇了【${r[test.dist] ?? '未定義'}】，但正確行為應為【${test.expected}】。原因：${test.reason}`,
+            details: { dist: test.dist, actual: r[test.dist], expected: test.expected }
+          };
+        }
+      }
+      // 隱藏邊界：驗 </<=（5 應為 SLOW_DOWN、15 應為 FULL_SPEED）
+      const hidden = [
+        { dist: 5, expected: 'SLOW_DOWN' },
+        { dist: 7, expected: 'SLOW_DOWN' },
+        { dist: 15, expected: 'FULL_SPEED' },
+        { dist: 30, expected: 'FULL_SPEED' }
+      ];
+      const missed = hidden.filter((t) => r[t.dist] !== t.expected);
+      if (missed.length > 0) {
+        const m = missed[0];
+        return {
+          pass: true,
+          data: { testResults: r, stars: 2, fromCode: true, hiddenMiss: m },
+          feedback: `基本情境全對、予以通關（2星）！但邊界沒過：在距離 ${m.dist} 時你的函式回傳【${r[m.dist] ?? '未定義'}】，正確應為【${m.expected}】。想想該用 < 還是 <=？修好邊界拿 3 星！`
+        };
+      }
+      return {
+        pass: true,
+        data: { testResults: r, stars: 3, fromCode: true },
+        feedback: `避障邏輯全數通過（含 5/15 邊界隱藏測試）！探測船完美穿越隕石帶！（3星）`
+      };
+    }
+
     const rules = runResult.rules || {};
     const { rule1Threshold, rule1Action, rule2Threshold, rule2Action, fallbackAction } = rules;
 
@@ -76,8 +146,8 @@ function autoPilotDecision(distance) {
 
     return {
       pass: true,
-      data: { rules },
-      feedback: `避障邏輯測試全數通過！探測船在所有測距情境（3、10、22 單位）皆做出完美決策，順利穿越隕石帶！`
+      data: { rules, stars: 2, fromCode: false },
+      feedback: `避障邏輯測試全數通過！探測船在所有測距情境（3、10、22 單位）皆做出完美決策，順利穿越隕石帶！（2星：積木模式上限，切「寫碼」通過隱藏邊界拿 3 星）`
     };
   }
 };
