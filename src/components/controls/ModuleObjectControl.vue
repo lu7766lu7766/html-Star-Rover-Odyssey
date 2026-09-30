@@ -3,7 +3,7 @@
     <div class="deck-header">
       <div class="deck-title-group">
         <Cpu :size="18" class="text-brand" />
-        <h3 class="deck-title">物件模組封裝與方法調用 · Object Methods</h3>
+        <h3 class="deck-title">函式呼叫與物件參數 · f(x)</h3>
       </div>
       <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
         <RotateCcw :size="14" />
@@ -12,35 +12,36 @@
     </div>
 
     <div class="deck-content">
-      <!-- 1. Select Module Object -->
+      <!-- 1. Select Function (verb) -->
       <div class="module-select-box">
-        <span class="box-label">選擇裝配的雷達模組物件 (Select Module)：</span>
+        <span class="box-label">選擇要呼叫的函式 f（動詞・三選一）：</span>
         <div class="module-cards-grid">
           <div
-            v-for="mod in availableModules"
-            :key="mod.id"
+            v-for="m in availableMethods"
+            :key="m.id"
             class="mod-option-card card"
-            :class="{ 'card-active': selectedModuleId === mod.id }"
-            @click="selectedModuleId = mod.id"
+            :class="{ 'card-active': selectedMethodId === m.id }"
+            @click="selectedMethodId = m.id"
           >
             <div class="mod-top">
-              <strong>{{ mod.name }}</strong>
-              <span class="badge" :class="mod.id === 'quantum-scanner' ? 'badge-blue' : 'badge-warning'">
-                最遠 {{ mod.maxRange }} 單位
+              <strong class="mono">{{ m.signature }}</strong>
+              <span class="badge" :class="m.id === 'activateScan' ? 'badge-blue' : 'badge-warning'">
+                {{ m.label }}
               </span>
             </div>
-            <p class="mod-desc">{{ mod.description }}</p>
+            <p class="mod-desc">{{ m.description }}</p>
+            <p class="mod-return mono">回傳 {{ m.returns }}</p>
           </div>
         </div>
       </div>
 
-      <!-- 2. Configure Object Properties -->
+      <!-- 2. Configure Object Argument (object) -->
       <div class="properties-box card">
-        <h4 class="prop-title">設定物件屬性 (Object Properties)</h4>
-        
+        <h4 class="prop-title">配置參數物件 scanParams（受詞・傳進函式的原料包）</h4>
+
         <div class="prop-row">
           <div class="prop-info">
-            <span class="prop-key">scanner.range (掃描覆蓋半徑)：</span>
+            <span class="prop-key">scanParams.range（廣域覆蓋半徑／activateScan 用）：</span>
             <strong class="prop-val">{{ scanRange }} 單位</strong>
           </div>
           <input
@@ -51,12 +52,12 @@
             step="1"
             class="slider"
           />
-          <span class="prop-hint">深空最遠目標位於 18 單位處，半徑必須 &ge; 18 才能完全覆蓋</span>
+          <span class="prop-hint">深空最遠目標位於 18 單位處，range 必須 &ge; 18（只對 activateScan 有效）</span>
         </div>
 
         <div class="prop-row">
           <div class="prop-info">
-            <span class="prop-key">scanner.mode (頻譜解析度)：</span>
+            <span class="prop-key">scanParams.mode（頻譜解析度／activateScan 用）：</span>
             <div class="mode-toggles">
               <button
                 class="btn btn-xs"
@@ -75,18 +76,36 @@
             </div>
           </div>
         </div>
+
+        <div class="prop-row param-duo">
+          <div class="duo-item">
+            <span class="prop-key">scanParams.target（集束目標／focusScan 用）：</span>
+            <select v-model="target" class="select">
+              <option value="NEAR-01">NEAR-01（近距離）</option>
+              <option value="FAR-07">FAR-07（遠端隱藏天體）</option>
+            </select>
+          </div>
+          <div class="duo-item">
+            <span class="prop-key">功率 power：</span>
+            <strong class="prop-val">{{ power }}%</strong>
+            <input v-model.number="power" type="range" min="10" max="100" step="5" class="slider" />
+          </div>
+        </div>
+
+        <div class="prop-row">
+          <div class="prop-info">
+            <span class="prop-key">scanParams.duration（回波时长秒／pingEcho 用）：</span>
+            <strong class="prop-val">{{ duration }}s</strong>
+          </div>
+          <input v-model.number="duration" type="range" min="1" max="5" step="1" class="slider" />
+        </div>
       </div>
 
-      <!-- 3. Object Representation Card -->
+      <!-- 3. Call preview -->
       <div class="object-preview card">
-        <span class="preview-label">JavaScript 物件記憶體狀態：</span>
+        <span class="preview-label">即將執行的函式呼叫：</span>
         <div class="code-view">
-          <pre><code>const scanner = {
-  name: "{{ currentModuleName }}",
-  range: {{ scanRange }},
-  mode: "{{ mode }}",
-  activateScan() { ... }
-};</code></pre>
+          <pre><code>{{ callPreview }}</code></pre>
         </div>
       </div>
     </div>
@@ -94,7 +113,7 @@
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        設定屬性並呼叫物件的 activateScan() 方法函式
+        先選對 f，再配對 x
       </div>
       <button
         class="btn btn-success execute-btn"
@@ -102,7 +121,7 @@
         @click="runExecution"
       >
         <Radio :size="16" />
-        <span>{{ levelStore.isExecuting ? '雷達掃描中...' : '呼叫 scanner.activateScan()' }}</span>
+        <span>{{ levelStore.isExecuting ? '執行中...' : `呼叫 ${selectedMethodId}(scanParams)` }}</span>
       </button>
     </div>
   </div>
@@ -113,40 +132,57 @@ import { ref, computed, onMounted } from 'vue';
 import { Cpu, RotateCcw, Radio } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
+import level5, { AVAILABLE_METHODS, INITIAL_METHOD_CALL } from '../../levels/level-5.js';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-const availableModules = [
-  {
-    id: 'quantum-scanner',
-    name: '量子廣角光譜儀 (QuantumScanner)',
-    maxRange: 25,
-    description: '深空專用高頻量子雷達，覆蓋範圍可達 25 單位，可穿透星雲探測星體'
-  },
-  {
-    id: 'basic-sensor',
-    name: '基礎聲納感測器 (BasicSensor)',
-    maxRange: 12,
-    description: '舊型近程儀器，最大範圍僅 12 單位，無法探測遠端目標'
-  }
-];
+const availableMethods = AVAILABLE_METHODS;
 
-const selectedModuleId = ref('basic-sensor');
-const scanRange = ref(10);
-const mode = ref('NORMAL');
+const selectedMethodId = ref(INITIAL_METHOD_CALL.methodId);
+const scanRange = ref(INITIAL_METHOD_CALL.params.range);
+const mode = ref(INITIAL_METHOD_CALL.params.mode);
+const target = ref(INITIAL_METHOD_CALL.params.target);
+const power = ref(INITIAL_METHOD_CALL.params.power);
+const duration = ref(INITIAL_METHOD_CALL.params.duration);
+
+function applyMethodCall(mc) {
+  if (!mc) return;
+  if (mc.methodId) selectedMethodId.value = mc.methodId;
+  const p = mc.params || {};
+  if (p.range !== undefined) scanRange.value = p.range;
+  if (p.mode !== undefined) mode.value = p.mode;
+  if (p.target !== undefined) target.value = p.target;
+  if (p.power !== undefined) power.value = p.power;
+  if (p.duration !== undefined) duration.value = p.duration;
+}
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(5);
-  if (saved && saved.moduleConfig) {
-    selectedModuleId.value = saved.moduleConfig.moduleId ?? 'basic-sensor';
-    scanRange.value = saved.moduleConfig.range ?? 10;
-    mode.value = saved.moduleConfig.mode ?? 'NORMAL';
+  if (saved && saved.methodCall) {
+    applyMethodCall(saved.methodCall);
+  } else if (saved && saved.moduleConfig) {
+    // 舊存檔遷移：quantum-scanner 視為選對方法，其餘視為選錯
+    const mc = saved.moduleConfig;
+    if (mc.moduleId === 'quantum-scanner') {
+      selectedMethodId.value = 'activateScan';
+      scanRange.value = mc.range ?? 10;
+      mode.value = mc.mode ?? 'NORMAL';
+    } else {
+      selectedMethodId.value = 'pingEcho';
+      scanRange.value = mc.range ?? 10;
+      mode.value = mc.mode ?? 'NORMAL';
+    }
   }
 });
 
-const currentModuleName = computed(() => {
-  return selectedModuleId.value === 'quantum-scanner' ? 'QuantumScanner' : 'BasicSensor';
+const callPreview = computed(() => {
+  if (selectedMethodId.value === 'activateScan') {
+    return `${selectedMethodId.value}({ range: ${scanRange.value}, mode: "${mode.value}" });`;
+  } else if (selectedMethodId.value === 'focusScan') {
+    return `${selectedMethodId.value}({ target: "${target.value}", power: ${power.value} });`;
+  }
+  return `${selectedMethodId.value}({ duration: ${duration.value} });`;
 });
 
 function resetDefaults() {
@@ -154,9 +190,21 @@ function resetDefaults() {
 }
 
 function runExecution() {
+  const params = {
+    range: scanRange.value,
+    mode: mode.value,
+    target: target.value,
+    power: power.value,
+    duration: duration.value
+  };
   levelStore.executeLevel({
+    methodCall: {
+      methodId: selectedMethodId.value,
+      params
+    },
+    // 供 3D 場景向下相容讀取
     moduleConfig: {
-      moduleId: selectedModuleId.value,
+      moduleId: 'quantum-scanner',
       range: scanRange.value,
       mode: mode.value,
       isMethodInvoked: true
@@ -250,12 +298,22 @@ function runExecution() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.mono {
+  font-family: var(--font-mono);
 }
 
 .mod-desc {
   font-size: 0.78rem;
   color: var(--text-muted);
   line-height: 1.35;
+}
+
+.mod-return {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
 }
 
 .properties-box {
@@ -311,7 +369,27 @@ function runExecution() {
   gap: 0.35rem;
 }
 
-/* Object Preview */
+.param-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.duo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.select {
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: #fff;
+  font-size: 0.8rem;
+}
+
+/* Call Preview */
 .object-preview {
   display: flex;
   flex-direction: column;

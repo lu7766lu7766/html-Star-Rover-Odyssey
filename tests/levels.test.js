@@ -191,39 +191,52 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
     expect(optimalRes.feedback).toContain('卓越評價');
   });
 
-  // Level 5: Objects & Methods
-  it('Level 5: validates quantum scanner selection, range >= 18, and activate method', () => {
+  // Level 5: Functions & Object Arguments f(x)
+  it('Level 5: validates activateScan(scanParams) with range >= 18 and HIGH mode', () => {
     const passRes = level5.validate({
-      moduleConfig: {
-        moduleId: 'quantum-scanner',
-        range: 20,
-        mode: 'HIGH',
-        isMethodInvoked: true
+      methodCall: {
+        methodId: 'activateScan',
+        params: { range: 20, mode: 'HIGH', target: 'FAR-07', power: 80, duration: 1 }
       }
     });
     expect(passRes.pass).toBe(true);
+    expect(passRes.data.returns).toBe('SCAN_COMPLETE');
 
-    // Wrong module
-    const wrongMod = level5.validate({
-      moduleConfig: {
-        moduleId: 'basic-sensor',
-        range: 20,
-        mode: 'HIGH',
-        isMethodInvoked: true
+    // Wrong method: focusScan fails even with good params
+    const wrongMethod = level5.validate({
+      methodCall: {
+        methodId: 'focusScan',
+        params: { range: 20, mode: 'HIGH', target: 'FAR-07', power: 80, duration: 1 }
       }
     });
-    expect(wrongMod.pass).toBe(false);
+    expect(wrongMethod.pass).toBe(false);
+    expect(wrongMethod.error).toContain('方法選型錯誤');
 
-    // Range too short
+    // Wrong method: pingEcho fails
+    const pingFail = level5.validate({
+      methodCall: {
+        methodId: 'pingEcho',
+        params: { range: 20, mode: 'HIGH', target: 'NEAR-01', power: 50, duration: 3 }
+      }
+    });
+    expect(pingFail.pass).toBe(false);
+    expect(pingFail.error).toContain('方法選型錯誤');
+
+    // Right method, range too short
     const shortRange = level5.validate({
-      moduleConfig: {
-        moduleId: 'quantum-scanner',
-        range: 15,
-        mode: 'HIGH',
-        isMethodInvoked: true
+      methodCall: {
+        methodId: 'activateScan',
+        params: { range: 15, mode: 'HIGH', target: 'FAR-07', power: 80, duration: 1 }
       }
     });
     expect(shortRange.pass).toBe(false);
+    expect(shortRange.error).toContain('參數不足');
+
+    // Legacy moduleConfig shape still migrates
+    const legacyPass = level5.validate({
+      moduleConfig: { moduleId: 'quantum-scanner', range: 20, mode: 'HIGH', isMethodInvoked: true }
+    });
+    expect(legacyPass.pass).toBe(true);
   });
 
   // Level 6: DOM Events
@@ -372,9 +385,10 @@ describe('Star Rover Odyssey 2.0 - Level Validation Engine', () => {
     expect(l4Res.pass).toBe(false);
     expect(l4Res.error).toContain('未抵達目的地');
 
-    // Level 5 initial state (basic-sensor, range 10 < 18) -> FAILS
-    const l5Res = level5.validate({ moduleConfig: { moduleId: 'basic-sensor', range: 10, mode: 'NORMAL', isMethodInvoked: true } });
+    // Level 5 initial state (pingEcho + range 10 < 18) -> FAILS on method selection
+    const l5Res = level5.validate({ methodCall: level5.initialMethodCall });
     expect(l5Res.pass).toBe(false);
+    expect(l5Res.error).toContain('方法選型錯誤');
 
     // Level 6 initial state (disarmed false, airlockOpen false) -> FAILS
     const l6Res = level6.validate({ domState: { bindings: { disarmEvent: 'mouseover', airlockEvent: 'dblclick' }, disarmed: false, airlockOpen: false } });

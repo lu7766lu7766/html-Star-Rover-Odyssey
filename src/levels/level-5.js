@@ -1,75 +1,137 @@
 /**
  * Level 5: 模組裝載
- * 核心概念：函式與物件 (Objects & Methods)
+ * 核心概念：函式呼叫與物件參數 (Functions & Object Arguments: f(x))
  */
+
+export const AVAILABLE_METHODS = [
+  {
+    id: 'activateScan',
+    name: 'activateScan',
+    label: '廣域掃描 (Wide Scan)',
+    signature: 'activateScan(scanParams)',
+    description: '釋放環狀廣域脈衝，一次普查整片空域，是本任務唯一能覆蓋所有隱藏天體的方法',
+    returns: '"SCAN_COMPLETE"',
+    usesParams: ['range', 'mode']
+  },
+  {
+    id: 'focusScan',
+    name: 'focusScan',
+    label: '集束掃描 (Focus Scan)',
+    signature: 'focusScan(scanParams)',
+    description: '發射集束直線波，一次只能解析單顆指定目標，無法完成全空域普查',
+    returns: '"PARTIAL_SINGLE"',
+    usesParams: ['target', 'power']
+  },
+  {
+    id: 'pingEcho',
+    name: 'pingEcho',
+    label: '短促回波 (Ping Echo)',
+    signature: 'pingEcho(scanParams)',
+    description: '發出短促回波，只能看到近距離殘影，遠端天體完全收不到訊號',
+    returns: '"PARTIAL_NEAR"',
+    usesParams: ['duration']
+  }
+];
+
+export const INITIAL_METHOD_CALL = {
+  methodId: 'pingEcho',
+  params: {
+    range: 10,
+    mode: 'NORMAL',
+    target: 'NEAR-01',
+    power: 50,
+    duration: 1
+  }
+};
 
 export default {
   id: 5,
   title: '模組裝載',
-  subtitle: '函式與物件',
-  conceptTitle: '物件打包屬性，方法定義行為',
-  concepts: ['物件結構 (Object)', '屬性與鍵值 (Key-Value)', '物件方法 (Methods)'],
-  description: `探測船進入未探明的迷霧星區。請替探測船裝配先進的掃描雷達模組。物件可以用來封裝模組的「規格屬性」（如名稱、掃描半徑、增益檔位），並透過掛載其上的「方法函式」一鍵觸發雷達掃描！請將掃描半徑設定至覆蓋所有隱藏天體（>= 18 單位）並點擊啟動。`,
+  subtitle: '函式呼叫與物件參數',
+  conceptTitle: '函式是動詞，物件是受詞：f(x)',
+  concepts: ['函式定義與呼叫 (Function Call)', '物件作為參數 (Object Argument)', '回傳值 (Return Value)'],
+  description: `探測船進入未探明的迷霧星區，量子掃描雷達已裝配完成。雷達提供三個函式（方法）：廣域掃描 activateScan、集束掃描 focusScan、短促回波 pingEcho。本次任務是全空域普查——所有隱藏天體座標都要解密。請選對函式，並配好傳入的參數物件 scanParams（範圍 range、解析度 mode），一發完成普查！`,
   targetRequirements: [
-    '選擇搭載「量子廣角光譜儀 (QuantumScanner)」模組',
-    '設定掃描半徑 range >= 18 單位 (以覆蓋遠端星體)',
-    '設定解析度 mode 為 "HIGH"',
-    '呼叫模組物件自帶的方法函式 scanner.activateScan() 觸發光波'
+    '呼叫正確的函式：activateScan(scanParams)（全空域普查唯一正解）',
+    '參數物件設定 range >= 18 單位（覆蓋最遠的隱藏天體）',
+    '參數物件設定 mode 為 "HIGH"（解析深空頻譜）',
+    '理解回傳值：只有 activateScan 回傳 "SCAN_COMPLETE"，其餘兩個函式只回傳部分結果'
   ],
   controlType: 'module-object',
-  availableModules: [
-    {
-      id: 'quantum-scanner',
-      name: '量子廣角光譜儀 (QuantumScanner)',
-      type: 'WIDE_SPECTRUM',
-      maxRange: 25,
-      description: '具備穿透星塵迷霧的量子級雷達，支援大範圍高解析掃描'
-    },
-    {
-      id: 'basic-sensor',
-      name: '基礎聲納感測器 (BasicSensor)',
-      type: 'ACOUSTIC',
-      maxRange: 12,
-      description: '舊型近程感測器，掃描範圍有限，無法探測遠端天體'
-    }
-  ],
+  availableMethods: AVAILABLE_METHODS,
+  initialMethodCall: INITIAL_METHOD_CALL,
+  // 舊存檔相容：過去以 moduleConfig 儲存的進度會被遷移為 methodCall
+  initialVariables: INITIAL_METHOD_CALL,
   hints: [
-    '提示 1【物件觀念】：JavaScript 物件用大括號 { } 將屬性（資料）與方法（函式行為）打包在一起。',
-    '提示 2【模組規格觀察】：深空中隱藏的目標天體距離較遠。比較兩款模組的規格與最大支援半徑 (maxRange)，哪一款才具備足夠的探測極限？',
-    '提示 3【引導式思考】：選定合適模組並調高 range 覆蓋半徑與解析度後，點擊執行按鈕即可呼叫物件的方法函式 (scanner.activateScan()) 觸發光波！'
+    '提示 1【函式觀念】：函式是「動詞」，物件是「受詞」。呼叫寫成 f(x)：f 是要做的事，x 是做事用的原料包。本關的三個 f 行為完全不同，先讀方法卡再選！',
+    '提示 2【方法選型】：任務是「全空域普查」。集束掃描一次只看一顆星、短促回波只看得到近距離，哪一個函式才是為普查設計的？',
+    '提示 3【參數物件】：選對函式後，傳入的 scanParams 物件還要合格：range 覆蓋半徑 >= 18、mode 切到 HIGH，執行鈕會即時顯示你正在呼叫的完整算式！'
   ],
-  jsCodeExample: `// 💡 JavaScript 對照：物件包含資料 (屬性) 與動作 (方法)
-const scannerModule = {
-  name: "QuantumScanner",
-  range: 20,           // 屬性：掃描半徑
-  mode: "HIGH",        // 屬性：高解析度
-
-  // 方法函式：啟動掃描行為
-  activateScan() {
-    console.log(\`[系統] 啟動 \${this.name}，覆蓋半徑 \${this.range} 單位\`);
-    rover.emitRadarPulse(this.range);
-    return "SCAN_COMPLETE";
-  }
+  jsCodeExample: `// 💡 JavaScript 對照：函式是動詞，物件是原料包
+const scanParams = {
+  range: 20,      // 掃描半徑
+  mode: "HIGH"    // 解析度
 };
 
-// 呼叫物件的方法
-scannerModule.activateScan();`,
-  conceptExplanation: `在真實世界中，任何東西都是**物件 (Object)**。一輛車有顏色、速度（屬性），也有開車門、煞車（方法）。在 JavaScript 中，物件用大括號 \`{ }\` 將資料（屬性）和功能（函式/方法）打包在一起，方便統一管理與調用。`,
-  validate: (runResult) => {
-    const moduleConfig = runResult.moduleConfig || {};
-    const { moduleId, range = 0, mode, isMethodInvoked } = moduleConfig;
+// ✅ 正解：廣域普查，一發覆蓋全空域
+activateScan(scanParams);   // 回傳 "SCAN_COMPLETE"
 
-    if (moduleId !== 'quantum-scanner') {
+// ❌ 集束波：一次只能解析單顆目標
+focusScan(scanParams);      // 回傳 "PARTIAL_SINGLE"
+
+// ❌ 短促回波：只能看到近距離殘影
+pingEcho(scanParams);       // 回傳 "PARTIAL_NEAR"`,
+  conceptExplanation: `**函式 (Function)** 是程式的「動詞」，負責做事；**物件 (Object)** 常被當成「一包參數」傳進函式，寫成 \`f(x)\`。同一個原料包傳給不同的函式，結果完全不同——選對函式跟配對參數一樣重要。這就是本關 3D 裡三種波型看起來完全不一樣的原因。`,
+  validate: (runResult) => {
+    // 新形狀 { methodCall: { methodId, params } }，相容舊形狀 { moduleConfig: {...} }
+    const legacy = runResult.moduleConfig || null;
+    const methodCall = runResult.methodCall || runResult || {};
+    let { methodId, params = {} } = methodCall;
+
+    if (!methodId && legacy) {
+      // 舊存檔遷移：quantum-scanner 視為選對方法，其餘視為選錯方法
+      if (legacy.moduleId === 'quantum-scanner' && legacy.isMethodInvoked) {
+        methodId = 'activateScan';
+        params = { range: legacy.range ?? 0, mode: legacy.mode ?? 'NORMAL' };
+      } else if (legacy.moduleId) {
+        methodId = 'pingEcho';
+        params = { range: legacy.range ?? 0, mode: legacy.mode ?? 'NORMAL' };
+      }
+    }
+
+    // 1. 先判方法選型（方法錯就不談數值）
+    if (methodId === 'focusScan') {
       return {
         pass: false,
-        error: '模組選型錯誤！「基礎聲納感測器」最大範圍僅 12 單位，無法探測遠端目標。請切換為「量子廣角光譜儀」。'
+        error: '方法選型錯誤！focusScan 是集束直線波，一次只能解析單顆指定目標，無法完成「全空域普查」。請改呼叫 activateScan(scanParams)。',
+        details: { methodId, expected: 'activateScan' }
       };
     }
 
-    if (range < 18) {
+    if (methodId !== 'activateScan') {
       return {
         pass: false,
-        error: `掃描半徑不足！目前設定為 ${range} 單位，最遠的隱藏天體位於 18 單位處，請將半徑調至 18 或以上！`,
+        error: '方法選型錯誤！pingEcho 是短促回波，只能看到近距離殘影，遠端天體完全收不到訊號。請改呼叫 activateScan(scanParams)。',
+        details: { methodId, expected: 'activateScan' }
+      };
+    }
+
+    // 2. 參數物件完整性
+    const { range = 0, mode } = params;
+    if (range === undefined || range === null || mode === undefined) {
+      return {
+        pass: false,
+        error: '參數物件不完整！scanParams 必須包含 range（掃描半徑）與 mode（解析度）兩個屬性。',
+        details: { params }
+      };
+    }
+
+    // 3. 參數閾值
+    const numRange = Number(range);
+    if (isNaN(numRange) || numRange < 18) {
+      return {
+        pass: false,
+        error: `參數不足！目前 scanParams.range 為 ${range} 單位，最遠的隱藏天體位於 18 單位處，請將半徑調至 18 或以上！`,
         details: { range, targetRange: 18 }
       };
     }
@@ -77,21 +139,14 @@ scannerModule.activateScan();`,
     if (mode !== 'HIGH') {
       return {
         pass: false,
-        error: '解析度設定過低！請將 mode 屬性切換為 "HIGH" 才能解析星圖深空頻譜。'
-      };
-    }
-
-    if (!isMethodInvoked) {
-      return {
-        pass: false,
-        error: '模組已配置但尚未呼叫啟動方法！請點擊「呼叫 scanner.activateScan()」按鈕觸發掃描。'
+        error: '參數不足！請將 scanParams.mode 切換為 "HIGH" 才能解析星圖深空頻譜。'
       };
     }
 
     return {
       pass: true,
-      data: { moduleId, range, mode },
-      feedback: `深空掃描大獲全勝！量子光波完全覆蓋 ${range} 單位空域，所有隱匿星體座標已全數解密歸檔！`
+      data: { methodId, range: numRange, mode, returns: 'SCAN_COMPLETE' },
+      feedback: `深空普查大獲全勝！activateScan(scanParams) 一發覆蓋 ${numRange} 單位空域，回傳 "SCAN_COMPLETE"，所有隱匿星體座標已全數解密歸檔！`
     };
   }
 };

@@ -241,11 +241,14 @@ const activeScopeVariables = computed(() => {
       { name: 'isLooping', type: 'boolean', value: String(levelStore.isExecuting) }
     ];
   } else if (currentId === 5) {
-    const mc = saved?.moduleConfig || {};
+    const mc = saved?.methodCall || null;
+    const legacy = saved?.moduleConfig || {};
+    const methodId = mc?.methodId || (legacy.moduleId === 'quantum-scanner' ? 'activateScan' : 'pingEcho');
+    const p = mc?.params || {};
     return [
-      { name: 'module.name', type: 'string', value: `"${mc.moduleId || 'basic-sensor'}"` },
-      { name: 'module.range', type: 'number', value: mc.range ?? 10 },
-      { name: 'module.mode', type: 'string', value: `"${mc.mode || 'NORMAL'}"` }
+      { name: 'call', type: 'function', value: `${methodId || 'pingEcho'}(scanParams)` },
+      { name: 'scanParams.range', type: 'number', value: p.range ?? legacy.range ?? 10 },
+      { name: 'scanParams.mode', type: 'string', value: `"${p.mode || legacy.mode || 'NORMAL'}"` }
     ];
   } else if (currentId === 6) {
     const ds = saved?.domState || {};
