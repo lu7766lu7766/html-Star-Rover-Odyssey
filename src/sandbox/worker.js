@@ -3,7 +3,7 @@
  * Runs student code in an isolated environment with restricted APIs
  */
 
-import { MockDocument } from './mockDOM.js';
+import { MockDocument, MockElement } from './mockDOM.js';
 import { MSG_TYPE } from './protocol.js';
 
 const workerSelf = self;
@@ -62,6 +62,14 @@ workerSelf.onmessage = function (e) {
     return;
   }
 
+  if (type === MSG_TYPE.GET_SNAPSHOT) {
+    workerSelf.postMessage({
+      type: MSG_TYPE.DOM_SNAPSHOT,
+      payload: currentMockDoc ? currentMockDoc.getSnapshot() : null
+    });
+    return;
+  }
+
   if (type === MSG_TYPE.EXECUTE) {
     const { code, levelId, initialData } = payload;
     recordedAPICalls = [];
@@ -73,6 +81,17 @@ workerSelf.onmessage = function (e) {
         payload: currentMockDoc.getSnapshot()
       });
     });
+
+    // L6 太空艙儀表板：預埋兩顆按鈕＋狀態燈＋氣閘門
+    if (levelId === 6) {
+      const seed = (id, tag, text, color) => {
+        currentMockDoc.elements[id] = new MockElement(id, tag, text, color, currentMockDoc._onMutation);
+      };
+      seed('disarm-btn', 'button', '解除警報', '#00f2fe');
+      seed('airlock-btn', 'button', '開啟氣閘', '#00f2fe');
+      seed('status-indicator', 'div', '警報中 (ALARM)', 'red');
+      seed('airlock-door', 'div', '氣閘關閉 (LOCKED)', 'gray');
+    }
 
     // Game APIs exposed to student code
     const rover = {

@@ -10,6 +10,7 @@ export class MockElement {
     this._innerText = initialText;
     this._onMutation = onMutation;
     this._listeners = {};
+    this._classes = new Set();
 
     const self = this;
     this.style = new Proxy({ color: initialColor }, {
@@ -21,6 +22,25 @@ export class MockElement {
         return true;
       }
     });
+    // 最小 classList：支援 add / remove / contains / toggle（L6 氣閘門開關）
+    this.classList = {
+      add: (...tokens) => {
+        tokens.forEach((t) => self._classes.add(t));
+        if (self._onMutation) self._onMutation(self.serialize());
+      },
+      remove: (...tokens) => {
+        tokens.forEach((t) => self._classes.delete(t));
+        if (self._onMutation) self._onMutation(self.serialize());
+      },
+      contains: (token) => self._classes.has(token),
+      toggle: (token, force) => {
+        const shouldHave = force !== undefined ? !!force : !self._classes.has(token);
+        if (shouldHave) self._classes.add(token);
+        else self._classes.delete(token);
+        if (self._onMutation) self._onMutation(self.serialize());
+        return shouldHave;
+      }
+    };
   }
 
   get innerText() {
@@ -63,6 +83,8 @@ export class MockElement {
       tagName: this.tagName,
       innerText: this._innerText,
       style: { ...this.style },
+      classes: [...this._classes],
+      listenerTypes: Object.keys(this._listeners),
       hasListener: Object.keys(this._listeners).length > 0
     };
   }
@@ -86,6 +108,19 @@ export class MockDocument {
       this.elements[id] = new MockElement(id, 'div', '', '', this._onMutation);
     }
     return this.elements[id];
+  }
+
+  // 最小 querySelector：支援 #id（L6 教學對照碼寫法）
+  querySelector(selector) {
+    if (typeof selector === 'string' && selector.startsWith('#')) {
+      return this.getElementById(selector.slice(1));
+    }
+    return null;
+  }
+
+  querySelectorAll(selector) {
+    const el = this.querySelector(selector);
+    return el ? [el] : [];
   }
 
   getSnapshot() {

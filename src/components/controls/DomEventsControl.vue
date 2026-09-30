@@ -5,15 +5,73 @@
         <MousePointer :size="18" class="text-brand" />
         <h3 class="deck-title">DOM 事件實驗室 · 幫網頁按鈕接上電線</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="onReset" title="還原場景與參數至最初狀態">
-        <RotateCcw :size="14" />
-        <span>還原</span>
-      </button>
+      <div class="header-actions">
+        <button
+          class="btn btn-sm"
+          :class="mode === 'blocks' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'blocks'"
+          title="接線表單模式（新手友善，上限 2 星）"
+        >
+          <span>🧩 接線</span>
+        </button>
+        <button
+          class="btn btn-sm"
+          :class="mode === 'code' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'code'"
+          title="手寫 JS 模式（模擬點擊驗證拿 3 星）"
+        >
+          <span>⌨️ 寫碼</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="onReset" title="還原場景與參數至最初狀態">
+          <RotateCcw :size="14" />
+          <span>還原</span>
+        </button>
+      </div>
     </div>
 
     <div class="deck-content">
+      <!-- 0. Code mode（L6：手寫接線＋回呼，走 Worker 模擬點擊） -->
+      <div v-if="mode === 'code'" class="code-mode-card card">
+        <div class="code-mode-header">
+          <div class="code-mode-title">
+            <Code :size="15" class="text-brand" />
+            <span>手寫 JS 挑戰 · 把 ___ 補完再執行</span>
+          </div>
+          <span class="badge badge-info">守衛判斷 = 3星</span>
+        </div>
+        <div class="code-editor-wrap">
+          <CodeEditor v-model="studentCode" :level-id="6" @reset="resetCode" />
+        </div>
+        <div class="code-mode-note">
+          <span>系統會自動點擊驗證：先解除警報再開門（門要開），以及警報中直接開門（門必須關著）。上方 2D 網頁僅供表單模式操作。</span>
+        </div>
+        <div class="code-mode-actions">
+          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值">
+            <span>💡 填入提示值</span>
+          </button>
+          <button
+            class="btn btn-success execute-btn"
+            :disabled="levelStore.isExecuting || !studentCode.trim()"
+            @click="runCodeExecution"
+          >
+            <Play :size="16" />
+            <span>{{ levelStore.isExecuting ? '模擬點擊中...' : '執行 JS 並模擬點擊' }}</span>
+          </button>
+        </div>
+        <div class="code-mode-logs" v-if="levelStore.executionLogs.length > 0">
+          <div
+            v-for="log in levelStore.executionLogs.slice(-4)"
+            :key="log.id"
+            class="mini-log"
+            :class="'mini-log-' + log.type"
+          >
+            {{ log.message }}
+          </div>
+        </div>
+      </div>
+
       <!-- Steps checklist -->
-      <div class="steps-row">
+      <div v-if="mode === 'blocks'" class="steps-row">
         <div class="step" :class="{ done: step1Done }">
           <span class="step-num">1</span>
           <span>兩顆按鈕都綁 <b>click</b></span>
@@ -32,7 +90,7 @@
       </div>
 
       <!-- 1. Bindings -->
-      <div class="binding-card card">
+      <div v-if="mode === 'blocks'" class="binding-card card">
         <h4 class="card-subtitle">1. 配置事件監聽器 — 就像幫按鈕接電線</h4>
         <p class="card-tip">左邊是「元素」，中間選「什麼動作會觸發」，右邊選「觸發後要做什麼」。改完立刻看上方 2D 網頁按鈕上的 👂 徽章變化！</p>
 
@@ -85,8 +143,8 @@
         </div>
       </div>
 
-      <!-- 2. Live JS preview -->
-      <div class="code-card card">
+      <!-- 2. Live JS preview（接線模式專用，寫碼模式不預演） -->
+      <div v-if="mode === 'blocks'" class="code-card card">
         <div class="code-head">
           <h4 class="card-subtitle">2. 你剛剛寫的 JS 長這樣（即時連動）</h4>
           <span class="live-tag">LIVE</span>
@@ -100,9 +158,10 @@
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        綁定 click ➔ 上方網頁先解除警報 ➔ 再開氣閘 ➔ 提交驗證
+        {{ mode === 'code' ? '寫碼模式：在上方編輯器按執行，系統自動兩路點擊驗證' : '綁定 click ➔ 上方網頁先解除警報 ➔ 再開氣閘 ➔ 提交驗證' }}
       </div>
       <button
+        v-if="mode === 'blocks'"
         class="btn btn-success execute-btn"
         :disabled="levelStore.isExecuting"
         @click="runExecution"
@@ -115,18 +174,24 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import {
-  MousePointer, RotateCcw, Play
+  MousePointer, RotateCcw, Play, Code
 } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { useDomLabStore } from '../../stores/domLabStore.js';
 import { soundManager } from '../../game/core/SoundManager.js';
+import { LEVEL_6_STARTER_CODE } from '../../levels/level-6.js';
+import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 const dom = useDomLabStore();
+
+// 混合漸進：預設寫碼模式（填空），接線表單當鷹架
+const mode = ref('code');
+const studentCode = ref(LEVEL_6_STARTER_CODE);
 
 const step1Done = computed(() =>
   dom.disarmEvent === 'click' && dom.disarmAction === 'DISARM_ALARM' &&
@@ -137,8 +202,13 @@ const airlockWireOk = computed(() => dom.airlockEvent === 'click' && dom.airlock
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(6);
-  if (saved && saved.domState) {
-    dom.hydrateFromSaved(saved.domState);
+  if (saved) {
+    if (typeof saved.code === 'string' && saved.code.length > 0) {
+      studentCode.value = saved.code;
+    }
+    if (saved.domState) {
+      dom.hydrateFromSaved(saved.domState);
+    }
   }
 });
 
@@ -154,6 +224,29 @@ function onReset() {
 
 function runExecution() {
   levelStore.executeLevel({ domState: dom.getDomStateForValidation() });
+}
+
+function runCodeExecution() {
+  levelStore.executeLevel({ code: studentCode.value });
+}
+
+function resetCode() {
+  studentCode.value = LEVEL_6_STARTER_CODE;
+}
+
+function fillAnswerHint() {
+  studentCode.value = studentCode.value
+    .replace("document.querySelector(___);", 'document.querySelector("#disarm-btn");')
+    .replace("document.querySelector(___);", 'document.querySelector("#airlock-btn");')
+    .replace("document.querySelector(___);", 'document.querySelector("#status-indicator");')
+    .replace("document.querySelector(___);", 'document.querySelector("#airlock-door");')
+    .replace("addEventListener(___, () => {", 'addEventListener("click", () => {')
+    .replace("addEventListener(___, () => {", 'addEventListener("click", () => {')
+    .replace("statusEl.textContent = ___;", 'statusEl.textContent = "系統正常 (NORMAL)";')
+    .replace("statusEl.style.color = ___;", 'statusEl.style.color = "green";')
+    .replace("if (!___) {", "if (!isAlarmActive) {")
+    .replace("doorEl.classList.add(___);", 'doorEl.classList.add("open");')
+    .replace("doorEl.textContent = ___;", 'doorEl.textContent = "氣閘已開啟 (OPEN)";');
 }
 </script>
 
@@ -330,5 +423,89 @@ function runExecution() {
 .execute-btn {
   padding: 0.5rem 1.4rem;
   font-size: 0.92rem;
+}
+
+/* L6: code mode */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.code-mode-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.code-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.code-mode-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.code-editor-wrap {
+  height: 280px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.code-mode-note {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-panel-hover);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
+  line-height: 1.5;
+}
+
+.code-mode-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.code-mode-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mini-log {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-hover);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.mini-log-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.mini-log-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
 }
 </style>

@@ -152,7 +152,45 @@ export const useLevelStore = defineStore('level', {
 
       // 新鏈路：payload.code 代表學生手寫 JS，先丟 Worker 真跑
       let tracePayload = payload;
-      if (typeof payload.code === 'string') {
+      if (typeof payload.code === 'string' && currentLevel.id === 6) {
+        // L6 太空艙：跑接線＋模擬正確/錯誤兩路點擊順序
+        this.appendLog({ type: 'info', message: '🖥️ 沙箱執行學生程式碼並模擬點擊中...' });
+        const domRes = await sandboxRuntime.runDomLevel(payload.code, {
+          onLog: (log) => {
+            this.appendLog({ type: log.type === 'error' ? 'error' : 'info', message: `console.${log.type}: ${log.args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}` });
+          },
+          onApiCall: () => {}
+        });
+
+        if (!domRes.success) {
+          const errResult = {
+            pass: false,
+            error: `程式執行失敗：第 ${extractLine(domRes.stack)} 行附近 → ${domRes.error}`,
+            details: { stack: domRes.stack, logs: domRes.logs }
+          };
+          this.lastRunResult = errResult;
+          this.appendLog({ type: 'error', message: `⚠️ [未通過] ${errResult.error}` });
+          if (this.sceneActionTrigger) {
+            this.sceneActionTrigger('LEVEL_FAIL', { levelId: currentLevel.id, evaluation: errResult });
+          }
+          if (this.failModalTimer) clearTimeout(this.failModalTimer);
+          this.failModalTimer = setTimeout(() => { this.isFailModalOpen = true; }, 750);
+          this.isExecuting = false;
+          return errResult;
+        }
+
+        for (const l of domRes.logs || []) {
+          this.appendLog({ type: l.type === 'error' ? 'error' : 'info', message: `console.${l.type}: ${l.args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}` });
+        }
+
+        tracePayload = {
+          ...payload,
+          apiCalls: domRes.apiCalls || [],
+          domWiring: domRes.wiring || {},
+          domCorrect: domRes.afterCorrect,
+          domWrong: domRes.afterWrongOrder
+        };
+      } else if (typeof payload.code === 'string') {
         this.appendLog({ type: 'info', message: '🖥️ 沙箱執行學生程式碼中...' });
         const runRes = await sandboxRuntime.execute({
           code: payload.code,

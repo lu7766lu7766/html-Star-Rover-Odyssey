@@ -613,4 +613,50 @@ for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
     expect(missing7.pass).toBe(false);
     expect(missing7.error).toContain('droneFleet.deploy');
   });
+
+  // L6 code mode: wiring + two-order click snapshots
+  it('Level 6 code mode: validates wiring and correct/wrong click orders', () => {
+    const el = (listenerTypes = [], innerText = '', style = {}, classes = []) => ({
+      innerText, style, classes, listenerTypes, hasListener: listenerTypes.length > 0
+    });
+    const wiring = {
+      'disarm-btn': el(['click']),
+      'airlock-btn': el(['click']),
+      'status-indicator': el([], '警報中 (ALARM)', { color: 'red' }),
+      'airlock-door': el([], '氣閘關閉 (LOCKED)', { color: 'gray' })
+    };
+    const correct = {
+      'status-indicator': el([], '系統正常 (NORMAL)', { color: 'green' }),
+      'airlock-door': el([], '氣閘已開啟 (OPEN)', { color: 'green' }, ['open'])
+    };
+    const wrong = {
+      'airlock-door': el([], '氣閘關閉 (LOCKED)', { color: 'gray' })
+    };
+    const code = 'document.querySelector("#disarm-btn").addEventListener("click", () => { statusEl.textContent = "NORMAL"; statusEl.style.color = "green"; }); doorEl.classList.add("open");';
+
+    const best = level6.validate({ domWiring: wiring, domCorrect: correct, domWrong: wrong, code });
+    expect(best.pass).toBe(true);
+    expect(best.data.stars).toBe(3);
+
+    // mouseover instead of click -> fail
+    const badWire = { ...wiring, 'disarm-btn': el(['mouseover']) };
+    expect(level6.validate({ domWiring: badWire, domCorrect: correct, domWrong: wrong, code }).pass).toBe(false);
+
+    // guard missing: wrong order opens door -> fail
+    const noGuard = { 'airlock-door': el([], '氣閘已開啟 (OPEN)', {}, ['open']) };
+    const noGuardRes = level6.validate({ domWiring: wiring, domCorrect: correct, domWrong: noGuard, code });
+    expect(noGuardRes.pass).toBe(false);
+    expect(noGuardRes.error).toContain('安全協議');
+
+    // status never normalized -> fail
+    const badStatus = { ...correct, 'status-indicator': el([], '警報中 (ALARM)', { color: 'red' }) };
+    expect(level6.validate({ domWiring: wiring, domCorrect: badStatus, domWrong: wrong, code }).pass).toBe(false);
+
+    // door never opens -> fail
+    const shutDoor = { ...correct, 'airlock-door': el([], '氣閘關閉 (LOCKED)') };
+    expect(level6.validate({ domWiring: wiring, domCorrect: shutDoor, domWrong: wrong, code }).pass).toBe(false);
+
+    // no wiring at all -> fail (old form shape has no bindings)
+    expect(level6.validate({}).pass).toBe(false);
+  });
 });

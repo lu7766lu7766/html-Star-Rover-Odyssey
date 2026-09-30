@@ -3,6 +3,31 @@
  * 核心概念：事件與 DOM (Events & DOM - addEventListener)
  */
 
+export const LEVEL_6_STARTER_CODE = `// 太空艙控制中心：把 ___ 補完，再按執行
+// 系統會自動依序點擊驗證：先解除警報，再開氣閘
+// （也會偷測：警報沒解除就開門，門必須保持關閉！）
+
+const disarmButton = document.querySelector(___);
+const airlockButton = document.querySelector(___);
+const statusEl = document.querySelector(___);
+const doorEl = document.querySelector(___);
+
+let isAlarmActive = true;
+
+disarmButton.addEventListener(___, () => {
+  isAlarmActive = false;
+  statusEl.textContent = ___;
+  statusEl.style.color = ___;
+});
+
+airlockButton.addEventListener(___, () => {
+  if (!___) {
+    doorEl.classList.add(___);
+    doorEl.textContent = ___;
+  }
+});
+`;
+
 export default {
   id: 6,
   title: '太空艙控制中心',
@@ -57,7 +82,87 @@ airlockButton.addEventListener('click', () => {
   }
 });`,
   conceptExplanation: `網頁就是一棵 DOM 樹，每個按鈕、文字、艙門都是一個節點。addEventListener('click', callback) 是「幫節點接電線」：先接好，之後使用者一點擊，瀏覽器就自動跑回呼。本關上方就是一個真的 2D 網頁，你親手接線、親手點擊，親眼看到 textContent、style、class 被改寫——這就是前端工程師每天在做的事！`,
+  starterCode: LEVEL_6_STARTER_CODE,
   validate: (runResult) => {
+    // 新鏈路：Worker 真跑接線＋模擬兩路點擊的快照
+    if (runResult.domWiring) {
+      const code = runResult.code || '';
+      const wiring = runResult.domWiring || {};
+      const correct = runResult.domCorrect;
+      const wrong = runResult.domWrong;
+
+      const listensTo = (snap, id, ev) => {
+        const types = snap?.[id]?.listenerTypes || [];
+        return types.includes(ev);
+      };
+
+      if (!listensTo(wiring, 'disarm-btn', 'click')) {
+        return {
+          pass: false,
+          error: '#disarm-btn 沒有接上 click 監聽！請寫 disarmButton.addEventListener(\'click\', ...)（mouseover / dblclick 不算，日常按鈕用點擊）。'
+        };
+      }
+      if (!listensTo(wiring, 'airlock-btn', 'click')) {
+        return {
+          pass: false,
+          error: '#airlock-btn 沒有接上 click 監聽！請寫 airlockButton.addEventListener(\'click\', ...)。'
+        };
+      }
+      if (!correct || !wrong) {
+        return {
+          pass: false,
+          error: '模擬點擊沒有回傳 DOM 快照，請重試一次。'
+        };
+      }
+
+      const doorOf = (snap) => snap?.['airlock-door'] || {};
+      const statusOf = (snap) => snap?.['status-indicator'] || {};
+      const isDoorOpen = (door) =>
+        (door.classes || []).includes('open') || /OPEN|開啟/.test(door.innerText || '');
+      const isStatusNormal = (st) =>
+        /NORMAL|正常/.test(st.innerText || '') || /green/i.test(st.style?.color || '');
+
+      // 錯誤順序先驗：警報中開門必須被擋下（守衛判斷）
+      if (isDoorOpen(doorOf(wrong))) {
+        return {
+          pass: false,
+          error: '安全協議被繞過！警報還沒解除時點擊開門，門竟然開了。氣閘回呼裡必須先判斷警報狀態（例如 if (!isAlarmActive)），警報中禁止開門！'
+        };
+      }
+      if (!isStatusNormal(statusOf(correct))) {
+        return {
+          pass: false,
+          error: '解除警報沒生效！點擊 #disarm-btn 後，#status-indicator 應該轉為正常（改 textContent 和 style.color 試試）。'
+        };
+      }
+      if (!isDoorOpen(doorOf(correct))) {
+        return {
+          pass: false,
+          error: '氣閘沒開！解除警報後點擊 #airlock-btn，#airlock-door 應該滑開（加上 open class、改文字）。'
+        };
+      }
+
+      // 星級：用了幾種 DOM 手法
+      const apis = ['querySelector', 'getElementById', 'addEventListener', 'textContent', 'style', 'classList']
+        .filter((api) => code.includes(api)).length;
+      let stars, suffix;
+      if (apis >= 4) {
+        stars = 3;
+        suffix = '（3星：選擇＋監聽＋改寫全用上，完整前端流程！）';
+      } else if (apis >= 2) {
+        stars = 2;
+        suffix = '（2星：過關！再用上 textContent / style / classList 改寫畫面拿 3 星！）';
+      } else {
+        stars = 1;
+        suffix = '（1星：過關但 DOM 手法太少，多用選擇器與改寫 API 拿 3 星！）';
+      }
+      return {
+        pass: true,
+        data: { disarmed: true, airlockOpen: true, stars, fromCode: true },
+        feedback: `2D 網頁修復成功！接線、點擊、改寫一次到位，警報解除、氣閘滑開，錯誤順序也被安全協議擋下！${suffix}`
+      };
+    }
+
     const domState = runResult.domState || {};
     const { bindings = {}, disarmed = false, airlockOpen = false } = domState;
 
@@ -91,8 +196,8 @@ airlockButton.addEventListener('click', () => {
 
     return {
       pass: true,
-      data: { disarmed, airlockOpen },
-      feedback: `2D 網頁修復成功！你親手接好 addEventListener、親手點擊觸發，#status-indicator 轉綠、#airlock-door 滑開——這就是 JS 操控 DOM 的完整流程！`
+      data: { disarmed, airlockOpen, stars: 2, fromCode: false },
+      feedback: `2D 網頁修復成功！你親手接好 addEventListener、親手點擊觸發，#status-indicator 轉綠、#airlock-door 滑開——這就是 JS 操控 DOM 的完整流程！（2星：表單模式上限，切「寫碼」手寫接線拿 3 星）`
     };
   }
 };

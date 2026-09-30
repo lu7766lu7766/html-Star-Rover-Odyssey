@@ -48,6 +48,11 @@ export class SandboxRuntime {
 
       case MSG_TYPE.DOM_MUTATION:
         if (callbacks?.onDomMutation) callbacks.onDomMutation(payload);
+        if (this._mutationWaiter) this._mutationWaiter.resolve(payload);
+        break;
+
+      case MSG_TYPE.DOM_SNAPSHOT:
+        if (this._snapshotWaiter) this._snapshotWaiter.resolve(payload);
         break;
 
       case MSG_TYPE.GAME_API_CALL:
@@ -165,6 +170,87 @@ export class SandboxRuntime {
       type: MSG_TYPE.TRIGGER_EVENT,
       payload: { targetId, eventType }
     });
+  }
+
+  /**
+   * Triggers an event and waits for the resulting DOM mutation.
+   * Resolves with the mutation snapshot, or null on timeout
+   * (e.g. handler does nothing — caller should then getSnapshot()).
+   */
+  triggerEventAndWait(targetId, eventType = 'click', timeoutMs = 800) {
+    if (!this.worker) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this._mutationWaiter = null;
+        resolve(null);
+      }, timeoutMs);
+      this._mutationWaiter = {
+        resolve: (snap) => {
+          clearTimeout(timer);
+          this._mutationWaiter = null;
+          resolve(snap);
+        }
+      };
+      this.worker.postMessage({
+        type: MSG_TYPE.TRIGGER_EVENT,
+        payload: { targetId, eventType }
+      });
+    });
+  }
+
+  /**
+   * Asks the worker for an authoritative DOM snapshot.
+   */
+  getSnapshot(timeoutMs = 800) {
+    if (!this.worker) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this._snapshotWaiter = null;
+        resolve(null);
+      }, timeoutMs);
+      this._snapshotWaiter = {
+        resolve: (snap) => {
+          clearTimeout(timer);
+          this._snapshotWaiter = null;
+          resolve(snap);
+        }
+      };
+      this.worker.postMessage({ type: MSG_TYPE.GET_SNAPSHOT, payload: {} });
+    });
+  }
+
+  /**
+   * L6 太空艙專用：跑學生程式碼，接著模擬「正確順序」
+   * （先解除警報再開門）與「錯誤順序」（警報中直接開門）兩路點擊，
+   * 回傳接線快照與兩路結果供 validate 純函式判定。
+   */
+  async runDomLevel(code, { onLog, onApiCall } = {}) {
+    const first = await this.execute({ code, levelId: 6, onLog, onApiCall });
+    if (!first.success) {
+      return { success: false, error: first.error, stack: first.stack, logs: first.logs };
+    }
+    await this.triggerEventAndWait('disarm-btn', 'click');
+    const afterDisarm = await this.getSnapshot();
+    await this.triggerEventAndWait('airlock-btn', 'click');
+    const afterCorrect = await this.getSnapshot();
+
+    // 錯誤順序：全新狀態下警報未解除就開門，門必須保持關閉
+    const second = await this.execute({ code, levelId: 6 });
+    if (!second.success) {
+      return { success: false, error: second.error, stack: second.stack, logs: first.logs };
+    }
+    await this.triggerEventAndWait('airlock-btn', 'click');
+    const afterWrongOrder = await this.getSnapshot();
+
+    return {
+      success: true,
+      apiCalls: first.apiCalls || [],
+      logs: first.logs || [],
+      wiring: first.domState || {},
+      afterDisarm,
+      afterCorrect,
+      afterWrongOrder
+    };
   }
 }
 

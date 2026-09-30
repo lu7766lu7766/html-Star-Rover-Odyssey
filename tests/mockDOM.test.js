@@ -43,4 +43,24 @@ describe('Mock DOM in Worker Sandbox', () => {
     expect(status.innerText).toBe('已解除鎖定');
     expect(status.style.color).toBe('green');
   });
+
+  it('supports classList and querySelector with listener introspection', () => {
+    const doc = new MockDocument();
+    const door = doc.getElementById('airlock-door');
+    door.classList.add('open');
+    expect(door.classList.contains('open')).toBe(true);
+    door.classList.remove('open');
+    expect(door.classList.contains('open')).toBe(false);
+
+    const viaQuery = doc.querySelector('#btn-unlock');
+    expect(viaQuery.innerText).toBe('解除安全鎖');
+    expect(doc.querySelector('.nope')).toBe(null);
+
+    viaQuery.addEventListener('click', () => {});
+    viaQuery.addEventListener('mouseover', () => {});
+    const snap = doc.getSnapshot();
+    expect(snap['btn-unlock'].listenerTypes).toContain('click');
+    expect(snap['btn-unlock'].listenerTypes).toContain('mouseover');
+    expect(snap['airlock-door'].classes).toEqual([]);
+  });
 });
