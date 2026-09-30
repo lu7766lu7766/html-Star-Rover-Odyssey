@@ -21,7 +21,8 @@ export function createLevelCompletions(levelId) {
       { label: 'rover.setup', type: 'function', detail: '(name, battery, isActive) 探測船通電開機', apply: 'rover.setup(shipName, battery, isActive);' }
     ],
     2: [
-      { label: 'rover.launch', type: 'function', detail: '(remainingFuel) 推進發射', apply: 'rover.launch(remainingFuel);' }
+      { label: 'rover.launch', type: 'function', detail: '(remainingFuel) 推進發射', apply: 'rover.launch(remainingFuel);' },
+      { label: 'rover.approachStation', type: 'function', detail: '({distance, speed, remainingFuel}) 軌道轉移進站', apply: 'rover.approachStation({ distance, speed, remainingFuel });' }
     ],
     3: [
       { label: 'rover.setAutoPilot', type: 'function', detail: '(callback) 註冊避障邏輯函式', apply: 'rover.setAutoPilot(autoPilot);' },

@@ -119,6 +119,14 @@ workerSelf.onmessage = function (e) {
           payload: { api: 'rover.launch', args: [remainingFuel] }
         });
       },
+      // L2 orbital transfer (records full flight params for level-2 validate)
+      approachStation: (flightPlan) => {
+        recordedAPICalls.push({ api: 'rover.approachStation', args: [flightPlan] });
+        workerSelf.postMessage({
+          type: MSG_TYPE.GAME_API_CALL,
+          payload: { api: 'rover.approachStation', args: [flightPlan] }
+        });
+      },
       setAutoPilot: (pilotFn) => {
         let testResults = null;
         let fnError = null;

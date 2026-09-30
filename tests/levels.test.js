@@ -504,4 +504,36 @@ for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
     expect(missing.pass).toBe(false);
     expect(missing.error).toContain('rover.setup');
   });
+
+  // L2 code mode: approachStation trace + variable stars
+  it('Level 2 code mode: validates approachStation trace and awards stars by variables', () => {
+    const planCall = (plan) => [{ api: 'rover.approachStation', args: [plan] }];
+    const fullCode = 'let initialFuel = 300;\nconst burnRate = 25;\nconst count = 8;\nconst speed = 3;\nlet totalBurn = burnRate * count;\nlet remainingFuel = initialFuel - totalBurn;\nlet distance = count * speed;';
+
+    const best = level2.validate({
+      apiCalls: planCall({ distance: 24, speed: 3, remainingFuel: 100 }),
+      code: fullCode
+    });
+    expect(best.pass).toBe(true);
+    expect(best.data.stars).toBe(3);
+
+    // hard-coded literals -> 1 star
+    const spam = level2.validate({
+      apiCalls: planCall({ distance: 24, speed: 2, remainingFuel: 50 }),
+      code: 'rover.approachStation({ distance: 24, speed: 2, remainingFuel: 50 });'
+    });
+    expect(spam.pass).toBe(true);
+    expect(spam.data.stars).toBe(1);
+
+    // failures
+    expect(level2.validate({ apiCalls: planCall({ distance: 20, speed: 2, remainingFuel: 10 }), code: '' }).pass).toBe(false);
+    expect(level2.validate({ apiCalls: planCall({ distance: 28, speed: 2, remainingFuel: 10 }), code: '' }).pass).toBe(false);
+    expect(level2.validate({ apiCalls: planCall({ distance: 24, speed: 4, remainingFuel: 10 }), code: '' }).pass).toBe(false);
+    expect(level2.validate({ apiCalls: planCall({ distance: 24, speed: 3, remainingFuel: -5 }), code: '' }).pass).toBe(false);
+
+    // missing call -> fail with guidance
+    const missing = level2.validate({ apiCalls: [{ api: 'rover.launch', args: [1] }], code: '' });
+    expect(missing.pass).toBe(false);
+    expect(missing.error).toContain('approachStation');
+  });
 });

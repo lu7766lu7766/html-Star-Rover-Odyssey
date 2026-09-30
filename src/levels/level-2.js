@@ -3,6 +3,22 @@
  * 核心概念：變數與參數 (Variables & Parameters)
  */
 
+export const LEVEL_2_STARTER_CODE = `// 能源補給站：把 ___ 補完，再按執行
+// 規則：次數 × 速度 必須 = 24，速度 <= 3，總消耗不可超過燃料
+
+let initialFuel = ___;   // 初始燃料，例如 300
+const burnRate = ___;    // 每次消耗，例如 25
+const count = ___;       // 推進次數，例如 8
+const speed = ___;       // 推力速度，例如 3（不可 > 3）
+
+// 用 * 算出總消耗、剩餘燃料與總位移
+let totalBurn = burnRate * count;
+let remainingFuel = initialFuel - totalBurn;
+let distance = count * speed;
+
+rover.approachStation({ distance, speed, remainingFuel });
+`;
+
 export default {
   id: 2,
   title: '能源補給站',
@@ -48,7 +64,76 @@ let distance = count * speed; // 8 * 3 = 24
 // 將計算好的參數傳入推進控制函式
 rover.approachStation({ distance, speed, remainingFuel });`,
   conceptExplanation: `在程式中，**變數 (Variable)** 就像貼有標籤的收納盒，用來暫存各種類型的資料（例如燃料量、速度）。而當我們呼叫功能時，傳入的數值稱為**參數 (Argument / Parameter)**，它會直接影響函式內部的運算結果與角色的物理行為。`,
+  starterCode: LEVEL_2_STARTER_CODE,
   validate: (runResult) => {
+    // 新鏈路：Worker 真跑 rover.approachStation({ distance, speed, remainingFuel })
+    if (runResult.apiCalls && Array.isArray(runResult.apiCalls)) {
+      const calls = runResult.apiCalls.filter((c) => c.api === 'rover.approachStation');
+      if (calls.length === 0) {
+        return {
+          pass: false,
+          error: '沒有偵測到 rover.approachStation(...)！請算出 distance / remainingFuel 並呼叫 rover.approachStation({ distance, speed, remainingFuel })。'
+        };
+      }
+      const plan = calls[calls.length - 1].args[0] || {};
+      const code = runResult.code || '';
+      const targetDistance = 24;
+      const totalDistance = Number(plan.distance);
+      const speed = Number(plan.speed);
+      const remainingFuel = Number(plan.remainingFuel);
+
+      if (!Number.isFinite(totalDistance) || !Number.isFinite(speed) || !Number.isFinite(remainingFuel)) {
+        return {
+          pass: false,
+          error: `參數缺失或不是數字！請傳入 { distance, speed, remainingFuel } 三個數值（收到 ${JSON.stringify(plan)}）。`
+        };
+      }
+      if (remainingFuel < 0) {
+        return {
+          pass: false,
+          error: `燃料耗盡！剩餘燃料為 ${remainingFuel} 單位（總消耗超過初始燃料），推進器在半空中熄火！`
+        };
+      }
+      if (totalDistance < targetDistance) {
+        return {
+          pass: false,
+          error: `推力不足！目前總位移僅 ${totalDistance} 單位，尚未到達距離 ${targetDistance} 的補給平台。`
+        };
+      }
+      if (totalDistance > targetDistance) {
+        return {
+          pass: false,
+          error: `推力過多！總位移 ${totalDistance} 單位衝過了補給平台 (${targetDistance} 單位)！`
+        };
+      }
+      if (speed > 3) {
+        return {
+          pass: false,
+          error: `著陸速度過猛！目前速度為 ${speed}（安全上限為 3），探測船劇烈撞擊停機坪！請降低速度並增加次數。`
+        };
+      }
+
+      // 星級：有沒有用變數 + * 運算（而非手算好數字硬塞）
+      const decls = (code.match(/(let|const)\s+\w+/g) || []).length;
+      const usesMult = code.includes('*');
+      let stars, suffix;
+      if (decls >= 4 && usesMult) {
+        stars = 3;
+        suffix = '（3星：用變數 + * 乘法算出結果，完美！）';
+      } else if (decls >= 2) {
+        stars = 2;
+        suffix = '（2星：值都對，但多用幾個變數 + * 來算，不要手算硬塞，拿 3 星！）';
+      } else {
+        stars = 1;
+        suffix = '（1星：直接硬塞算好的數字！用 let/const + * 自己算拿 3 星！）';
+      }
+      return {
+        pass: true,
+        data: { remainingFuel, totalDistance, speed, stars, fromCode: true },
+        feedback: `著陸大成功！推進總位移精準達到 24 單位，剩餘燃料 ${remainingFuel} 單位，平穩降落能源補給平台！${suffix}`
+      };
+    }
+
     const params = runResult.params || {};
     const { initialFuel = 0, burnPerThrust = 0, thrustCount = 0, speed = 0 } = params;
 
@@ -91,8 +176,8 @@ rover.approachStation({ distance, speed, remainingFuel });`,
 
     return {
       pass: true,
-      data: { remainingFuel, totalDistance, speed },
-      feedback: `著陸大成功！推進總位移精準達到 24 單位，剩餘燃料 ${remainingFuel} 單位，平穩降落能源補給平台！`
+      data: { remainingFuel, totalDistance, speed, stars: 2, fromCode: false },
+      feedback: `著陸大成功！推進總位移精準達到 24 單位，剩餘燃料 ${remainingFuel} 單位，平穩降落能源補給平台！（2星：滑桿模式上限，切「寫碼」用變數 + * 自己算拿 3 星）`
     };
   }
 };
