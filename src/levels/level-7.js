@@ -3,6 +3,21 @@
  * 核心概念：陣列與綜合應用 (Arrays & Iteration)
  */
 
+export const LEVEL_7_STARTER_CODE = `// 無人機編隊：把 ___ 補完，再按執行
+// 規則：電量 < 20 → RETURN_BASE（返航），否則 → PATROL（巡邏）
+// drones 陣列已內建 4 架無人機資料，直接用 forEach 走訪！
+
+drones.forEach((drone) => {
+  if (drone.battery < ___) {
+    drone.order = ___;   // 低電量：返航充電
+  } else {
+    drone.order = ___;   // 高電量：空域巡邏
+  }
+});
+
+droneFleet.deploy(drones);
+`;
+
 export default {
   id: 7,
   title: '無人機編隊',
@@ -48,7 +63,66 @@ fleet.forEach((drone) => {
   }
 });`,
   conceptExplanation: `當我們需要管理多筆同類型的資料（例如全班學生成績、遊戲中的眾多敵人物件）時，會使用**陣列 (Array)**。陣列就像一排置物櫃，可以用 \`[0], [1], [2]...\` 依序索引，也能透過 \`forEach\` 快速對每一筆資料執行相同的邏輯判斷。`,
+  starterCode: LEVEL_7_STARTER_CODE,
   validate: (runResult) => {
+    // 新鏈路：Worker 真跑 forEach + droneFleet.deploy(list) 的 trace
+    if (runResult.apiCalls && Array.isArray(runResult.apiCalls)) {
+      const calls = runResult.apiCalls.filter((c) => c.api === 'droneFleet.deploy');
+      if (calls.length === 0) {
+        return {
+          pass: false,
+          error: '沒有偵測到 droneFleet.deploy(...)！請走訪 drones 陣列、逐架指派 order 後呼叫 droneFleet.deploy(drones)。'
+        };
+      }
+      const list = calls[calls.length - 1].args[0];
+      const code = runResult.code || '';
+      if (!Array.isArray(list) || list.length === 0) {
+        return {
+          pass: false,
+          error: 'deploy 收到的是空陣列！請把指派好 order 的無人機陣列傳入 droneFleet.deploy(...)。'
+        };
+      }
+      for (const d of list) {
+        const order = d.order ?? d.status;
+        const expected = Number(d.battery) < 20 ? 'RETURN_BASE' : 'PATROL';
+        if (!order) {
+          return {
+            pass: false,
+            error: `【${d.name || d.id || '未知無人機'}】沒有 order！請用 forEach 逐架判斷 battery 並指派 "RETURN_BASE" 或 "PATROL"。`
+          };
+        }
+        if (order !== expected) {
+          const why = expected === 'RETURN_BASE'
+            ? `電量僅 ${d.battery}%（< 20%），派去巡邏會在半途斷電墜毀！`
+            : `電量有 ${d.battery}%，應該出發巡邏防守空域！`;
+          return {
+            pass: false,
+            error: `【${d.name || d.id}】指派錯誤：給了【${order}】，正確應為【${expected}】。${why}`
+          };
+        }
+      }
+
+      // 星級：有沒有用迭代（而非手寫 4 筆指派）
+      const hasForEach = code.includes('forEach') || code.includes('filter') || code.includes('.map(');
+      const hasFor = /for\s*\(/.test(code);
+      let stars, suffix;
+      if (hasForEach) {
+        stars = 3;
+        suffix = '（3星：用 forEach/filter 批次處理，完美！）';
+      } else if (hasFor) {
+        stars = 2;
+        suffix = '（2星：過關！改用 forEach/filter 更符合陣列批次精神，拿 3 星！）';
+      } else {
+        stars = 1;
+        suffix = '（1星：一架一架手寫指派也能過，但 40 架時怎麼辦？用 forEach 拿 3 星！）';
+      }
+      return {
+        pass: true,
+        data: { deployed: list.length, stars, fromCode: true },
+        feedback: `編隊調度大獲全勝！${list.length} 架無人機全員正確分流，零損傷安全回傳數據！${suffix}`
+      };
+    }
+
     const fleetConfig = runResult.fleetConfig || {};
     const { batteryThreshold = 20, lowBatteryAction, normalBatteryAction, dispatched = false } = fleetConfig;
 
@@ -82,8 +156,8 @@ fleet.forEach((drone) => {
 
     return {
       pass: true,
-      data: { batteryThreshold, lowBatteryAction, normalBatteryAction },
-      feedback: `編隊調度大獲全勝！游隼號與海鵰號完成全域巡邏，低電量的夜梟號與雀鷹號安全回塢充滿能源！`
+      data: { batteryThreshold, lowBatteryAction, normalBatteryAction, stars: 2, fromCode: false },
+      feedback: `編隊調度大獲全勝！游隼號與海鵰號完成全域巡邏，低電量的夜梟號與雀鷹號安全回塢充滿能源！（2星：表單模式上限，切「寫碼」用 forEach 拿 3 星）`
     };
   }
 };

@@ -575,4 +575,42 @@ for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
     expect(missing5.pass).toBe(false);
     expect(missing5.error).toContain('installModule');
   });
+
+  // L7 code mode: deploy trace + iteration stars
+  it('Level 7 code mode: validates deploy trace and awards stars by iteration', () => {
+    const deployCall = (list) => ([{ api: 'droneFleet.deploy', args: [list] }]);
+    const goodList = [
+      { id: 'DRONE-01', name: '游隼號', battery: 85, order: 'PATROL' },
+      { id: 'DRONE-02', name: '夜梟號', battery: 15, order: 'RETURN_BASE' },
+      { id: 'DRONE-03', name: '海鵰號', battery: 92, order: 'PATROL' },
+      { id: 'DRONE-04', name: '雀鷹號', battery: 12, order: 'RETURN_BASE' }
+    ];
+    const forEachCode = 'drones.forEach((drone) => { if (drone.battery < 20) { drone.order = "RETURN_BASE"; } else { drone.order = "PATROL"; } });';
+
+    const best = level7.validate({ apiCalls: deployCall(goodList), code: forEachCode });
+    expect(best.pass).toBe(true);
+    expect(best.data.stars).toBe(3);
+
+    // for loop -> 2 stars
+    const forCode = 'for (let i = 0; i < drones.length; i++) { if (drones[i].battery < 20) { drones[i].order = "RETURN_BASE"; } else { drones[i].order = "PATROL"; } }';
+    const two = level7.validate({ apiCalls: deployCall(goodList), code: forCode });
+    expect(two.pass).toBe(true);
+    expect(two.data.stars).toBe(2);
+
+    // wrong order names the drone
+    const badList = goodList.map((d) => d.id === 'DRONE-02' ? { ...d, order: 'PATROL' } : d);
+    const bad = level7.validate({ apiCalls: deployCall(badList), code: forEachCode });
+    expect(bad.pass).toBe(false);
+    expect(bad.error).toContain('夜梟號');
+
+    // missing order
+    const noOrder = goodList.map((d) => ({ id: d.id, name: d.name, battery: d.battery }));
+    expect(level7.validate({ apiCalls: deployCall(noOrder), code: forEachCode }).pass).toBe(false);
+    // empty list
+    expect(level7.validate({ apiCalls: deployCall([]), code: '' }).pass).toBe(false);
+    // missing call
+    const missing7 = level7.validate({ apiCalls: [{ api: 'rover.setup', args: [] }], code: '' });
+    expect(missing7.pass).toBe(false);
+    expect(missing7.error).toContain('droneFleet.deploy');
+  });
 });
