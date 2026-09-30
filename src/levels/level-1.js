@@ -3,6 +3,16 @@
  * 核心概念：變數宣告與基礎資料型態 (Variables & Data Types: String, Number, Boolean)
  */
 
+export const LEVEL_1_STARTER_CODE = `// 探測船通電自檢：把 ___ 補完，再按執行
+// 規則：船名不可空、功率 80~100、護罩必須是 true
+
+let roverName = ___;      // 字串：例如 "奧德賽號"
+let powerLevel = ___;     // 數值：80 ~ 100
+let shieldActive = ___;   // 布林值：true 或 false
+
+rover.setup(roverName, powerLevel, shieldActive);
+`;
+
 export default {
   id: 1,
   title: '探測船通電自檢',
@@ -37,7 +47,83 @@ let shieldActive = true;      // 3. 布林值 (Boolean)：只有 true 或 false
 // 將變數傳入探測船自檢系統
 rover.systemCheck({ roverName, powerLevel, shieldActive });`,
   conceptExplanation: `**變數 (Variable)** 是程式設計中最基礎也最重要的觀念。它就像電腦記憶體中的「有名字的抽屜」，讓我們可以把字串（文字）、數值（數字）、布林（真/假開關）等資料存起來，隨時在後續的程式邏輯中使用與修改。`,
+  starterCode: LEVEL_1_STARTER_CODE,
   validate: (runResult) => {
+    // 新鏈路：Worker 真跑 rover.setup(name, battery, isActive) 的 trace
+    if (runResult.apiCalls && Array.isArray(runResult.apiCalls)) {
+      const setups = runResult.apiCalls.filter((c) => c.api === 'rover.setup');
+      if (setups.length === 0) {
+        return {
+          pass: false,
+          error: '沒有偵測到 rover.setup(...)！請宣告三個變數並呼叫 rover.setup(roverName, powerLevel, shieldActive)。'
+        };
+      }
+      const [roverName, powerLevel, shieldActive] = setups[setups.length - 1].args;
+      const code = runResult.code || '';
+
+      const trimmedName = String(roverName ?? '').trim();
+      if (!trimmedName || trimmedName === '未命名' || trimmedName === 'UNKNOWN') {
+        return {
+          pass: false,
+          error: '探測船未命名！roverName 必須是帶名字的字串（例如 "奧德賽號"），不能空字串。',
+          details: { field: 'roverName', current: trimmedName }
+        };
+      }
+      if (typeof roverName !== 'string') {
+        return {
+          pass: false,
+          error: `型態錯誤！roverName 必須是字串 String（記得加引號），你傳入的是 ${typeof roverName}。`,
+          details: { field: 'roverName', current: roverName }
+        };
+      }
+
+      const numPower = Number(powerLevel);
+      if (typeof powerLevel === 'boolean' || isNaN(numPower) || numPower < 80) {
+        return {
+          pass: false,
+          error: `能源不足！目前 powerLevel 為 ${String(powerLevel)}，系統最低啟動門檻為 80%。請傳入 80~100 的數值！`,
+          details: { field: 'powerLevel', current: powerLevel }
+        };
+      }
+      if (numPower > 100) {
+        return {
+          pass: false,
+          error: `電壓超載！目前 powerLevel 為 ${numPower}%，超過反應爐額定上限 (100%)。`,
+          details: { field: 'powerLevel', current: numPower }
+        };
+      }
+
+      if (shieldActive !== true) {
+        return {
+          pass: false,
+          error: `防護力場未啟動！shieldActive 必須是布林值 true（不加引號），你傳入的是 ${JSON.stringify(shieldActive)}。`,
+          details: { field: 'shieldActive', current: shieldActive }
+        };
+      }
+
+      // 星級：有沒有真的用 let 宣告三個變數（而非直接塞字面值進 setup）
+      const lets = ['roverName', 'powerLevel', 'shieldActive'].filter((v) =>
+        new RegExp(`let\\s+${v}\\b`).test(code)
+      ).length;
+      let stars, suffix;
+      if (lets >= 3) {
+        stars = 3;
+        suffix = '（3星：三個變數都用 let 宣告，完美！）';
+      } else if (lets >= 1) {
+        stars = 2;
+        suffix = `（2星：只用 let 宣告了 ${lets}/3 個變數，把三個值都存進變數再傳入拿 3 星！）`;
+      } else {
+        stars = 1;
+        suffix = '（1星：值都對但沒用 let 宣告變數，直接塞字面值進去的！用 let 存起來再傳入拿 3 星！）';
+      }
+
+      return {
+        pass: true,
+        feedback: `通電自檢全部通過！探測船「${trimmedName}」系統功率已達 ${numPower}%，電漿防護罩成功激活！${suffix}`,
+        data: { roverName: trimmedName, powerLevel: numPower, shieldActive: true, stars, fromCode: true }
+      };
+    }
+
     const vars = runResult.variables || runResult || {};
     const { roverName = '', powerLevel = 0, shieldActive = false } = vars;
 
@@ -80,11 +166,13 @@ rover.systemCheck({ roverName, powerLevel, shieldActive });`,
 
     return {
       pass: true,
-      feedback: `通電自檢全部通過！探測船「${trimmedName}」系統功率已達 ${numPower}%，電漿防護罩成功激活，全艦進入啟航就緒狀態！`,
+      feedback: `通電自檢全部通過！探測船「${trimmedName}」系統功率已達 ${numPower}%，電漿防護罩成功激活，全艦進入啟航就緒狀態！（2星：表單模式上限，切「寫碼」用 let 宣告拿 3 星）`,
       data: {
         roverName: trimmedName,
         powerLevel: numPower,
-        shieldActive: true
+        shieldActive: true,
+        stars: 2,
+        fromCode: false
       }
     };
   }

@@ -7,6 +7,22 @@
         <h3 class="deck-title">變數宣告與記憶體配置 · Variable Declaration</h3>
       </div>
       <div class="deck-actions">
+        <button
+          class="btn btn-sm"
+          :class="mode === 'blocks' ? 'btn-success' : 'btn-secondary'"
+          @click="mode = 'blocks'"
+          title="表單模式（新手友善，上限 2 星）"
+        >
+          <span>🧩 表單</span>
+        </button>
+        <button
+          class="btn btn-sm"
+          :class="mode === 'code' ? 'btn-success' : 'btn-secondary'"
+          @click="mode = 'code'"
+          title="手寫 JS 模式（用 let 宣告拿 3 星）"
+        >
+          <span>⌨️ 寫碼</span>
+        </button>
         <button class="btn btn-secondary btn-sm" @click="handleRestore" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
           <span>還原</span>
@@ -16,8 +32,50 @@
 
     <!-- Main Deck Grid -->
     <div class="deck-content">
+      <!-- 0. Code mode（L1：手寫 let + rover.setup，走 Worker 真跑） -->
+      <div v-if="mode === 'code'" class="code-mode-card card">
+        <div class="code-mode-header">
+          <div class="code-mode-title">
+            <Code :size="15" class="text-brand" />
+            <span>手寫 JS 挑戰 · 把 ___ 補完再執行</span>
+          </div>
+          <span class="badge badge-info">3 個 let = 3星</span>
+        </div>
+        <div class="code-editor-wrap">
+          <CodeEditor v-model="studentCode" :level-id="1" @reset="resetCode" />
+        </div>
+        <div class="type-hint-row">
+          <span class="type-hint tag-string">String 加引號 " "</span>
+          <span class="type-hint tag-number">Number 寫數字 80~100</span>
+          <span class="type-hint tag-boolean">Boolean 寫 true（不加引號）</span>
+        </div>
+        <div class="code-mode-actions">
+          <button class="btn btn-secondary btn-sm" @click="fillAnswerHint" title="填入提示數值">
+            <span>💡 填入提示值</span>
+          </button>
+          <button
+            class="btn btn-success execute-btn"
+            :disabled="levelStore.isExecuting || !studentCode.trim()"
+            @click="runCodeExecution"
+          >
+            <Zap :size="16" />
+            <span>{{ levelStore.isExecuting ? '通電自檢運行中...' : '執行 JS 程式碼' }}</span>
+          </button>
+        </div>
+        <div class="code-mode-logs" v-if="levelStore.executionLogs.length > 0">
+          <div
+            v-for="log in levelStore.executionLogs.slice(-4)"
+            :key="log.id"
+            class="mini-log"
+            :class="'mini-log-' + log.type"
+          >
+            {{ log.message }}
+          </div>
+        </div>
+      </div>
+
       <!-- Variable 1: roverName (String) -->
-      <div class="var-card card" :class="{ 'card-valid': isNameValid, 'card-pending': !isNameValid }">
+      <div v-if="mode === 'blocks'" class="var-card card" :class="{ 'card-valid': isNameValid, 'card-pending': !isNameValid }">
         <div class="var-header">
           <div class="var-title-wrap">
             <span class="keyword">let</span>
@@ -59,7 +117,7 @@
       </div>
 
       <!-- Variable 2: powerLevel (Number) -->
-      <div class="var-card card" :class="{ 'card-valid': isPowerValid, 'card-pending': !isPowerValid }">
+      <div v-if="mode === 'blocks'" class="var-card card" :class="{ 'card-valid': isPowerValid, 'card-pending': !isPowerValid }">
         <div class="var-header">
           <div class="var-title-wrap">
             <span class="keyword">let</span>
@@ -98,7 +156,7 @@
       </div>
 
       <!-- Variable 3: shieldActive (Boolean) -->
-      <div class="var-card card" :class="{ 'card-valid': isShieldValid, 'card-pending': !isShieldValid }">
+      <div v-if="mode === 'blocks'" class="var-card card" :class="{ 'card-valid': isShieldValid, 'card-pending': !isShieldValid }">
         <div class="var-header">
           <div class="var-title-wrap">
             <span class="keyword">let</span>
@@ -135,7 +193,7 @@
       </div>
 
       <!-- Live JavaScript Code Preview Card -->
-      <div class="code-preview-card card">
+      <div v-if="mode === 'blocks'" class="code-preview-card card">
         <div class="preview-header">
           <Code :size="14" class="text-brand" />
           <span>即時記憶體狀態 (Live JavaScript Scope)</span>
@@ -151,14 +209,18 @@ rover.<span class="func">systemCheck</span>({ roverName, powerLevel, shieldActiv
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        <span v-if="allVariablesValid" class="text-success font-semibold">
-          ✓ 3 項核心狀態變數皆已就緒！點擊啟動通電自檢
+        <span v-if="mode === 'code'" class="text-muted">
+          寫碼模式：在上方編輯器按「執行 JS 程式碼」（型態錯會直接報錯）
+        </span>
+        <span v-else-if="allVariablesValid" class="text-success font-semibold">
+          ✓ 3 項核心狀態變數皆已就緒！點擊啟動通電自檢（表單上限 2 星）
         </span>
         <span v-else class="text-muted">
           請設定完成船名、80%~100% 功率與開啟防護罩 ➔ 點擊執行通電自檢
         </span>
       </div>
       <button
+        v-if="mode === 'blocks'"
         class="btn execute-btn"
         :class="allVariablesValid ? 'btn-success pulse-glow' : 'btn-primary'"
         :disabled="levelStore.isExecuting"
@@ -177,9 +239,15 @@ import { Variable, RotateCcw, ShieldCheck, ShieldAlert, Code, Zap } from 'lucide
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { soundManager } from '../../game/core/SoundManager.js';
+import { LEVEL_1_STARTER_CODE } from '../../levels/level-1.js';
+import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
+
+// 混合漸進：預設寫碼模式（填空），表單當鷹架
+const mode = ref('code');
+const studentCode = ref(LEVEL_1_STARTER_CODE);
 
 const presetNames = ['奧德賽號', '星馳號', '先鋒探索者', '阿波羅極光'];
 
@@ -202,10 +270,15 @@ const powerStatusClass = computed(() => {
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(1);
-  if (saved && saved.variables) {
-    roverName.value = saved.variables.roverName ?? '';
-    powerLevel.value = saved.variables.powerLevel ?? 0;
-    shieldActive.value = saved.variables.shieldActive ?? false;
+  if (saved) {
+    if (typeof saved.code === 'string' && saved.code.length > 0) {
+      studentCode.value = saved.code;
+    }
+    if (saved.variables) {
+      roverName.value = saved.variables.roverName ?? '';
+      powerLevel.value = saved.variables.powerLevel ?? 0;
+      shieldActive.value = saved.variables.shieldActive ?? false;
+    }
   }
 });
 
@@ -231,6 +304,23 @@ function runExecution() {
       shieldActive: shieldActive.value
     }
   });
+}
+
+function runCodeExecution() {
+  levelStore.executeLevel({
+    code: studentCode.value
+  });
+}
+
+function resetCode() {
+  studentCode.value = LEVEL_1_STARTER_CODE;
+}
+
+function fillAnswerHint() {
+  studentCode.value = studentCode.value
+    .replace('let roverName = ___;', 'let roverName = "奧德賽號";')
+    .replace('let powerLevel = ___;', 'let powerLevel = 100;')
+    .replace('let shieldActive = ___;', 'let shieldActive = true;');
 }
 </script>
 
@@ -544,5 +634,86 @@ function runExecution() {
   gap: 0.5rem;
   font-weight: 600;
   padding: 0.6rem 1.25rem;
+}
+
+/* L1: code mode */
+.code-mode-card {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.code-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.code-mode-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.code-editor-wrap {
+  height: 240px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.type-hint-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.type-hint {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.code-mode-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.code-mode-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mini-log {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card, #f8fafc);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.mini-log-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.mini-log-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
 }
 </style>

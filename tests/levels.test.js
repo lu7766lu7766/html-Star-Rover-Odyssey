@@ -473,4 +473,35 @@ for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
     expect(missing.pass).toBe(false);
     expect(missing.error).toContain('setAutoPilot');
   });
+
+  // L1 code mode: rover.setup trace + let stars
+  it('Level 1 code mode: validates setup trace and awards stars by let usage', () => {
+    const setupCall = (name, power, shield) => ([
+      { api: 'rover.setup', args: [name, power, shield] }
+    ]);
+    const fullLets = 'let roverName = "奧德賽號";\nlet powerLevel = 100;\nlet shieldActive = true;';
+
+    const best = level1.validate({ apiCalls: setupCall('奧德賽號', 100, true), code: fullLets });
+    expect(best.pass).toBe(true);
+    expect(best.data.stars).toBe(3);
+
+    // literals without let -> 1 star
+    const spam = level1.validate({
+      apiCalls: setupCall('奧德賽號', 90, true),
+      code: 'rover.setup("奧德賽號", 90, true);'
+    });
+    expect(spam.pass).toBe(true);
+    expect(spam.data.stars).toBe(1);
+
+    // type errors
+    expect(level1.validate({ apiCalls: setupCall(123, 90, true), code: '' }).pass).toBe(false);
+    expect(level1.validate({ apiCalls: setupCall(' test ', 60, true), code: '' }).pass).toBe(false);
+    expect(level1.validate({ apiCalls: setupCall('星馳號', 90, 'true'), code: '' }).pass).toBe(false);
+    expect(level1.validate({ apiCalls: setupCall('星馳號', 90, true), code: '' }).pass).toBe(true);
+
+    // missing setup call -> fail with guidance
+    const missing = level1.validate({ apiCalls: [{ api: 'rover.launch', args: [1] }], code: '' });
+    expect(missing.pass).toBe(false);
+    expect(missing.error).toContain('rover.setup');
+  });
 });
