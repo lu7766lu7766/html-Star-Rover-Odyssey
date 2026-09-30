@@ -5,11 +5,12 @@
 
 export const LEVEL_2_STARTER_CODE = `// 能源補給站：把 ___ 補完，再按執行
 // 規則：次數 × 速度 必須 = 24，速度 <= 3，總消耗不可超過燃料
+// 型別：四個 ___ 全部填 @type {number} 數字（純數字，不加引號）
 
-let initialFuel = ___;   // 初始燃料，例如 300
-const burnRate = ___;    // 每次消耗，例如 25
-const count = ___;       // 推進次數，例如 8
-const speed = ___;       // 推力速度，例如 3（不可 > 3）
+let initialFuel = ___;   // @type {number} 初始燃料，例如 300
+const burnRate = ___;    // @type {number} 每次消耗，例如 25
+const count = ___;       // @type {number} 推進次數，例如 8
+const speed = ___;       // @type {number} 推力速度，例如 3（不可 > 3）
 
 // 用 * 算出總消耗、剩餘燃料與總位移
 let totalBurn = burnRate * count;

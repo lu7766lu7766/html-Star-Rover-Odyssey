@@ -8,6 +8,8 @@ import { DRONE_FLIGHT_LIMITS, WEATHER_STATIONS, BENCHMARK_STATION_DATA, resolveJ
 export const LEVEL_8_STARTER_CODE = `// 星際氣象站：把 ___ 補完，再按執行
 // 可用基地：station-tpe / station-tyo / station-lon / station-dxb / station-rkv
 // 安全窗口：風速 <= 25、降水 <= 20、氣溫 >= 0
+// 型別：站點 id 是 @type {"station-tpe" | "station-tyo" | "station-lon" | "station-dxb" | "station-rkv"}（五選一，字串加引號）
+//   風速／氣溫／降水取出來的是 @type {number}（點運算子路徑，不是字串，不加引號）；if (...) 裡填布林運算式；launch 填跟 fetch 同一站
 
 async function evaluateAndLaunch(stationId) {
   const data = await ___;   // 用 fetchStation 取回 JSON

@@ -6,6 +6,11 @@
 export const LEVEL_7_STARTER_CODE = `// 無人機編隊：把 ___ 補完，再按執行
 // 規則：電量 < 20 → RETURN_BASE（返航），否則 → PATROL（巡邏）
 // drones 陣列已內建 4 架無人機資料，直接用 forEach 走訪！
+// ------------------------------------------------------------
+// 型別（中文還是英文？填英文，字串前後加引號，填中文一定失敗）：
+//   drone.battery 是 @type {number} 數字（電量百分比）；門檻 ___ 填 @type {number}（純數字，不加引號）
+//   /** @type {"RETURN_BASE" | "PATROL"} */
+//   drone.order 只能是這兩個英文："RETURN_BASE"＝返航充電 ／ "PATROL"＝空域巡邏
 
 drones.forEach((drone) => {
   if (drone.battery < ___) {

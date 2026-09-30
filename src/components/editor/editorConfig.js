@@ -50,8 +50,11 @@ export function createLevelCompletions(levelId) {
     7: [
       { label: 'drones', type: 'variable', detail: 'Array<Drone> 無人機遙測資料陣列' },
       { label: 'droneFleet.deploy', type: 'function', detail: '(drones) 部署無人機編隊', apply: 'droneFleet.deploy(drones);' },
-      { label: 'drone.battery', type: 'property', detail: '無人機電量百分比' },
-      { label: 'drone.status', type: 'property', detail: '設定為 "PATROL" 或 "WARNING"' }
+      { label: 'drone.battery', type: 'property', detail: '無人機電量百分比 (number)' },
+      { label: 'drone.order', type: 'property', detail: '"RETURN_BASE" | "PATROL"（英文，加引號）' },
+      { label: 'drone.status', type: 'property', detail: '舊寫法，同 order（"RETURN_BASE" | "PATROL"）' },
+      { label: '"RETURN_BASE"', type: 'constant', detail: '低電量：返航充電', apply: '"RETURN_BASE"' },
+      { label: '"PATROL"', type: 'constant', detail: '高電量：空域巡邏', apply: '"PATROL"' }
     ],
     8: [
       { label: 'fetchStation', type: 'function', detail: '(id) 取回觀測站氣象 JSON', apply: 'fetchStation("station-tpe");' },

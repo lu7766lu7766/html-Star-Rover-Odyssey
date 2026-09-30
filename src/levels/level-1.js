@@ -5,10 +5,11 @@
 
 export const LEVEL_1_STARTER_CODE = `// 探測船通電自檢：把 ___ 補完，再按執行
 // 規則：船名不可空、功率 80~100、護罩必須是 true
+// 型別：三個變數型別各不同，填錯型別（例如數字加了引號）會自檢失敗！
 
-let roverName = ___;      // 字串：例如 "奧德賽號"
-let powerLevel = ___;     // 數值：80 ~ 100
-let shieldActive = ___;   // 布林值：true 或 false
+let roverName = ___;      // @type {string} 字串：前後加引號，例如 "奧德賽號"（中文也可以，是文字就行）
+let powerLevel = ___;     // @type {number} 數字：80 ~ 100，直接寫數字，不加引號
+let shieldActive = ___;   // @type {boolean} 布林值：只能填 true 或 false，不加引號（加了引號就變字串！）
 
 rover.setup(roverName, powerLevel, shieldActive);
 `;

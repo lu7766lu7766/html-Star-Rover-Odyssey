@@ -46,18 +46,21 @@ export const INITIAL_METHOD_CALL = {
 
 export const LEVEL_5_STARTER_CODE = `// 模組裝載：把 ___ 補完，再按執行
 // 任務：全空域普查——選對函式，配好 scanParams 物件
+// 型別（英文還是中文？全部填英文，字串加引號，不是中文）：
+//   range 是 @type {number} 數字（不加引號）；mode 是 @type {"HIGH" | "NORMAL"}；
+//   name 是 @type {"activateScan" | "focusScan" | "pingEcho"}；回傳字串看任務面板方法卡上的「回傳」那一行
 
 const scanParams = {
-  range: ___,      // 掃描半徑，最遠天體在 18 單位
-  mode: ___        // 解析度："HIGH" 才能解析深空頻譜
+  range: ___,      // @type {number} 掃描半徑，最遠天體在 18 單位
+  mode: ___        // @type {"HIGH" | "NORMAL"} 解析度："HIGH" 才能解析深空頻譜
 };
 
 const scanModule = {
-  name: ___,       // 三選一："activateScan" / "focusScan" / "pingEcho"
+  name: ___,       // @type {"activateScan" | "focusScan" | "pingEcho"} 三選一，任務是全空域普查，先讀方法卡再選
   range: scanParams.range,
   mode: scanParams.mode,
   activate: function() {
-    return ___;    // 成功普查回傳什麼字串？
+    return ___;    // 回傳字串：選對的函式成功普查會回傳什麼？看方法卡「回傳」那一行，整行照抄
   }
 };
 

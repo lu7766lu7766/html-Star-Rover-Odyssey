@@ -5,6 +5,8 @@
 
 export const LEVEL_3_STARTER_CODE = `// 隕石避障：把下面 ___ 補完，再按執行
 // 規則：距離 < 5 → STOP，距離 < 15 → SLOW_DOWN，否則 → FULL_SPEED
+// 型別：兩個 ___ 都填 @type {number} 數字（距離門檻，不加引號）
+//   return 的三個單字是固定的英文字串（大寫、加引號），不是中文，不可改！
 
 function autoPilot(distance) {
   if (distance < ___) {
