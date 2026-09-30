@@ -167,8 +167,7 @@ describe('Star Rover Odyssey 2.0 - Failure Alert Modal & Vehicle Restore Suite',
     expect(scene.drone.position.y).toBeCloseTo(0.6);
   });
 
-  it('Level4Scene: properly restores maze rover to start pad (1, 0) on RESET_SCENE and RESET_POSITION', () => {
-    const scene = new Level4Scene();
+  it('Level4Scene: properly restores maze rover to start pad (1, 0) on RESET_SCENE and RESET_POSITION', () => {    const scene = new Level4Scene();
     scene.build();
 
     // Start pad world coords: gx=1, gy=0 -> x = (1 - 2.5)*2.4 = -3.6, z = (2.5 - 0)*2.4 = 6.0
@@ -190,5 +189,57 @@ describe('Star Rover Odyssey 2.0 - Failure Alert Modal & Vehicle Restore Suite',
     scene.handleAction('RESET_POSITION');
     expect(scene.rover.position.x).toBeCloseTo(-3.6);
     expect(scene.rover.position.z).toBeCloseTo(6.0);
+  });
+
+  it('Level4Scene: animates rover from Worker apiCalls trace (code mode EXECUTE_START)', () => {
+    const scene = new Level4Scene();
+    scene.build();
+
+    // Canonical 2-3-2 solution as Worker apiCalls (levelStore tracePayload shape)
+    const toCalls = (actions) => actions.map((a) => ({ api: `rover.${a}`, args: [] }));
+    const apiCalls = toCalls([
+      'moveForward', 'moveForward',
+      'turnRight',
+      'moveForward', 'moveForward', 'moveForward',
+      'turnLeft',
+      'moveForward', 'moveForward'
+    ]);
+
+    scene.handleAction('EXECUTE_START', { levelId: 4, payload: { apiCalls, code: 'for...' } });
+
+    // 9 steps total: first shifted to currentStep, rest queued
+    expect(scene.isAnimating).toBe(true);
+    const totalSteps = scene.animQueue.length + (scene.currentStep ? 1 : 0);
+    expect(totalSteps).toBe(9);
+    // First step: MOVE (1,0) -> (1,1) heading north
+    expect(scene.currentStep.type).toBe('MOVE');
+    expect(scene.currentStep.fromX).toBe(1);
+    expect(scene.currentStep.fromY).toBe(0);
+    expect(scene.currentStep.toX).toBe(1);
+    expect(scene.currentStep.toY).toBe(1);
+  });
+
+  it('Level4Scene: still animates from loopConfig blocks (blocks mode EXECUTE_START)', () => {
+    const scene = new Level4Scene();
+    scene.build();
+
+    scene.handleAction('EXECUTE_START', {
+      levelId: 4,
+      payload: {
+        loopConfig: {
+          blocks: [
+            { id: '1', type: 'LOOP', count: 2, action: 'FORWARD' },
+            { id: '2', type: 'TURN_RIGHT' },
+            { id: '3', type: 'LOOP', count: 3, action: 'FORWARD' },
+            { id: '4', type: 'TURN_LEFT' },
+            { id: '5', type: 'LOOP', count: 2, action: 'FORWARD' }
+          ]
+        }
+      }
+    });
+
+    expect(scene.isAnimating).toBe(true);
+    const totalSteps = scene.animQueue.length + (scene.currentStep ? 1 : 0);
+    expect(totalSteps).toBe(9);
   });
 });

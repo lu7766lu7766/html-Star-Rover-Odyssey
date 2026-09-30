@@ -281,20 +281,35 @@ export class Level4Scene extends BaseGameScene {
     if (actionType === 'EXECUTE_START') {
       this.resetRoverToStart();
 
-      const loopConfig = payload.payload?.loopConfig || payload.loopConfig || {};
-      const blocks = loopConfig.blocks || [];
-
+      const inner = payload.payload || payload || {};
       // Expand blocks into flat animation steps
       const flatActions = [];
-      for (const b of blocks) {
-        if (b.type === 'LOOP') {
-          const count = Math.max(1, Math.min(b.count || 2, 6));
-          const act = b.action || 'FORWARD';
-          for (let i = 0; i < count; i++) {
-            flatActions.push({ type: act, sourceBlock: b });
+
+      if (inner.apiCalls && Array.isArray(inner.apiCalls)) {
+        // 寫碼模式：Worker 真跑 JS 的 apiCalls trace
+        const apiToAction = {
+          'rover.moveForward': 'FORWARD',
+          'rover.moveBackward': 'BACKWARD',
+          'rover.turnLeft': 'TURN_LEFT',
+          'rover.turnRight': 'TURN_RIGHT'
+        };
+        for (const c of inner.apiCalls) {
+          const act = apiToAction[c.api];
+          if (act) flatActions.push({ type: act, sourceBlock: null });
+        }
+      } else {
+        const loopConfig = inner.loopConfig || {};
+        const blocks = loopConfig.blocks || [];
+        for (const b of blocks) {
+          if (b.type === 'LOOP') {
+            const count = Math.max(1, Math.min(b.count || 2, 6));
+            const act = b.action || 'FORWARD';
+            for (let i = 0; i < count; i++) {
+              flatActions.push({ type: act, sourceBlock: b });
+            }
+          } else {
+            flatActions.push({ type: b.type, sourceBlock: b });
           }
-        } else {
-          flatActions.push({ type: b.type, sourceBlock: b });
         }
       }
 
