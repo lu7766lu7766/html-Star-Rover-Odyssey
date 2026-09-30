@@ -5,13 +5,68 @@
         <Cpu :size="18" class="text-brand" />
         <h3 class="deck-title">函式呼叫與物件參數 · f(x)</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
-        <RotateCcw :size="14" />
-        <span>還原</span>
-      </button>
+      <div class="header-actions">
+        <button
+          class="btn btn-sm"
+          :class="mode === 'blocks' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'blocks'"
+          title="點選模式（新手友善，上限 2 星）"
+        >
+          <span>🧩 點選</span>
+        </button>
+        <button
+          class="btn btn-sm"
+          :class="mode === 'code' ? 'btn-success' : 'btn-ghost'"
+          @click="mode = 'code'"
+          title="手寫 JS 模式（自己定義物件 + 方法拿 3 星）"
+        >
+          <span>⌨️ 寫碼</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
+          <RotateCcw :size="14" />
+          <span>還原</span>
+        </button>
+      </div>
     </div>
 
     <div class="deck-content">
+      <!-- 0. Code mode（L5：手寫物件 + 方法，走 Worker 真調用） -->
+      <div v-if="mode === 'code'" class="code-mode-card card">
+        <div class="code-mode-header">
+          <div class="code-mode-title">
+            <Code :size="15" class="text-brand" />
+            <span>手寫 JS 挑戰 · 把 ___ 補完再執行</span>
+          </div>
+          <span class="badge badge-info">物件 + 方法 = 3星</span>
+        </div>
+        <div class="code-editor-wrap">
+          <CodeEditor v-model="studentCode" :level-id="5" @reset="resetCode" />
+        </div>
+        <div class="code-mode-actions">
+          <button class="btn btn-ghost btn-sm" @click="fillAnswerHint" title="填入提示數值">
+            <span>💡 填入提示值</span>
+          </button>
+          <button
+            class="btn btn-success execute-btn"
+            :disabled="levelStore.isExecuting || !studentCode.trim()"
+            @click="runCodeExecution"
+          >
+            <Radio :size="16" />
+            <span>{{ levelStore.isExecuting ? '執行中...' : '執行 JS 程式碼' }}</span>
+          </button>
+        </div>
+        <div class="code-mode-logs" v-if="levelStore.executionLogs.length > 0">
+          <div
+            v-for="log in levelStore.executionLogs.slice(-4)"
+            :key="log.id"
+            class="mini-log"
+            :class="'mini-log-' + log.type"
+          >
+            {{ log.message }}
+          </div>
+        </div>
+      </div>
+
       <!-- 1. Select Function (verb) -->
       <div class="module-select-box">
         <span class="box-label">選擇要呼叫的函式 f（動詞・三選一）：</span>
@@ -36,7 +91,7 @@
       </div>
 
       <!-- 2. Configure Object Argument (object) -->
-      <div class="properties-box card">
+      <div v-if="mode === 'blocks'" class="properties-box card">
         <h4 class="prop-title">配置參數物件 scanParams（受詞・傳進函式的原料包）</h4>
 
         <div class="prop-row">
@@ -61,15 +116,15 @@
             <div class="mode-toggles">
               <button
                 class="btn btn-xs"
-                :class="mode === 'HIGH' ? 'btn-primary' : 'btn-outline'"
-                @click="mode = 'HIGH'"
+                :class="scanMode === 'HIGH' ? 'btn-primary' : 'btn-outline'"
+                @click="scanMode = 'HIGH'"
               >
                 HIGH (高解析)
               </button>
               <button
                 class="btn btn-xs"
-                :class="mode === 'NORMAL' ? 'btn-primary' : 'btn-outline'"
-                @click="mode = 'NORMAL'"
+                :class="scanMode === 'NORMAL' ? 'btn-primary' : 'btn-outline'"
+                @click="scanMode = 'NORMAL'"
               >
                 NORMAL (普通)
               </button>
@@ -101,8 +156,8 @@
         </div>
       </div>
 
-      <!-- 3. Call preview -->
-      <div class="object-preview card">
+      <!-- 3. Call preview（點選模式專用，寫碼模式不預演） -->
+      <div v-if="mode === 'blocks'" class="object-preview card">
         <span class="preview-label">即將執行的函式呼叫：</span>
         <div class="code-view">
           <pre><code>{{ callPreview }}</code></pre>
@@ -113,9 +168,10 @@
     <!-- Execute Bar -->
     <div class="deck-footer">
       <div class="footer-hint">
-        先選對 f，再配對 x
+        {{ mode === 'code' ? '寫碼模式：在上方編輯器按「執行 JS 程式碼」（先選對 f，再配對 x）' : '先選對 f，再配對 x' }}
       </div>
       <button
+        v-if="mode === 'blocks'"
         class="btn btn-success execute-btn"
         :disabled="levelStore.isExecuting"
         @click="runExecution"
@@ -129,19 +185,25 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { Cpu, RotateCcw, Radio } from 'lucide-vue-next';
+import { Cpu, RotateCcw, Radio, Code } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
-import level5, { AVAILABLE_METHODS, INITIAL_METHOD_CALL } from '../../levels/level-5.js';
+import level5, { AVAILABLE_METHODS, INITIAL_METHOD_CALL, LEVEL_5_STARTER_CODE } from '../../levels/level-5.js';
+import CodeEditor from '../editor/CodeEditor.vue';
 
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
+
+// 混合漸進：預設寫碼模式（填空），點選當鷹架
+const mode = ref('code');
+const studentCode = ref(LEVEL_5_STARTER_CODE);
+const hasRunOnce = ref(false);
 
 const availableMethods = AVAILABLE_METHODS;
 
 const selectedMethodId = ref(INITIAL_METHOD_CALL.methodId);
 const scanRange = ref(INITIAL_METHOD_CALL.params.range);
-const mode = ref(INITIAL_METHOD_CALL.params.mode);
+const scanMode = ref(INITIAL_METHOD_CALL.params.mode);
 const target = ref(INITIAL_METHOD_CALL.params.target);
 const power = ref(INITIAL_METHOD_CALL.params.power);
 const duration = ref(INITIAL_METHOD_CALL.params.duration);
@@ -151,7 +213,7 @@ function applyMethodCall(mc) {
   if (mc.methodId) selectedMethodId.value = mc.methodId;
   const p = mc.params || {};
   if (p.range !== undefined) scanRange.value = p.range;
-  if (p.mode !== undefined) mode.value = p.mode;
+  if (p.mode !== undefined) scanMode.value = p.mode;
   if (p.target !== undefined) target.value = p.target;
   if (p.power !== undefined) power.value = p.power;
   if (p.duration !== undefined) duration.value = p.duration;
@@ -159,26 +221,31 @@ function applyMethodCall(mc) {
 
 onMounted(() => {
   const saved = progressStore.getSavedOperation(5);
-  if (saved && saved.methodCall) {
-    applyMethodCall(saved.methodCall);
-  } else if (saved && saved.moduleConfig) {
+  if (saved) {
+    if (typeof saved.code === 'string' && saved.code.length > 0) {
+      studentCode.value = saved.code;
+    }
+    if (saved.methodCall) {
+      applyMethodCall(saved.methodCall);
+    } else if (saved.moduleConfig) {
     // 舊存檔遷移：quantum-scanner 視為選對方法，其餘視為選錯
     const mc = saved.moduleConfig;
     if (mc.moduleId === 'quantum-scanner') {
       selectedMethodId.value = 'activateScan';
       scanRange.value = mc.range ?? 10;
-      mode.value = mc.mode ?? 'NORMAL';
+      scanMode.value = mc.mode ?? 'NORMAL';
     } else {
       selectedMethodId.value = 'pingEcho';
       scanRange.value = mc.range ?? 10;
-      mode.value = mc.mode ?? 'NORMAL';
+      scanMode.value = mc.mode ?? 'NORMAL';
+    }
     }
   }
 });
 
 const callPreview = computed(() => {
   if (selectedMethodId.value === 'activateScan') {
-    return `${selectedMethodId.value}({ range: ${scanRange.value}, mode: "${mode.value}" });`;
+    return `${selectedMethodId.value}({ range: ${scanRange.value}, mode: "${scanMode.value}" });`;
   } else if (selectedMethodId.value === 'focusScan') {
     return `${selectedMethodId.value}({ target: "${target.value}", power: ${power.value} });`;
   }
@@ -190,9 +257,10 @@ function resetDefaults() {
 }
 
 function runExecution() {
+  hasRunOnce.value = true;
   const params = {
     range: scanRange.value,
-    mode: mode.value,
+    mode: scanMode.value,
     target: target.value,
     power: power.value,
     duration: duration.value
@@ -206,10 +274,29 @@ function runExecution() {
     moduleConfig: {
       moduleId: 'quantum-scanner',
       range: scanRange.value,
-      mode: mode.value,
+      mode: scanMode.value,
       isMethodInvoked: true
     }
   });
+}
+
+function runCodeExecution() {
+  hasRunOnce.value = true;
+  levelStore.executeLevel({
+    code: studentCode.value
+  });
+}
+
+function resetCode() {
+  studentCode.value = LEVEL_5_STARTER_CODE;
+}
+
+function fillAnswerHint() {
+  studentCode.value = studentCode.value
+    .replace('range: ___,', 'range: 20,')
+    .replace('mode: ___', 'mode: "HIGH"')
+    .replace('name: ___,', 'name: "activateScan",')
+    .replace('return ___;', 'return "SCAN_COMPLETE";');
 }
 </script>
 
@@ -434,5 +521,79 @@ function runExecution() {
 .execute-btn {
   padding: 0.5rem 1.4rem;
   font-size: 0.92rem;
+}
+
+/* L5: code mode */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.code-mode-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.code-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.code-mode-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.code-editor-wrap {
+  height: 260px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.code-mode-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.code-mode-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mini-log {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-hover);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.mini-log-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.mini-log-success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
 }
 </style>

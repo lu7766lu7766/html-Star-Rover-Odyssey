@@ -44,6 +44,26 @@ export const INITIAL_METHOD_CALL = {
   }
 };
 
+export const LEVEL_5_STARTER_CODE = `// 模組裝載：把 ___ 補完，再按執行
+// 任務：全空域普查——選對函式，配好 scanParams 物件
+
+const scanParams = {
+  range: ___,      // 掃描半徑，最遠天體在 18 單位
+  mode: ___        // 解析度："HIGH" 才能解析深空頻譜
+};
+
+const scanModule = {
+  name: ___,       // 三選一："activateScan" / "focusScan" / "pingEcho"
+  range: scanParams.range,
+  mode: scanParams.mode,
+  activate: function() {
+    return ___;    // 成功普查回傳什麼字串？
+  }
+};
+
+rover.installModule(scanModule);
+`;
+
 export default {
   id: 5,
   title: '模組裝載',
@@ -82,7 +102,84 @@ focusScan(scanParams);      // 回傳 "PARTIAL_SINGLE"
 // ❌ 短促回波：只能看到近距離殘影
 pingEcho(scanParams);       // 回傳 "PARTIAL_NEAR"`,
   conceptExplanation: `**函式 (Function)** 是程式的「動詞」，負責做事；**物件 (Object)** 常被當成「一包參數」傳進函式，寫成 \`f(x)\`。同一個原料包傳給不同的函式，結果完全不同——選對函式跟配對參數一樣重要。這就是本關 3D 裡三種波型看起來完全不一樣的原因。`,
+  starterCode: LEVEL_5_STARTER_CODE,
   validate: (runResult) => {
+    // 新鏈路：Worker 真跑 rover.installModule(moduleObj) 的 trace
+    if (runResult.apiCalls && Array.isArray(runResult.apiCalls)) {
+      const calls = runResult.apiCalls.filter((c) => c.api === 'rover.installModule');
+      if (calls.length === 0) {
+        return {
+          pass: false,
+          error: '沒有偵測到 rover.installModule(...)！請定義 scanModule 物件並呼叫 rover.installModule(scanModule)。'
+        };
+      }
+      const mod = calls[calls.length - 1].args[0] || {};
+      const code = runResult.code || '';
+
+      if (!mod.hasActivate) {
+        return {
+          pass: false,
+          error: 'scanModule 缺少 activate 函式！模組必須有 activate 方法（function），回傳普查結果字串。'
+        };
+      }
+      if (mod.activateError) {
+        return {
+          pass: false,
+          error: `activate() 執行出錯：${mod.activateError}。請檢查函式內容。`
+        };
+      }
+      if (mod.name !== 'activateScan') {
+        const got = mod.name ?? '未命名';
+        const hint = mod.name === 'focusScan'
+          ? 'focusScan 是集束直線波，一次只能解析單顆指定目標，無法完成「全空域普查」。'
+          : 'pingEcho 是短促回波，只能看到近距離殘影，遠端天體完全收不到訊號。';
+        return {
+          pass: false,
+          error: `方法選型錯誤！你裝載的是【${got}】。${hint}請改用 activateScan。`,
+          details: { methodId: mod.name, expected: 'activateScan' }
+        };
+      }
+      const numRange = Number(mod.range);
+      if (isNaN(numRange) || numRange < 18) {
+        return {
+          pass: false,
+          error: `參數不足！目前 range 為 ${mod.range} 單位，最遠的隱藏天體位於 18 單位處，請將半徑調至 18 或以上！`
+        };
+      }
+      if (mod.mode !== 'HIGH') {
+        return {
+          pass: false,
+          error: `參數不足！目前 mode 為 ${JSON.stringify(mod.mode)}，請切換為 "HIGH" 才能解析星圖深空頻譜。`
+        };
+      }
+      if (mod.activateResult !== 'SCAN_COMPLETE') {
+        return {
+          pass: false,
+          error: `回傳值錯誤！activate() 回傳了 ${JSON.stringify(mod.activateResult)}，全空域普查成功必須回傳 "SCAN_COMPLETE"。`
+        };
+      }
+
+      // 星級：物件是否具名宣告 + 是否用 function/return
+      const hasNamedObject = /(let|const)\s+\w+\s*=\s*\{/.test(code);
+      const hasFunction = /function|=>/.test(code);
+      let stars, suffix;
+      if (hasNamedObject && hasFunction) {
+        stars = 3;
+        suffix = '（3星：物件具名宣告 + 方法回傳，完美！）';
+      } else if (hasFunction) {
+        stars = 2;
+        suffix = '（2星：把參數包成具名的 scanParams 物件再傳入，拿 3 星！）';
+      } else {
+        stars = 1;
+        suffix = '（1星：過關但物件/方法結構鬆散，用 const 包好物件 + function 回傳拿 3 星！）';
+      }
+      return {
+        pass: true,
+        data: { methodId: 'activateScan', range: numRange, mode: 'HIGH', returns: 'SCAN_COMPLETE', stars, fromCode: true },
+        feedback: `深空普查大獲全勝！activateScan 一發覆蓋 ${numRange} 單位空域，回傳 "SCAN_COMPLETE"，所有隱匿星體座標已全數解密歸檔！${suffix}`
+      };
+    }
+
     // 新形狀 { methodCall: { methodId, params } }，相容舊形狀 { moduleConfig: {...} }
     const legacy = runResult.moduleConfig || null;
     const methodCall = runResult.methodCall || runResult || {};
@@ -145,8 +242,8 @@ pingEcho(scanParams);       // 回傳 "PARTIAL_NEAR"`,
 
     return {
       pass: true,
-      data: { methodId, range: numRange, mode, returns: 'SCAN_COMPLETE' },
-      feedback: `深空普查大獲全勝！activateScan(scanParams) 一發覆蓋 ${numRange} 單位空域，回傳 "SCAN_COMPLETE"，所有隱匿星體座標已全數解密歸檔！`
+      data: { methodId, range: numRange, mode, returns: 'SCAN_COMPLETE', stars: 2, fromCode: false },
+      feedback: `深空普查大獲全勝！activateScan(scanParams) 一發覆蓋 ${numRange} 單位空域，回傳 "SCAN_COMPLETE"，所有隱匿星體座標已全數解密歸檔！（2星：點選模式上限，切「寫碼」自己定義物件 + 方法拿 3 星）`
     };
   }
 };

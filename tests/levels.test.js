@@ -536,4 +536,43 @@ for (let k = 0; k < 2; k++) { rover.moveForward(); }`;
     expect(missing.pass).toBe(false);
     expect(missing.error).toContain('approachStation');
   });
+
+  // L5 code mode: installModule trace + object stars
+  it('Level 5 code mode: validates installModule trace and awards stars by object structure', () => {
+    const modCall = (mod) => ([{
+      api: 'rover.installModule',
+      args: [{ ...mod, hasActivate: typeof mod.activate === 'function', activateError: null, activateResult: typeof mod.activate === 'function' ? mod.activate() : undefined }]
+    }]);
+    const goodMod = () => ({
+      name: 'activateScan', range: 20, mode: 'HIGH', activate: function () { return 'SCAN_COMPLETE'; }
+    });
+    const fullCode = 'const scanParams = { range: 20, mode: "HIGH" };\nconst scanModule = { name: "activateScan", activate: function() { return "SCAN_COMPLETE"; } };';
+
+    const best = level5.validate({ apiCalls: modCall(goodMod()), code: fullCode });
+    expect(best.pass).toBe(true);
+    expect(best.data.stars).toBe(3);
+    expect(best.data.returns).toBe('SCAN_COMPLETE');
+
+    // wrong method
+    const wrong = { ...goodMod(), name: 'focusScan' };
+    expect(level5.validate({ apiCalls: modCall(wrong), code: '' }).pass).toBe(false);
+    // short range
+    const short = { ...goodMod(), range: 10 };
+    expect(level5.validate({ apiCalls: modCall(short), code: '' }).pass).toBe(false);
+    // wrong mode
+    const badMode = { ...goodMod(), mode: 'NORMAL' };
+    expect(level5.validate({ apiCalls: modCall(badMode), code: '' }).pass).toBe(false);
+    // wrong return
+    const badRet = { ...goodMod(), activate: function () { return 'PARTIAL_SINGLE'; } };
+    const badRetRes = level5.validate({ apiCalls: modCall(badRet), code: '' });
+    expect(badRetRes.pass).toBe(false);
+    expect(badRetRes.error).toContain('回傳值');
+    // missing activate
+    const noFn = { name: 'activateScan', range: 20, mode: 'HIGH' };
+    expect(level5.validate({ apiCalls: modCall(noFn), code: '' }).pass).toBe(false);
+    // missing call
+    const missing5 = level5.validate({ apiCalls: [{ api: 'rover.setup', args: [] }], code: '' });
+    expect(missing5.pass).toBe(false);
+    expect(missing5.error).toContain('installModule');
+  });
 });

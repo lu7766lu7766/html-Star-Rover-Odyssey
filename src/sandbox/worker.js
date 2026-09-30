@@ -173,6 +173,7 @@ workerSelf.onmessage = function (e) {
           args: [{
             name: moduleObj?.name,
             range: moduleObj?.range,
+            mode: moduleObj?.mode,
             activateResult,
             activateError,
             hasActivate: typeof moduleObj?.activate === 'function'
@@ -185,6 +186,7 @@ workerSelf.onmessage = function (e) {
             args: [{
               name: moduleObj?.name,
               range: moduleObj?.range,
+              mode: moduleObj?.mode,
               activateResult,
               hasActivate: typeof moduleObj?.activate === 'function'
             }]
