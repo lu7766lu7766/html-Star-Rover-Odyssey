@@ -278,6 +278,29 @@ describe('Star Rover Odyssey 2.0 - Failure Alert Modal & Vehicle Restore Suite',
     expect(scene.launchSpeed).toBeCloseTo(9.6);
   });
 
+  it('Level4Scene: nose heading matches grid direction (East/West not swapped)', () => {
+    const scene = new Level4Scene();
+    // Rover nose points +Z at rotY=0; facing = R_y(angle) applied to (0,0,1)
+    const facingOf = (dir) => {
+      const a = scene.getHeadingAngle(dir);
+      return { x: Math.sin(a), z: Math.cos(a) };
+    };
+    const close = (v, e) => expect(v).toBeCloseTo(e, 5);
+
+    // 0=North -> world -Z (up-screen)
+    let f = facingOf(0);
+    close(f.x, 0); close(f.z, -1);
+    // 1=East -> world +X (screen-right); right turn from North must face East
+    f = facingOf(1);
+    close(f.x, 1); close(f.z, 0);
+    // 2=South -> world +Z
+    f = facingOf(2);
+    close(f.x, 0); close(f.z, 1);
+    // 3=West -> world -X (screen-left)
+    f = facingOf(3);
+    close(f.x, -1); close(f.z, 0);
+  });
+
   it('Level5Scene: installs the traced module method instead of defaulting (code mode)', () => {
     const scene = new Level5Scene();
     scene.build();

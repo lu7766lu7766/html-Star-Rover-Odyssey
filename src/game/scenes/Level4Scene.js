@@ -55,8 +55,10 @@ export class Level4Scene extends BaseGameScene {
   }
 
   getHeadingAngle(dir) {
-    // 0=North(face -Z)=PI, 1=East(face +X)=-PI/2, 2=South(face +Z)=0, 3=West(face -X)=PI/2
-    const angles = [Math.PI, -Math.PI / 2, 0, Math.PI / 2];
+    // Rover model nose (+z at rotY=0) faces +Z=South. R_y(θ) maps +Z to
+    // (sinθ, 0, cosθ), so East (+X) needs θ=+PI/2 and West (-X) needs θ=-PI/2.
+    // 0=North(face -Z)=PI, 1=East(face +X)=PI/2, 2=South(face +Z)=0, 3=West(face -X)=-PI/2
+    const angles = [Math.PI, Math.PI / 2, 0, -Math.PI / 2];
     return angles[dir] ?? Math.PI;
   }
 
