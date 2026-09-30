@@ -256,8 +256,9 @@ export class Level2Scene extends BaseGameScene {
 
       try { soundManager.playThruster(); } catch (e) {}
 
-      const { flame, nameLabel } = this.rover.userData;
+      const { flame, flameGlow, nameLabel } = this.rover.userData;
       if (flame) flame.material.opacity = 0.9;
+      if (flameGlow) flameGlow.material.opacity = 0.75;
       if (nameLabel) {
         nameLabel.material.map = createTextTexture(
           `推進中: ${speed} 格/次 | 目標: ${this.targetDistance}m`,
@@ -268,8 +269,9 @@ export class Level2Scene extends BaseGameScene {
       }
     } else if (actionType === 'LEVEL_SUCCESS') {
       this.success = true;
-      const { flame, nameLabel } = this.rover.userData;
+      const { flame, flameGlow, nameLabel } = this.rover.userData;
       if (flame) flame.material.opacity = 0.5;
+      if (flameGlow) flameGlow.material.opacity = 0.45;
       if (nameLabel) {
         nameLabel.material.map = createTextTexture('★ 成功入軌！完美對接 24m', '#ffffff', '#10b981');
         nameLabel.material.needsUpdate = true;
@@ -277,8 +279,9 @@ export class Level2Scene extends BaseGameScene {
       this.stationLights.forEach(b => b.material.color.setHex(0x10b981));
     } else if (actionType === 'LEVEL_FAIL') {
       this.success = false;
-      const { flame, nameLabel } = this.rover.userData;
+      const { flame, flameGlow, nameLabel } = this.rover.userData;
       if (flame) flame.material.opacity = 0;
+      if (flameGlow) flameGlow.material.opacity = 0;
       if (nameLabel) {
         if (this.fuelRemaining < 0) {
           nameLabel.material.map = createTextTexture('⚠️ 燃料耗盡！半途熄火', '#ffffff', '#ef4444');
@@ -341,8 +344,9 @@ export class Level2Scene extends BaseGameScene {
         this.isLaunching = false;
         this.rover.position.z = this.targetDistance;
 
-        const { flame, nameLabel } = this.rover.userData;
+        const { flame, flameGlow, nameLabel } = this.rover.userData;
         if (flame) flame.material.opacity = 0;
+        if (flameGlow) flameGlow.material.opacity = 0;
 
         if (nameLabel) {
           if (this.targetDistance === 24 && this.fuelRemaining >= 0) {

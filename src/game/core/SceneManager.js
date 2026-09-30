@@ -1,10 +1,11 @@
 /**
- * Star Rover Odyssey - Scene Manager
- * Controls Three.js lifecycle, rendering loop, lighting, resizing, and scene switching
+ * Star Rover Odyssey - Scene Manager (B-scheme upgrade)
+ * PBR lighting + soft shadows + gradient sky + ground disc + auto shadow flags
  */
 
 import * as THREE from 'three';
 import { CameraController } from './CameraController.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 export class SceneManager {
   constructor(canvasContainer) {
@@ -23,6 +24,10 @@ export class SceneManager {
     this.onContextLostCallback = null;
     this.onContextRestoredCallback = null;
 
+    this.skyDome = null;
+    this.groundDisc = null;
+    this.groundGrid = null;
+
     this.init();
   }
 
@@ -30,16 +35,16 @@ export class SceneManager {
     const width = this.container.clientWidth || 800;
     const height = this.container.clientHeight || 600;
 
-    // 1. Scene - Bright Cosmic Dawn Atmosphere
+    // 1. Scene - soft daylight with distance haze
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf1f5f9);
-    this.scene.fog = new THREE.FogExp2(0xf1f5f9, 0.01);
+    this.scene.background = new THREE.Color(0xeaf2ff);
+    this.scene.fog = new THREE.Fog(0xeaf2ff, 38, 120);
 
     // 2. Camera
-    this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 500);
     this.camera.position.set(0, 7, 12);
 
-    // 3. Renderer
+    // 3. Renderer - PBR + shadows
     try {
       this.renderer = new THREE.WebGLRenderer({
         antialias: !this.isLowPerformance,
@@ -49,7 +54,16 @@ export class SceneManager {
       this.renderer.setSize(width, height);
       this.renderer.setPixelRatio(this.isLowPerformance ? 1.0 : Math.min(window.devicePixelRatio, 2.0));
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.05;
+      this.renderer.toneMappingExposure = 1.12;
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.shadowMap.enabled = !this.isLowPerformance;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      // Image-based lighting for realistic metal / glass
+      const pmrem = new THREE.PMREMGenerator(this.renderer);
+      this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.06).texture;
+      this.scene.environmentIntensity = 0.55;
+      pmrem.dispose();
 
       this.container.appendChild(this.renderer.domElement);
     } catch (err) {
@@ -61,59 +75,149 @@ export class SceneManager {
     // 4. Controls
     this.cameraController = new CameraController(this.camera, this.renderer.domElement);
 
-    // 5. Lighting - Bright, friendly, clean illumination
+    // 5. Lighting + sky + ground
     this.setupLighting();
-
-    // 6. Ambient Cosmic Dust Motes
+    this.setupSkyAndGround();
     this.setupStarfield();
 
-    // 7. Event Listeners
+    // 6. Events
     this.bindEvents();
 
-    // 8. Start Loop
+    // 7. Loop
     this.startLoop();
   }
 
   setupLighting() {
-    // Hemispherical soft sky/ground light
-    const hemiLight = new THREE.HemisphereLight(0xeff6ff, 0xf1f5f9, 0.7);
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0xf8fafc, 0.85);
     this.scene.add(hemiLight);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
     this.scene.add(ambientLight);
 
-    // Warm sun light
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(12, 24, 16);
+    // Key sun with shadows
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight.position.set(14, 26, 16);
+    dirLight.castShadow = !this.isLowPerformance;
+    dirLight.shadow.mapSize.set(2048, 2048);
+    dirLight.shadow.camera.near = 2;
+    dirLight.shadow.camera.far = 80;
+    dirLight.shadow.camera.left = -28;
+    dirLight.shadow.camera.right = 28;
+    dirLight.shadow.camera.top = 28;
+    dirLight.shadow.camera.bottom = -28;
+    dirLight.shadow.bias = -0.0004;
+    dirLight.shadow.normalBias = 0.02;
     this.scene.add(dirLight);
+    this.sunLight = dirLight;
 
-    // Soft lilac-blue fill light
-    const fillLight = new THREE.DirectionalLight(0xc4b5fd, 0.5);
-    fillLight.position.set(-16, 12, -12);
-    this.scene.add(fillLight);
+    // Cool lilac rim from behind
+    const rimLight = new THREE.DirectionalLight(0xc4b5fd, 0.9);
+    rimLight.position.set(-18, 10, -16);
+    this.scene.add(rimLight);
+
+    // Warm bounce from below-front for friendly classroom look
+    const bounce = new THREE.DirectionalLight(0xfdf4ff, 0.35);
+    bounce.position.set(0, 4, 18);
+    this.scene.add(bounce);
+  }
+
+  setupSkyAndGround() {
+    // Gradient sky dome (BackSide shader, no texture needed)
+    const skyGeo = new THREE.SphereGeometry(220, 32, 20);
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+      uniforms: {
+        topColor: { value: new THREE.Color(0xbfdbfe) },
+        midColor: { value: new THREE.Color(0xeaf2ff) },
+        bottomColor: { value: new THREE.Color(0xf8fafc) }
+      },
+      vertexShader: `
+        varying vec3 vPos;
+        void main() {
+          vPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor; uniform vec3 midColor; uniform vec3 bottomColor;
+        varying vec3 vPos;
+        void main() {
+          float h = normalize(vPos).y;
+          vec3 col = h > 0.12
+            ? mix(midColor, topColor, smoothstep(0.12, 0.75, h))
+            : mix(bottomColor, midColor, smoothstep(-0.25, 0.12, h));
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `
+    });
+    this.skyDome = new THREE.Mesh(skyGeo, skyMat);
+    this.scene.add(this.skyDome);
+
+    // Large soft ground disc receiving shadows
+    const groundGeo = new THREE.CircleGeometry(90, 64);
+    groundGeo.rotateX(-Math.PI / 2);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0xf1f5f9,
+      roughness: 0.95,
+      metalness: 0.0
+    });
+    this.groundDisc = new THREE.Mesh(groundGeo, groundMat);
+    this.groundDisc.position.y = -0.03;
+    this.groundDisc.receiveShadow = true;
+    this.scene.add(this.groundDisc);
+
+    // Faint radial grid overlay handled per-level; keep a very subtle global grid
+    const grid = new THREE.GridHelper(140, 70, 0xbfdbfe, 0xe2e8f0);
+    grid.position.y = -0.015;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.35;
+    this.scene.add(grid);
+    this.groundGrid = grid;
   }
 
   setupStarfield() {
-    const particleCount = this.isLowPerformance ? 150 : 400;
+    const particleCount = this.isLowPerformance ? 150 : 500;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
 
     for (let i = 0; i < particleCount * 3; i += 3) {
-      positions[i] = (Math.random() - 0.5) * 160;
-      positions[i + 1] = Math.random() * 60 - 5;
-      positions[i + 2] = (Math.random() - 0.5) * 160;
+      positions[i] = (Math.random() - 0.5) * 180;
+      positions[i + 1] = Math.random() * 55 + 4;
+      positions[i + 2] = (Math.random() - 0.5) * 180;
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const mat = new THREE.PointsMaterial({
-      color: 0x93c5fd, // Soft pastel blue dust particles
-      size: 0.9,
+      color: 0x93c5fd,
+      size: 0.55,
       transparent: true,
-      opacity: 0.65
+      opacity: 0.55,
+      sizeAttenuation: true
     });
 
     this.starfield = new THREE.Points(geo, mat);
     this.scene.add(this.starfield);
+  }
+
+  applyShadowFlags(object3D) {
+    object3D.traverse((obj) => {
+      if (obj.isMesh) {
+        const name = (obj.name || '').toLowerCase();
+        const isGroundLike = name.includes('grid') || name.includes('ground') || obj === this.groundDisc;
+        if (!isGroundLike) {
+          obj.castShadow = !this.isLowPerformance;
+        }
+        if (obj.position.y < 0.3 || isGroundLike) {
+          obj.receiveShadow = true;
+        }
+        // Text plates / beacons should not cast harsh shadows
+        if (obj.material && obj.material.isMeshBasicMaterial && obj.geometry && obj.geometry.type === 'PlaneGeometry') {
+          obj.castShadow = false;
+        }
+      }
+    });
   }
 
   bindEvents() {
@@ -149,6 +253,11 @@ export class SceneManager {
     this.isLowPerformance = isLow;
     if (this.renderer) {
       this.renderer.setPixelRatio(isLow ? 1.0 : Math.min(window.devicePixelRatio, 2.0));
+      this.renderer.shadowMap.enabled = !isLow;
+      if (this.sunLight) this.sunLight.castShadow = !isLow;
+    }
+    if (this.activeGameScene) {
+      this.applyShadowFlags(this.activeGameScene.group);
     }
   }
 
@@ -165,6 +274,7 @@ export class SceneManager {
       this.cameraController.reset();
       this.activeGameScene.init(this);
       if (this.activeGameScene.group) {
+        this.applyShadowFlags(this.activeGameScene.group);
         this.scene.add(this.activeGameScene.group);
       }
     }
@@ -173,6 +283,7 @@ export class SceneManager {
   resetCurrentScene() {
     if (this.activeGameScene) {
       this.activeGameScene.reset();
+      this.applyShadowFlags(this.activeGameScene.group);
     }
     if (this.cameraController) {
       this.cameraController.reset();
@@ -183,24 +294,20 @@ export class SceneManager {
     const loop = () => {
       this.animationFrameId = requestAnimationFrame(loop);
 
-      const delta = Math.min(this.clock.getDelta(), 0.1); // Cap delta to prevent jump
+      const delta = Math.min(this.clock.getDelta(), 0.1);
 
-      // Rotate starfield slowly
       if (this.starfield) {
-        this.starfield.rotation.y += delta * 0.02;
+        this.starfield.rotation.y += delta * 0.015;
       }
 
-      // Update camera damping
       if (this.cameraController) {
-        this.cameraController.update();
+        this.cameraController.update(delta);
       }
 
-      // Update active game level scene
       if (this.activeGameScene) {
         this.activeGameScene.update(delta);
       }
 
-      // Render
       if (this.renderer && this.scene && this.camera && !this.isContextLost) {
         this.renderer.render(this.scene, this.camera);
       }

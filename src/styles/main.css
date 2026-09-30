@@ -267,3 +267,94 @@ html, body {
   opacity: 0;
   transform: translateY(16px);
 }
+
+/* B-scheme: control deck shared ergonomics (applies to all 8 controls) */
+.control-panel {
+  --deck-pad: 1.1rem;
+}
+
+.control-panel .deck-content {
+  padding: var(--deck-pad) !important;
+  gap: 1rem !important;
+}
+
+.control-panel .deck-header,
+.control-panel .deck-footer {
+  min-height: var(--control-touch-min);
+}
+
+.control-panel input[type="range"].slider {
+  height: 28px;
+  cursor: pointer;
+  accent-color: var(--primary-blue);
+}
+
+.control-panel input[type="range"].slider::-webkit-slider-runnable-track {
+  height: var(--slider-track-h);
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--primary-blue-light), #dbeafe);
+  border: 1px solid var(--border-accent-light);
+}
+
+.control-panel input[type="range"].slider::-webkit-slider-thumb {
+  width: var(--slider-thumb);
+  height: var(--slider-thumb);
+  margin-top: calc((var(--slider-track-h) - var(--slider-thumb)) / 2);
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--primary-blue);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+
+.control-panel input[type="range"].slider::-moz-range-track {
+  height: var(--slider-track-h);
+  border-radius: 9999px;
+  background: #dbeafe;
+  border: 1px solid var(--border-accent-light);
+}
+
+.control-panel input[type="range"].slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--primary-blue);
+}
+
+.control-panel .text-input,
+.control-panel select {
+  min-height: var(--control-touch-min);
+  font-size: 0.95rem;
+}
+
+.control-panel .btn,
+.control-panel button {
+  min-height: 38px;
+}
+
+.control-panel .btn-sm {
+  min-height: 34px;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.btn-xs {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

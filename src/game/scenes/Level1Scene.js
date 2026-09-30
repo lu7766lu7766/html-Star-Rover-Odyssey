@@ -152,8 +152,9 @@ export class Level1Scene extends BaseGameScene {
       }
     } else if (actionType === 'LEVEL_SUCCESS') {
       this.isDiagnosing = false;
-      const { flame, nameLabel } = this.rover.userData;
+      const { flame, flameGlow, nameLabel } = this.rover.userData;
       if (flame) flame.material.opacity = 0.75;
+      if (flameGlow) flameGlow.material.opacity = 0.7;
       if (nameLabel) {
         nameLabel.material.map = createTextTexture('ALL SYSTEMS ONLINE ✓', '#ffffff', '#10b981');
         nameLabel.material.needsUpdate = true;
@@ -161,8 +162,9 @@ export class Level1Scene extends BaseGameScene {
       this.dockBeacons.forEach(b => b.material.color.setHex(0x10b981));
     } else if (actionType === 'LEVEL_FAIL') {
       this.isDiagnosing = false;
-      const { flame, nameLabel } = this.rover.userData;
+      const { flame, flameGlow, nameLabel } = this.rover.userData;
       if (flame) flame.material.opacity = 0;
+      if (flameGlow) flameGlow.material.opacity = 0;
       if (nameLabel) {
         nameLabel.material.map = createTextTexture('CHECK FAILED ⚠️', '#ffffff', '#ef4444');
         nameLabel.material.needsUpdate = true;
@@ -202,10 +204,23 @@ export class Level1Scene extends BaseGameScene {
       const beaconColor = (Math.sin(this.diagnosticTimer * 10) > 0) ? 0x38bdf8 : 0x2563eb;
       this.dockBeacons.forEach(b => b.material.color.setHex(beaconColor));
 
-      // Thruster flame warmup
+      // Thruster flame warmup + glow sprite
       if (this.rover && this.rover.userData.flame) {
         this.rover.userData.flame.material.opacity = (this.currentPower / 100) * 0.45;
+        if (this.rover.userData.flameGlow) {
+          this.rover.userData.flameGlow.material.opacity = (this.currentPower / 100) * 0.5;
+        }
       }
+
+      // Antenna heartbeat
+      if (this.rover?.userData?.antennaTip) {
+        const pulse = 1.6 + Math.sin(this.diagnosticTimer * 6) * 0.9;
+        this.rover.userData.antennaTip.material.emissiveIntensity = pulse;
+      }
+    } else if (this.rover?.userData?.flameGlow) {
+      this.rover.userData.flameGlow.material.opacity = THREE.MathUtils.lerp(
+        this.rover.userData.flameGlow.material.opacity, 0, delta * 5
+      );
     }
 
     // Shield Shimmering Animation

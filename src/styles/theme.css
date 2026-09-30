@@ -76,4 +76,20 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+
+  /* B-scheme Workspace Tokens */
+  --workspace-gap: 0.75rem;
+  --workspace-pad: 0.75rem;
+  --pane-viewport-min: 0px;
+  --pane-control-default: 460px;
+  --pane-control-min: 380px;
+  --pane-control-max: 620px;
+  --pane-mission-default: 330px;
+  --pane-mission-min: 280px;
+  --pane-mission-max: 400px;
+  --control-touch-min: 44px;
+  --slider-track-h: 10px;
+  --slider-thumb: 22px;
+  --ion-flame-from: #38bdf8;
+  --ion-flame-to: #6366f1;
 }

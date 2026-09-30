@@ -5,6 +5,7 @@
 
     <!-- 3D Canvas Mount Point (Level 6 以外) -->
     <div v-else class="canvas-wrapper" ref="canvasContainer"></div>
+    <div v-if="levelId !== 6" class="viewport-vignette" aria-hidden="true"></div>
 
     <!-- Viewport Optical HUD Header (Top Left / Right) -->
     <div v-if="levelId !== 6" class="viewport-telemetry-banner">
@@ -359,6 +360,12 @@ watch(() => props.isLowPerformance, (isLow) => {
   }
 });
 
+watch(() => props.lastRunResult, (res) => {
+  if (!res || !sceneManager?.cameraController) return;
+  if (res.pass) sceneManager.cameraController.kick(0.22);
+  else sceneManager.cameraController.kick(0.4);
+});
+
 onBeforeUnmount(() => {
   if (sceneManager) {
     sceneManager.dispose();
@@ -380,6 +387,16 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   outline: none;
+}
+
+.viewport-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  background:
+    radial-gradient(120% 90% at 50% 42%, transparent 58%, rgba(15, 23, 42, 0.14) 100%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.35), transparent 18%, transparent 84%, rgba(15, 23, 42, 0.08));
 }
 
 .viewport-telemetry-banner {

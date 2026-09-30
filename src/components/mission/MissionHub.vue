@@ -61,17 +61,21 @@
         </div>
       </section>
 
-      <!-- Live Scope & Variable Inspector (Pedagogical Enhancement) -->
-      <section class="inspector-card card">
-        <div class="inspector-header">
+      <!-- Live Scope & Variable Inspector (collapsed by default to prioritize controls) -->
+      <section class="inspector-card card collapsible">
+        <div class="inspector-header collapsible-header" @click="toggleSection('scope')">
           <div class="inspector-title">
             <Eye :size="15" class="text-brand" />
             <span>即時記憶體變數監視器 (Scope Watch)</span>
           </div>
-          <span class="live-pulse">LIVE</span>
+          <div class="header-right-group">
+            <span class="live-pulse">LIVE</span>
+            <ChevronUp v-if="openSections.scope" :size="15" class="text-muted" />
+            <ChevronDown v-else :size="15" class="text-muted" />
+          </div>
         </div>
 
-        <div class="inspector-table-wrapper">
+        <div v-show="openSections.scope" class="inspector-table-wrapper">
           <table class="inspector-table">
             <thead>
               <tr>
@@ -93,13 +97,17 @@
         </div>
       </section>
 
-      <!-- Core Concept Card -->
-      <section class="concept-card card">
-        <div class="concept-header">
+      <!-- Core Concept Card (collapsed to reduce scroll) -->
+      <section class="concept-card card collapsible">
+        <div class="concept-header collapsible-header" @click="toggleSection('concept')">
           <BookOpen :size="16" class="text-purple" />
           <h4 class="concept-name">{{ level.conceptTitle }}</h4>
+          <span class="collapse-icon">
+            <ChevronUp v-if="openSections.concept" :size="15" class="text-muted" />
+            <ChevronDown v-else :size="15" class="text-muted" />
+          </span>
         </div>
-        <p class="concept-text">{{ level.conceptExplanation }}</p>
+        <p v-show="openSections.concept" class="concept-text">{{ level.conceptExplanation }}</p>
       </section>
 
       <!-- JavaScript Code Peek (Collapsible by default as per PRD 4.2) -->
@@ -176,6 +184,11 @@ const failureHint = computed(() => {
 });
 
 const copyStatusText = ref('複製程式碼');
+
+const openSections = ref({ scope: false, concept: false });
+function toggleSection(key) {
+  openSections.value[key] = !openSections.value[key];
+}
 
 function openHints() {
   levelStore.toggleHintModal(true);
@@ -642,5 +655,26 @@ const activeScopeVariables = computed(() => {
   color: var(--text-muted);
   line-height: 1.4;
   margin-top: 0.35rem;
+}
+
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.header-right-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.collapse-icon {
+  margin-left: auto;
+  display: inline-flex;
+}
+
+.hub-content {
+  gap: 0.8rem !important;
+  padding: 0.8rem !important;
 }
 </style>
