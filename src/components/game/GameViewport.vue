@@ -29,10 +29,6 @@
         <RotateCcw :size="14" class="icon-hud" />
         <span>場景還原</span>
       </button>
-      <button class="btn btn-sm hud-btn" @click="resetScene" title="重設 3D 場景物理狀態">
-        <RefreshCw :size="14" class="icon-hud" />
-        <span>重置場景</span>
-      </button>
     </div>
 
     <!-- Level 7 Custom Drone Fleet HUD -->
@@ -135,7 +131,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
-import { Compass, RotateCcw, AlertTriangle, Award, ArrowRight, Lightbulb, RefreshCw } from 'lucide-vue-next';
+import { Compass, RotateCcw, AlertTriangle, Award, ArrowRight, Lightbulb } from 'lucide-vue-next';
 import { SceneManager } from '../../game/core/SceneManager.js';
 import { Level1Scene } from '../../game/scenes/Level1Scene.js';
 import { Level2Scene } from '../../game/scenes/Level2Scene.js';
@@ -248,12 +244,6 @@ function restoreScene() {
 
 function restoreVehicle() {
   restoreScene();
-}
-
-function resetScene() {
-  if (sceneManager) {
-    sceneManager.resetCurrentScene();
-  }
 }
 
 function reinitScene() {

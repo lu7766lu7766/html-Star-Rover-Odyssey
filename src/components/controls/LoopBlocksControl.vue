@@ -7,9 +7,9 @@
         <h3 class="deck-title">迷宮拼圖路徑規劃 · Maze Path Puzzle & Loops</h3>
       </div>
       <div class="header-actions">
-        <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="重置為初始狀態">
+        <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
-          <span>重置</span>
+          <span>還原</span>
         </button>
       </div>
     </div>
@@ -285,14 +285,6 @@
     <!-- Footer Controls -->
     <div class="deck-footer">
       <div class="footer-left">
-        <button
-          class="btn btn-secondary btn-sm"
-          @click="restoreScene"
-          title="將 3D 場景與探測車恢復至起點"
-        >
-          <RotateCcw :size="14" />
-          <span>場景還原</span>
-        </button>
       </div>
 
       <div class="footer-right">
@@ -386,13 +378,7 @@ function clearAllBlocks() {
 }
 
 function resetDefaults() {
-  blocks.value = [
-    { id: 'b-init-1', type: 'FORWARD' }
-  ];
-}
-
-function restoreScene() {
-  levelStore.restoreScene();
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {

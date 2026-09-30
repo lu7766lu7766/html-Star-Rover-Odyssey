@@ -5,9 +5,9 @@
         <Cpu :size="18" class="text-brand" />
         <h3 class="deck-title">物件模組封裝與方法調用 · Object Methods</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="重置模組">
+      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
         <RotateCcw :size="14" />
-        <span>預設值</span>
+        <span>還原</span>
       </button>
     </div>
 
@@ -150,9 +150,7 @@ const currentModuleName = computed(() => {
 });
 
 function resetDefaults() {
-  selectedModuleId.value = 'basic-sensor';
-  scanRange.value = 10;
-  mode.value = 'NORMAL';
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {

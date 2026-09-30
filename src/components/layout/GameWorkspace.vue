@@ -3,24 +3,15 @@
     <!-- Top Bar -->
     <LevelTopBar />
 
-    <!-- Three Pane Workspace: Viewport | Controls | Mission -->
+    <!-- Three Pane Workspace: Viewport | Controls | Mission (固定三欄，不收合) -->
     <div
       class="workspace-main"
       :style="gridStyle"
-      :class="{
-        'is-controls-collapsed': isControlsCollapsed,
-        'is-mission-collapsed': isMissionCollapsed
-      }"
     >
       <!-- Pane A: 3D Viewport -->
       <section class="pane pane-viewport" aria-label="3D 遊戲場景">
         <div class="pane-toolbar">
           <span class="pane-eyebrow">3D 場景</span>
-          <div class="pane-tools">
-            <button class="btn btn-ghost btn-xs" @click="isControlsCollapsed = !isControlsCollapsed" :title="isControlsCollapsed ? '展開控制區' : '收合控制區以放大 3D'">
-              {{ isControlsCollapsed ? '展開控制' : '專注 3D' }}
-            </button>
-          </div>
         </div>
         <div class="pane-body">
           <GameViewport
@@ -42,14 +33,13 @@
 
       <!-- Splitter: viewport <-> controls -->
       <div
-        v-if="!isControlsCollapsed && !isMissionCollapsed"
         class="splitter"
         @pointerdown="startResize($event, 'controls')"
         title="拖曳調整控制區寬度"
       />
 
       <!-- Pane B: Interactive Control Deck -->
-      <section v-show="!isControlsCollapsed" class="pane pane-controls" aria-label="操作控制區">
+      <section class="pane pane-controls" aria-label="操作控制區">
         <div class="pane-toolbar">
           <span class="pane-eyebrow">操作控制</span>
           <span class="pane-meta">{{ levelStore.currentLevel.controlType }}</span>
@@ -61,36 +51,20 @@
 
       <!-- Splitter: controls <-> mission -->
       <div
-        v-if="!isControlsCollapsed && !isMissionCollapsed"
         class="splitter"
         @pointerdown="startResize($event, 'mission')"
         title="拖曳調整任務區寬度"
       />
 
       <!-- Pane C: Mission Hub -->
-      <section v-show="!isMissionCollapsed" class="pane pane-mission" aria-label="任務資訊區">
+      <section class="pane pane-mission" aria-label="任務資訊區">
         <div class="pane-toolbar">
           <span class="pane-eyebrow">任務簡報</span>
-          <div class="pane-tools">
-            <button class="btn btn-ghost btn-xs" @click="isMissionCollapsed = true" title="收合任務欄以放大操作區">
-              收合
-            </button>
-          </div>
         </div>
         <div class="pane-body pane-body-tight">
           <MissionHub />
         </div>
       </section>
-
-      <!-- Collapsed mission reopen -->
-      <button
-        v-if="isMissionCollapsed"
-        class="btn btn-outline btn-sm mission-reopen"
-        @click="isMissionCollapsed = false"
-        title="展開任務簡報"
-      >
-        任務
-      </button>
     </div>
   </div>
 </template>
@@ -107,21 +81,10 @@ import { useProgressStore } from '../../stores/progressStore.js';
 const levelStore = useLevelStore();
 const progressStore = useProgressStore();
 
-const isControlsCollapsed = ref(false);
-const isMissionCollapsed = ref(false);
 const controlsWidth = ref(460);
 const missionWidth = ref(330);
 
 const gridStyle = computed(() => {
-  if (isControlsCollapsed.value && isMissionCollapsed.value) {
-    return { gridTemplateColumns: 'minmax(0, 1fr)' };
-  }
-  if (isControlsCollapsed.value) {
-    return { gridTemplateColumns: `minmax(0, 1fr) 8px minmax(280px, ${missionWidth.value}px)` };
-  }
-  if (isMissionCollapsed.value) {
-    return { gridTemplateColumns: `minmax(0, 1fr) 8px minmax(380px, ${controlsWidth.value}px)` };
-  }
   return {
     gridTemplateColumns: `minmax(0, 1fr) 8px minmax(380px, ${controlsWidth.value}px) 8px minmax(280px, ${missionWidth.value}px)`
   };
@@ -175,9 +138,11 @@ function handleNextLevel() {
 .workspace-root {
   width: 100vw;
   height: 100vh;
+  min-width: 1280px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background-color: var(--bg-space);
   background-image: var(--bg-space-gradient);
 }
@@ -188,6 +153,7 @@ function handleNextLevel() {
   gap: 0;
   padding: var(--workspace-pad);
   min-height: 0;
+  min-width: 1240px;
   overflow: hidden;
   position: relative;
 }
@@ -214,9 +180,11 @@ function handleNextLevel() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   padding: 0 0.8rem;
   border-bottom: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
 }
 
 .pane-eyebrow {
@@ -225,17 +193,19 @@ function handleNextLevel() {
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pane-meta {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--text-muted);
-}
-
-.pane-tools {
-  display: flex;
-  gap: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .pane-body {
@@ -243,10 +213,6 @@ function handleNextLevel() {
   min-height: 0;
   position: relative;
   overflow: hidden;
-}
-
-.pane-body-scroll {
-  overflow-y: auto;
 }
 
 .pane-body-tight {
@@ -258,12 +224,14 @@ function handleNextLevel() {
 .pane-body-tight > * {
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .splitter {
   cursor: col-resize;
   background: transparent;
   position: relative;
+  min-width: 8px;
 }
 
 .splitter::after {
@@ -281,49 +249,5 @@ function handleNextLevel() {
 
 .splitter:hover::after {
   background: var(--primary-blue);
-}
-
-.mission-reopen {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 20;
-  background: #ffffff;
-}
-
-/* Narrow: stack to 2 cols then 1 col */
-@media (max-width: 1280px) {
-  .workspace-main {
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px) !important;
-  }
-  .pane-mission {
-    display: none;
-  }
-  .mission-reopen {
-    display: inline-flex;
-  }
-  .splitter:nth-of-type(2) {
-    display: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .workspace-main {
-    display: flex !important;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-  .pane-viewport {
-    height: 380px;
-    flex: none;
-  }
-  .pane-controls,
-  .pane-mission {
-    min-height: 420px;
-    flex: none;
-  }
-  .splitter {
-    display: none;
-  }
 }
 </style>

@@ -7,17 +7,9 @@
         <h3 class="deck-title">變數宣告與記憶體配置 · Variable Declaration</h3>
       </div>
       <div class="deck-actions">
-        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="還原 3D 場景與探測船整備狀態">
+        <button class="btn btn-secondary btn-sm" @click="handleRestore" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
-          <span>場景還原</span>
-        </button>
-        <button class="btn btn-ghost btn-sm" @click="loadDemoSafely" title="自動填入符合規範的安全變數值">
-          <Sparkles :size="14" class="text-brand" />
-          <span>合規示範</span>
-        </button>
-        <button class="btn btn-ghost btn-sm" @click="resetToFactory" title="重設至未配置出廠狀態">
-          <RefreshCw :size="14" />
-          <span>出廠狀態</span>
+          <span>還原</span>
         </button>
       </div>
     </div>
@@ -181,7 +173,7 @@ rover.<span class="func">systemCheck</span>({ roverName, powerLevel, shieldActiv
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { Variable, RotateCcw, RefreshCw, Sparkles, ShieldCheck, ShieldAlert, Code, Zap } from 'lucide-vue-next';
+import { Variable, RotateCcw, ShieldCheck, ShieldAlert, Code, Zap } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { soundManager } from '../../game/core/SoundManager.js';
@@ -227,24 +219,8 @@ function setShield(val) {
   shieldActive.value = val;
 }
 
-function restorePosition() {
-  levelStore.restoreVehiclePosition();
-}
-
-function loadDemoSafely() {
-  soundManager.playClick();
-  roverName.value = '奧德賽號';
-  powerLevel.value = 90;
-  shieldActive.value = true;
-  restorePosition();
-}
-
-function resetToFactory() {
-  soundManager.playClick();
-  roverName.value = '';
-  powerLevel.value = 0;
-  shieldActive.value = false;
-  restorePosition();
+function handleRestore() {
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {

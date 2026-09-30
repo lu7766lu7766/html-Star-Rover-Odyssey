@@ -29,11 +29,11 @@
 
         <button
           class="btn btn-secondary btn-xs"
-          @click="restoreScene"
-          title="將氣象探測機還原至發射整備台"
+          @click="handleRestore"
+          title="還原場景與參數至最初狀態"
         >
           <RotateCcw :size="13" />
-          <span>場景還原</span>
+          <span>還原</span>
         </button>
       </div>
     </div>
@@ -635,8 +635,8 @@ async function fetchAllStations() {
   }
 }
 
-function restoreScene() {
-  levelStore.restoreScene();
+function handleRestore() {
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {

@@ -6,13 +6,9 @@
         <h3 class="deck-title">飛行變數與推力參數調節 · Flight Parameters</h3>
       </div>
       <div class="deck-actions">
-        <button class="btn btn-secondary btn-sm" @click="restorePosition" title="還原 3D 場景跑道與探測船位置">
+        <button class="btn btn-secondary btn-sm" @click="handleRestore" title="還原場景與參數至最初狀態">
           <RotateCcw :size="14" />
-          <span>場景還原</span>
-        </button>
-        <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="恢復預設參數">
-          <RefreshCw :size="14" />
-          <span>預設值</span>
+          <span>還原</span>
         </button>
       </div>
     </div>
@@ -134,7 +130,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { Sliders, RotateCcw, RefreshCw, Play } from 'lucide-vue-next';
+import { Sliders, RotateCcw, Play } from 'lucide-vue-next';
 import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 
@@ -165,16 +161,8 @@ watch([thrustCount, speed, initialFuel, burnPerThrust], () => {
   levelStore.restoreVehiclePosition();
 });
 
-function restorePosition() {
-  levelStore.restoreVehiclePosition();
-}
-
-function resetDefaults() {
-  initialFuel.value = 150;
-  burnPerThrust.value = 30;
-  thrustCount.value = 3;
-  speed.value = 2;
-  restorePosition();
+function handleRestore() {
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {

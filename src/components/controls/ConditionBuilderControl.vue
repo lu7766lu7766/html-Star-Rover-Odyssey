@@ -5,9 +5,9 @@
         <GitBranch :size="18" class="text-brand" />
         <h3 class="deck-title">條件判斷邏輯樹 · Decision Branching</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="重置條件">
+      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
         <RotateCcw :size="14" />
-        <span>預設值</span>
+        <span>還原</span>
       </button>
     </div>
 
@@ -174,11 +174,7 @@ function getDecisionClass(dist) {
 }
 
 function resetDefaults() {
-  rule1Threshold.value = 5;
-  rule1Action.value = '';
-  rule2Threshold.value = 15;
-  rule2Action.value = '';
-  fallbackAction.value = '';
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {

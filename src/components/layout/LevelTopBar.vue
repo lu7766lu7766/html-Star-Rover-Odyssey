@@ -46,9 +46,9 @@
       </button>
 
       <!-- Reset Level -->
-      <button class="btn btn-outline btn-sm" @click="levelStore.resetCurrentLevel" title="重設本關狀態與場景">
+      <button class="btn btn-outline btn-sm" @click="levelStore.resetCurrentLevel" title="還原場景與參數至最初狀態">
         <RotateCcw :size="15" />
-        <span class="hide-mobile">重設</span>
+        <span class="hide-mobile">還原</span>
       </button>
 
       <!-- Sound Toggle -->

@@ -5,9 +5,9 @@
         <ListFilter :size="18" class="text-brand" />
         <h3 class="deck-title">陣列清單檢視與批次遍歷 · Array Fleet Dispatch</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="重置編隊設定">
+      <button class="btn btn-ghost btn-sm" @click="resetDefaults" title="還原場景與參數至最初狀態">
         <RotateCcw :size="14" />
-        <span>預設值</span>
+        <span>還原</span>
       </button>
     </div>
 
@@ -151,9 +151,7 @@ onMounted(() => {
 });
 
 function resetDefaults() {
-  batteryThreshold.value = 10;
-  lowBatteryAction.value = 'PATROL';
-  normalBatteryAction.value = 'RETURN_BASE';
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {

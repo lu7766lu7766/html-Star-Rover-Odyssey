@@ -5,9 +5,9 @@
         <MousePointer :size="18" class="text-brand" />
         <h3 class="deck-title">DOM 事件實驗室 · 幫網頁按鈕接上電線</h3>
       </div>
-      <button class="btn btn-ghost btn-sm" @click="onReset" title="重置事件配置">
+      <button class="btn btn-ghost btn-sm" @click="onReset" title="還原場景與參數至最初狀態">
         <RotateCcw :size="14" />
-        <span>重置狀態</span>
+        <span>還原</span>
       </button>
     </div>
 
@@ -149,7 +149,7 @@ function onBindingChange() {
 
 function onReset() {
   dom.resetDefaults();
-  try { soundManager.playClick(); } catch (e) {}
+  levelStore.resetCurrentLevel();
 }
 
 function runExecution() {
