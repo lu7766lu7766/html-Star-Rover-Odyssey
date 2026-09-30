@@ -156,10 +156,11 @@ export class SceneManager {
     this.scene.add(this.skyDome);
 
     // Large soft ground disc receiving shadows
+    // 深色機甲甲板：與白色探測車、白色塔台形成高對比，避免白 on 白看不清
     const groundGeo = new THREE.CircleGeometry(90, 64);
     groundGeo.rotateX(-Math.PI / 2);
     const groundMat = new THREE.MeshStandardMaterial({
-      color: 0xf1f5f9,
+      color: 0x1e293b,
       roughness: 0.95,
       metalness: 0.0
     });
@@ -169,10 +170,11 @@ export class SceneManager {
     this.scene.add(this.groundDisc);
 
     // Faint radial grid overlay handled per-level; keep a very subtle global grid
-    const grid = new THREE.GridHelper(140, 70, 0xbfdbfe, 0xe2e8f0);
+    // 深色地板上改用亮青 + 中灰，確保網格線清晰可見
+    const grid = new THREE.GridHelper(140, 70, 0x38bdf8, 0x475569);
     grid.position.y = -0.015;
     grid.material.transparent = true;
-    grid.material.opacity = 0.35;
+    grid.material.opacity = 0.6;
     this.scene.add(grid);
     this.groundGrid = grid;
   }

@@ -291,13 +291,13 @@ export function createSciFiRover() {
 }
 
 /**
- * Grid floor - brighter, softer
+ * Grid floor - 高對比：亮青主線 + 中灰副線，深色甲板上清晰可見
  */
-export function createSciFiGrid(size = 50, divisions = 50, primaryColor = 0x93c5fd, secondaryColor = 0xe2e8f0) {
+export function createSciFiGrid(size = 50, divisions = 50, primaryColor = 0x38bdf8, secondaryColor = 0x64748b) {
   const grid = new THREE.GridHelper(size, divisions, primaryColor, secondaryColor);
   grid.position.y = 0;
   grid.material.transparent = true;
-  grid.material.opacity = 0.55;
+  grid.material.opacity = 0.75;
   return grid;
 }
 
@@ -310,7 +310,7 @@ export function createLandingPad(radius = 1.4, color = 0x10b981) {
 
   const rim = new THREE.Mesh(
     new THREE.CylinderGeometry(radius + 0.25, radius + 0.35, 0.22, 40),
-    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.8 })
+    new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.35, metalness: 0.8 })
   );
   rim.position.y = 0.11;
   group.add(rim);
@@ -535,7 +535,7 @@ export function createAirlockDoors() {
 
   const frame = new THREE.Mesh(
     new RoundedBoxGeometry(7.4, 5.0, 0.9, 2, 0.08),
-    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4, metalness: 0.3 })
+    new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 })
   );
   frame.position.set(0, 2.5, 0);
   group.add(frame);

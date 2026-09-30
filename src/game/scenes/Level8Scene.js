@@ -24,13 +24,13 @@ export class Level8Scene extends BaseGameScene {
   }
 
   build() {
-    this.grid = createSciFiGrid(60, 20);
+    this.grid = createSciFiGrid(60, 20, 0x38bdf8, 0x475569);
     this.group.add(this.grid);
 
-    // Weather Station Base Tower
+    // Weather Station Base Tower — 深 slate 塔身，在淺色天空與深色地板上都清晰
     this.stationTower = new THREE.Group();
     const towerGeo = new THREE.CylinderGeometry(1.2, 1.8, 3.5, 16);
-    const towerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+    const towerMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.5 });
     const tower = new THREE.Mesh(towerGeo, towerMat);
     tower.position.y = 1.75;
     this.stationTower.add(tower);
@@ -54,20 +54,32 @@ export class Level8Scene extends BaseGameScene {
     this.drone.position.set(4, 0.6, 0);
     this.group.add(this.drone);
 
-    // Fluffy Atmospheric Clouds
+    // Fluffy Atmospheric Clouds — 淺灰藍雲體 + 深色描邊，在淺色天空下仍可辨識
     const cloudMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: 0xe2e8f0,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.92,
       roughness: 0.9
+    });
+    const cloudEdgeMat = new THREE.LineBasicMaterial({
+      color: 0x475569,
+      transparent: true,
+      opacity: 0.55
     });
 
     for (let i = 0; i < 6; i++) {
       const cloud = new THREE.Group();
       for (let j = 0; j < 3; j++) {
-        const puff = new THREE.Mesh(new THREE.DodecahedronGeometry(1.8, 1), cloudMat);
+        const puffGeo = new THREE.DodecahedronGeometry(1.8, 1);
+        const puff = new THREE.Mesh(puffGeo, cloudMat);
         puff.position.set(j * 1.5, Math.sin(j) * 0.5, 0);
         cloud.add(puff);
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(puffGeo),
+          cloudEdgeMat
+        );
+        edges.position.copy(puff.position);
+        cloud.add(edges);
       }
       cloud.position.set((i - 2.5) * 6, 8 + Math.sin(i) * 2, -10 + i * 3);
       this.group.add(cloud);

@@ -68,9 +68,10 @@ export class Level2Scene extends BaseGameScene {
     this.runway.name = 'LaunchRunway';
 
     // Main Runway Slab (Length: 36m from z = -4 to z = 32)
+    // 中灰跑道：深色甲板上保持對比，避免與地板融為一體
     const slabGeo = new THREE.BoxGeometry(4.4, 0.25, 36);
     const slabMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
+      color: 0x64748b,
       metalness: 0.6,
       roughness: 0.4
     });

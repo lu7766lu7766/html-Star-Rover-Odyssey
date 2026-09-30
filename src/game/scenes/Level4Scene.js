@@ -87,27 +87,28 @@ export class Level4Scene extends BaseGameScene {
   buildMazePlatform() {
     this.gridPlatform = new THREE.Group();
 
-    // Platform Base
+    // Platform Base — 深色懸浮平台，與白色探測車形成高對比
     const platGeo = new THREE.BoxGeometry(6 * CELL_SIZE + 0.6, 0.4, 6 * CELL_SIZE + 0.6);
     const platMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.25,
-      metalness: 0.15
+      color: 0x0f172a,
+      roughness: 0.35,
+      metalness: 0.35
     });
     const platform = new THREE.Mesh(platGeo, platMat);
     platform.position.y = -0.2;
     this.gridPlatform.add(platform);
 
-    // Glowing border rim
+    // Glowing border rim — 亮青邊框，在深色平台與地板之間勾勒邊界
     const rimGeo = new THREE.BoxGeometry(6 * CELL_SIZE + 0.8, 0.08, 6 * CELL_SIZE + 0.8);
-    const rimMat = new THREE.MeshBasicMaterial({ color: 0x93c5fd });
+    const rimMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     const rim = new THREE.Mesh(rimGeo, rimMat);
     rim.position.y = 0.01;
     this.gridPlatform.add(rim);
 
     // 6x6 Tile Grid Lines and Subtle Coordinate Tiles
-    const tileMatOdd = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
-    const tileMatEven = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.5 });
+    // 深灰棋盤格：白色探測車、綠色目標、橘色水晶在上面都清晰可辨
+    const tileMatOdd = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 });
+    const tileMatEven = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
     const tileGeo = new THREE.PlaneGeometry(CELL_SIZE - 0.08, CELL_SIZE - 0.08);
     tileGeo.rotateX(-Math.PI / 2);
 
@@ -183,7 +184,7 @@ export class Level4Scene extends BaseGameScene {
     this.obstaclesGroup = new THREE.Group();
 
     const rockMat = new THREE.MeshStandardMaterial({
-      color: 0x475569,
+      color: 0x94a3b8,
       roughness: 0.9,
       metalness: 0.1,
       flatShading: true
