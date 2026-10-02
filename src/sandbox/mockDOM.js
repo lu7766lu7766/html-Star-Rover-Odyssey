@@ -54,6 +54,18 @@ export class MockElement {
     }
   }
 
+  // 真實瀏覽器 textContent / innerText 都會改畫面文字，這裡做別名否則學生寫 textContent 快照永遠是舊的
+  get textContent() {
+    return this._innerText;
+  }
+
+  set textContent(val) {
+    this._innerText = String(val);
+    if (this._onMutation) {
+      this._onMutation(this.serialize());
+    }
+  }
+
   addEventListener(event, callback) {
     if (typeof callback !== 'function') return;
     if (!this._listeners[event]) {

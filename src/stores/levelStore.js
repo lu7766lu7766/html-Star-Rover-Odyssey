@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia';
 import { getLevelById } from '../levels/index.js';
 import { useProgressStore } from './progressStore.js';
+import { useDomLabStore } from './domLabStore.js';
 import { soundManager } from '../game/core/SoundManager.js';
 import { sandboxRuntime } from '../sandbox/runtime.js';
 
@@ -26,7 +27,11 @@ export const useLevelStore = defineStore('level', {
     isFailModalOpen: false,
     failModalTimer: null,
     isHintModalOpen: false,
-    resetNonce: 0
+    resetNonce: 0,
+    // L6 送審制：程式通過後才放行手動操作，通過前 2D 不自動開門
+    l6CodeApproved: false,
+    l6ApprovedEval: null,
+    l6ApprovedCode: ''
   }),
 
   getters: {
@@ -112,6 +117,15 @@ export const useLevelStore = defineStore('level', {
       soundManager.playClick();
       this.clearLogs();
       progressStore.clearSavedOperation(this.currentLevel.id);
+      // L6 是 2D 模式：3D RESET 觸發是空函式，這裡要順手把 2D 儀表板打回鎖定
+      if (this.currentLevel.id === 6) {
+        try {
+          useDomLabStore().resetDefaults();
+        } catch (e) {}
+        this.l6CodeApproved = false;
+        this.l6ApprovedEval = null;
+        this.l6ApprovedCode = '';
+      }
       this.resetNonce++;
       if (this.sceneActionTrigger) {
         this.sceneActionTrigger('RESET', { levelId: this.currentLevel.id });
@@ -120,6 +134,46 @@ export const useLevelStore = defineStore('level', {
         type: 'info',
         message: '關卡場景與參數已重置為初始狀態。'
       });
+    },
+
+    // L6 手動過關：送審通過後，學生在 2D 親手點亮 disarmed + airlockOpen 才算通關
+    checkL6ManualCompletion() {
+      if (this.currentLevel?.id !== 6) return null;
+      if (!this.l6CodeApproved) return null;
+      let domLab = null;
+      try {
+        domLab = useDomLabStore();
+      } catch (e) {
+        return null;
+      }
+      if (!domLab.disarmed || !domLab.airlockOpen) return null;
+      // 防重複觸發：先關放行旗
+      this.l6CodeApproved = false;
+      const progressStore = useProgressStore();
+      const stars = this.l6ApprovedEval?.data?.stars ?? 3;
+      const evaluation = {
+        pass: true,
+        data: { disarmed: true, airlockOpen: true, stars, fromCode: true, manual: true },
+        feedback: `2D 網頁修復成功！程式接線正確＋親手點擊完成，警報解除、氣閘滑開！（${stars}星）`
+      };
+      this.lastRunResult = evaluation;
+      if (this.sceneActionTrigger) {
+        this.sceneActionTrigger('LEVEL_SUCCESS', { levelId: 6, evaluation });
+      }
+      progressStore.markLevelCompleted(6);
+      this.appendLog({
+        type: 'success',
+        message: `🌟 [任務通關] ${evaluation.feedback}`
+      });
+      if (this.failModalTimer) clearTimeout(this.failModalTimer);
+      this.isFailModalOpen = false;
+      // L6 無 3D 勝利動畫要等，直接彈窗
+      if (this.successModalTimer) clearTimeout(this.successModalTimer);
+      try {
+        soundManager.playSuccess();
+      } catch (e) {}
+      this.isSuccessModalOpen = true;
+      return evaluation;
     },
 
     async executeLevel(payload) {
@@ -145,8 +199,11 @@ export const useLevelStore = defineStore('level', {
       // 新鏈路：payload.code 代表學生手寫 JS，先丟 Worker 真跑
       let tracePayload = payload;
       if (typeof payload.code === 'string' && currentLevel.id === 6) {
-        // L6 太空艙：跑接線＋模擬正確/錯誤兩路點擊順序
-        this.appendLog({ type: 'info', message: '🖥️ 沙箱執行學生程式碼並模擬點擊中...' });
+        // L6 送審制：只驗程式接線是否正確，不自動開門。
+        // 失敗 → 直接失敗彈窗；成功 → 2D 回到鎖定態並同步接線徽章，等學生親手點擊完成。
+        this.l6CodeApproved = false;
+        this.l6ApprovedEval = null;
+        this.appendLog({ type: 'info', message: '🖥️ 沙箱檢查學生程式碼（只驗接線，不自動開門）…' });
         const domRes = await sandboxRuntime.runDomLevel(payload.code, {
           onLog: (log) => {
             this.appendLog({ type: log.type === 'error' ? 'error' : 'info', message: `console.${log.type}: ${log.args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}` });
@@ -165,8 +222,9 @@ export const useLevelStore = defineStore('level', {
           if (this.sceneActionTrigger) {
             this.sceneActionTrigger('LEVEL_FAIL', { levelId: currentLevel.id, evaluation: errResult });
           }
+          // L6 無 3D 動畫要等，直接彈窗
           if (this.failModalTimer) clearTimeout(this.failModalTimer);
-          this.failModalTimer = setTimeout(() => { this.isFailModalOpen = true; }, 750);
+          this.isFailModalOpen = true;
           this.isExecuting = false;
           return errResult;
         }
@@ -182,6 +240,59 @@ export const useLevelStore = defineStore('level', {
           domCorrect: domRes.afterCorrect,
           domWrong: domRes.afterWrongOrder
         };
+
+        const pickEvent = (wiringSnap, id, fallback) => {
+          const types = wiringSnap?.[id]?.listenerTypes || [];
+          if (types.includes('click')) return 'click';
+          if (types.length > 0) return types[0];
+          return fallback;
+        };
+
+        // 背景已跑完正確/錯誤兩路點擊，直接用 validate 判定程式對錯（不碰 2D 開門）
+        const codeEval = currentLevel.validate(tracePayload);
+        if (!codeEval.pass) {
+          try {
+            const domLab = useDomLabStore();
+            const wiringSnap = domRes.wiring || {};
+            domLab.disarmEvent = pickEvent(wiringSnap, 'disarm-btn', domLab.disarmEvent);
+            domLab.airlockEvent = pickEvent(wiringSnap, 'airlock-btn', domLab.airlockEvent);
+            domLab.disarmed = false;
+            domLab.airlockOpen = false;
+            domLab.setNotice(`【送審未通過】${codeEval.error}`, 'danger');
+            domLab.pushLog('error', `❌ 送審未通過：${codeEval.error}`);
+          } catch (e) {}
+          this.lastRunResult = codeEval;
+          this.appendLog({ type: 'error', message: `⚠️ [未通過] ${codeEval.error}` });
+          if (this.sceneActionTrigger) {
+            this.sceneActionTrigger('LEVEL_FAIL', { levelId: currentLevel.id, evaluation: codeEval });
+          }
+          // L6 無 3D 動畫要等，直接彈窗
+          if (this.failModalTimer) clearTimeout(this.failModalTimer);
+          this.isFailModalOpen = true;
+          this.isExecuting = false;
+          return codeEval;
+        }
+
+        // 送審通過：2D 照程式同步接線徽章並回到鎖定態，等學生親手操作（此時不彈成功窗、不算通關）
+        try {
+          const domLab = useDomLabStore();
+          const wiringSnap = domRes.wiring || {};
+          domLab.disarmEvent = pickEvent(wiringSnap, 'disarm-btn', 'click');
+          domLab.airlockEvent = pickEvent(wiringSnap, 'airlock-btn', 'click');
+          domLab.disarmAction = 'DISARM_ALARM';
+          domLab.airlockAction = 'OPEN_AIRLOCK';
+          domLab.disarmed = false;
+          domLab.airlockOpen = false;
+          domLab.setNotice('【送審通過】接線正確！請親手點擊「解除警報」→「開啟氣閘門」完成任務。', 'success');
+          domLab.pushLog('system', `✅ 送審通過：#disarm-btn@${domLab.disarmEvent} / #airlock-btn@${domLab.airlockEvent}，等待手動操作`);
+        } catch (e) {}
+        this.l6CodeApproved = true;
+        this.l6ApprovedEval = codeEval;
+        this.l6ApprovedCode = payload.code;
+        this.lastRunResult = null;
+        this.appendLog({ type: 'success', message: '✅ 程式送審通過！請到上方 2D 網頁親手解除警報＋開啟氣閘，完成後自動過關。' });
+        this.isExecuting = false;
+        return { pass: false, pendingManual: true, error: null };
       } else if (typeof payload.code === 'string') {
         this.appendLog({ type: 'info', message: '🖥️ 沙箱執行學生程式碼中...' });
         const runRes = await sandboxRuntime.execute({

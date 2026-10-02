@@ -12,6 +12,10 @@
       <span class="badge-2d">2D 網頁模式</span>
     </div>
 
+    <div v-if="levelStore.l6CodeApproved && !(dom.disarmed && dom.airlockOpen)" class="manual-banner">
+      <span>✅ 程式送審通過！請親手點擊「解除警報」→「開啟氣閘門」完成任務</span>
+    </div>
+
     <div class="browser-body">
       <!-- Left: mock webpage -->
       <div class="webpage" :class="{ alarmed: !dom.disarmed }">
@@ -70,7 +74,7 @@
             <button
               id="disarm-btn"
               class="web-btn disarm"
-              :class="{ done: dom.disarmed }"
+              :class="{ done: dom.disarmed, 'sim-press': dom.pressTarget === 'disarm' }"
               @click="fire('disarm', 'click')"
               @mouseover="fire('disarm', 'mouseover')"
               @dblclick="fire('disarm', 'dblclick')"
@@ -91,7 +95,7 @@
             <button
               id="airlock-btn"
               class="web-btn airlock"
-              :class="{ done: dom.airlockOpen }"
+              :class="{ done: dom.airlockOpen, 'sim-press': dom.pressTarget === 'airlock' }"
               @click="fire('airlock', 'click')"
               @mouseover="fire('airlock', 'mouseover')"
               @dblclick="fire('airlock', 'dblclick')"
@@ -134,13 +138,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { Globe, Rocket, ShieldAlert, ShieldCheck, DoorClosed, DoorOpen, Terminal } from 'lucide-vue-next';
 import { useDomLabStore } from '../../stores/domLabStore.js';
+import { useLevelStore } from '../../stores/levelStore.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { soundManager } from '../../game/core/SoundManager.js';
 
 const dom = useDomLabStore();
+const levelStore = useLevelStore();
 const progress = useProgressStore();
 
 onMounted(() => {
@@ -148,6 +154,13 @@ onMounted(() => {
   if (saved?.domState) dom.hydrateFromSaved(saved.domState);
   if (!dom.eventLog.length) {
     dom.pushLog('system', '📄 document.querySelector 已選到 4 個元素，等待 addEventListener…');
+  }
+});
+
+// 送審通過後，親手點亮兩格才算通關（成功窗由 levelStore 發）
+watch(() => [dom.disarmed, dom.airlockOpen], ([disarmed, airlockOpen]) => {
+  if (disarmed && airlockOpen) {
+    levelStore.checkL6ManualCompletion();
   }
 });
 
@@ -221,6 +234,15 @@ const treePreview = computed(() => {
   border: 1px solid #c7d2fe;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
+}
+.manual-banner {
+  background: #ecfdf5;
+  border-bottom: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.45rem 1rem;
+  text-align: center;
 }
 .browser-body {
   flex: 1;
@@ -323,6 +345,20 @@ const treePreview = computed(() => {
 .web-btn.airlock.done { border-color: #6ee7b7; background: #ecfdf5; color: #065f46; }
 .web-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
 .web-btn:active { transform: translateY(0) scale(0.99); }
+/* 程式模擬點擊：彈一下＋變色，讓學生看到「被程式按下去」 */
+.web-btn.sim-press {
+  animation: simPressPop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-color: #4f46e5;
+  background: #eef2ff;
+  color: #312e81;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35), 0 8px 20px rgba(79, 70, 229, 0.25);
+}
+@keyframes simPressPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.93); }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
 .notice {
   font-size: 0.8rem; line-height: 1.5; padding: 0.55rem 0.75rem; border-radius: 8px; border: 1px solid;
 }

@@ -13,6 +13,8 @@ const DEFAULTS = {
   airlockAction: 'DISARM_ALARM'
 };
 
+let pressTimer = null;
+
 export const useDomLabStore = defineStore('domLab', {
   state: () => ({
     disarmEvent: DEFAULTS.disarmEvent,
@@ -23,7 +25,8 @@ export const useDomLabStore = defineStore('domLab', {
     airlockOpen: false,
     notice: '',
     noticeType: 'muted', // success | danger | warning | muted
-    eventLog: [] // { id, time, kind, message }
+    eventLog: [], // { id, time, kind, message }
+    pressTarget: null // 'disarm' | 'airlock' | null：程式模擬點擊時的按鈕彈跳
   }),
 
   getters: {
@@ -70,6 +73,16 @@ export const useDomLabStore = defineStore('domLab', {
       this.noticeType = type;
     },
 
+    // 程式模擬點擊：讓 2D 按鈕彈一下變色（650ms 後自動復原）
+    flashPress(which, ms = 650) {
+      this.pressTarget = which;
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => {
+        this.pressTarget = null;
+        pressTimer = null;
+      }, ms);
+    },
+
     resetDefaults() {
       this.disarmEvent = DEFAULTS.disarmEvent;
       this.disarmAction = DEFAULTS.disarmAction;
@@ -80,6 +93,11 @@ export const useDomLabStore = defineStore('domLab', {
       this.notice = '';
       this.noticeType = 'muted';
       this.eventLog = [];
+      this.pressTarget = null;
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
       this.pushLog('system', '已重置：4 條線全部接錯（事件＋動作都要修），請重新配置。');
     },
 
