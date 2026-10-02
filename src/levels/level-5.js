@@ -44,23 +44,18 @@ export const INITIAL_METHOD_CALL = {
   }
 };
 
-export const LEVEL_5_STARTER_CODE = `// 模組裝載：把 ___ 補完，再按執行
-// 任務：全空域普查——選對函式，配好 scanParams 物件
-// 型別（英文還是中文？全部填英文，字串加引號，不是中文）：
-//   range 是 @type {number} 數字（不加引號）；mode 是 @type {"HIGH" | "NORMAL"}；
-//   name 是 @type {"activateScan" | "focusScan" | "pingEcho"}；回傳字串看任務面板方法卡上的「回傳」那一行
-
+export const LEVEL_5_STARTER_CODE = `// 模組裝載
 const scanParams = {
-  range: ___,      // @type {number} 掃描半徑，最遠天體在 18 單位
-  mode: ___        // @type {"HIGH" | "NORMAL"} 解析度："HIGH" 才能解析深空頻譜
+  range: ___,      // @type {number} 掃描半徑
+  mode: ___        // @type {"HIGH" | "NORMAL"} 解析度
 };
 
 const scanModule = {
-  name: ___,       // @type {"activateScan" | "focusScan" | "pingEcho"} 三選一，任務是全空域普查，先讀方法卡再選
+  name: ___,       // @type {"activateScan" | "focusScan" | "pingEcho"} 掃描方法
   range: scanParams.range,
   mode: scanParams.mode,
   activate: function() {
-    return ___;    // 回傳字串：選對的函式成功普查會回傳什麼？看方法卡「回傳」那一行，整行照抄
+    return ___;    // 掃描回傳值
   }
 };
 
@@ -73,7 +68,7 @@ export default {
   subtitle: '函式呼叫與物件參數',
   conceptTitle: '函式是動詞，物件是受詞：f(x)',
   concepts: ['函式定義與呼叫 (Function Call)', '物件作為參數 (Object Argument)', '回傳值 (Return Value)'],
-  description: `探測船進入未探明的迷霧星區，量子掃描雷達已裝配完成。雷達提供三個函式（方法）：廣域掃描 activateScan、集束掃描 focusScan、短促回波 pingEcho。本次任務是全空域普查——所有隱藏天體座標都要解密。請選對函式，並配好傳入的參數物件 scanParams（範圍 range、解析度 mode），一發完成普查！`,
+  description: `探測船進入未探明的迷霧星區，量子掃描雷達已裝配完成。雷達提供三個函式（方法）：廣域掃描 activateScan、集束掃描 focusScan、短促回波 pingEcho。本次任務是全空域普查——所有隱藏天體座標都要解密（最遠天體在 18 單位，需用 "HIGH" 解析度才能解析深空頻譜）。請選對函式，並配好傳入的參數物件 scanParams（範圍 range、解析度 mode），一發完成普查！方法卡上的「回傳」那一行即為成功普查的回傳字串，請整行照抄。填寫時全部填英文：字串加引號，數字不加引號，填中文一定失敗。`,
   targetRequirements: [
     '呼叫正確的函式：activateScan(scanParams)（全空域普查唯一正解）',
     '參數物件設定 range >= 18 單位（覆蓋最遠的隱藏天體）',

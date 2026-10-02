@@ -3,20 +3,13 @@
  * 核心概念：陣列與綜合應用 (Arrays & Iteration)
  */
 
-export const LEVEL_7_STARTER_CODE = `// 無人機編隊：把 ___ 補完，再按執行
-// 規則：電量 < 20 → RETURN_BASE（返航），否則 → PATROL（巡邏）
-// drones 陣列已內建 4 架無人機資料，直接用 forEach 走訪！
-// ------------------------------------------------------------
-// 型別（中文還是英文？填英文，字串前後加引號，填中文一定失敗）：
-//   drone.battery 是 @type {number} 數字（電量百分比）；門檻 ___ 填 @type {number}（純數字，不加引號）
-//   /** @type {"RETURN_BASE" | "PATROL"} */
-//   drone.order 只能是這兩個英文："RETURN_BASE"＝返航充電 ／ "PATROL"＝空域巡邏
-
-drones.forEach((drone) => {
-  if (drone.battery < ___) {
-    drone.order = ___;   // 低電量：返航充電
+export const LEVEL_7_STARTER_CODE = `// 無人機編隊：遍歷編隊並指派指令
+// drones 陣列已內建 4 架無人機資料
+drones.forEach((drone) => {   // @param {Object} drone 無人機物件
+  if (drone.battery < ___) {   // @type {number} 低電量門檻
+    drone.order = ___;   // @type {"RETURN_BASE" | "PATROL"} 低電量指令
   } else {
-    drone.order = ___;   // 高電量：空域巡邏
+    drone.order = ___;   // @type {"RETURN_BASE" | "PATROL"} 高電量指令
   }
 });
 
@@ -29,12 +22,12 @@ export default {
   subtitle: '陣列與批次處理',
   conceptTitle: '批次管理成批資料：陣列與迭代',
   concepts: ['陣列 (Array [])', '資料遍歷 (forEach)', '條件篩選 (filter)'],
-  description: `巡邏編隊由 4 架不同型號的偵查無人機組成。每架無人機的即時電量資料已存放在「無人機陣列」中。請遍歷陣列中的每架無人機，設定安全電量判斷閾值（< 20%）：讓低電量無人機優先「返航充電」，高電量無人機出發「執行巡邏」，防止無人機在深空因電力耗盡而墜毀！`,
+  description: `巡邏編隊由 4 架不同型號的偵查無人機組成。每架無人機的即時電量資料（數字，電量百分比）已存放在「無人機陣列」中，直接用 forEach 走訪即可。請遍歷陣列中的每架無人機，設定安全電量判斷閾值（< 20%，門檻填純數字，不加引號）：讓低電量無人機優先「返航充電」，高電量無人機出發「執行巡邏」，防止無人機在深空因電力耗盡而墜毀！指令只能填英文："RETURN_BASE"＝返航充電 / "PATROL"＝空域巡邏（字串前後加引號，填中文一定失敗）。`,
   targetRequirements: [
-    '檢視無人機陣列清單資料 (共 4 架無人機)',
-    '設定低電量防護閾值為 20%',
-    '低電量無人機判定執行「返航充電 (RETURN_BASE)」',
-    '高電量無人機判定執行「空域巡邏 (PATROL)」',
+    '檢視無人機陣列清單資料 (共 4 架無人機，直接用 forEach 走訪)',
+    '設定低電量防護閾值為 20%（門檻填數字，不加引號）',
+    '低電量無人機判定執行「返航充電 (RETURN_BASE)」（英文大寫字串，加引號，不可填中文）',
+    '高電量無人機判定執行「空域巡邏 (PATROL)」（英文大寫字串，加引號，不可填中文）',
     '啟動編隊，確認全員零損傷安全回傳數據'
   ],
   controlType: 'array-fleet',

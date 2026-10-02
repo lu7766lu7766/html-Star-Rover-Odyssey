@@ -3,13 +3,10 @@
  * 核心概念：變數宣告與基礎資料型態 (Variables & Data Types: String, Number, Boolean)
  */
 
-export const LEVEL_1_STARTER_CODE = `// 探測船通電自檢：把 ___ 補完，再按執行
-// 規則：船名不可空、功率 80~100、護罩必須是 true
-// 型別：三個變數型別各不同，填錯型別（例如數字加了引號）會自檢失敗！
-
-let roverName = ___;      // @type {string} 字串：前後加引號，例如 "奧德賽號"（中文也可以，是文字就行）
-let powerLevel = ___;     // @type {number} 數字：80 ~ 100，直接寫數字，不加引號
-let shieldActive = ___;   // @type {boolean} 布林值：只能填 true 或 false，不加引號（加了引號就變字串！）
+export const LEVEL_1_STARTER_CODE = `// 探測船通電自檢
+let roverName = ___;      // @type {string} 探測船代號
+let powerLevel = ___;     // @type {number} 主系統輸出功率
+let shieldActive = ___;   // @type {boolean} 量子防護力場開關
 
 rover.setup(roverName, powerLevel, shieldActive);
 `;
@@ -22,10 +19,10 @@ export default {
   concepts: ['變數宣告 (let)', '字串 (String)', '數值 (Number)', '布林值 (Boolean)'],
   description: `歡迎來到奧德賽基地！全新出廠的探測船目前靜止在整備台，系統記憶體處於未配置狀態。請為探測船宣告並初始化 3 個核心狀態變數：設定探測船代號 (字串 String)、調整主系統輸出功率 (數值 Number) 並啟動量子防護力場 (布林值 Boolean)，完成全艦開機通電自檢！`,
   targetRequirements: [
-    '宣告 roverName (字串)：為探測船命名 (不可留空或為預設值)',
-    '宣告 powerLevel (數值)：調校系統輸出功率至安全標準 (80% ~ 100%)',
-    '宣告 shieldActive (布林值)：啟動防護力場開關 (必須為 true)',
-    '確認三大變數型態正確，點擊「執行通電自檢」喚醒探測船'
+    '宣告 roverName (字串)：為探測船命名 (不可留空或為預設值，字串前後要加引號)',
+    '宣告 powerLevel (數值)：調校系統輸出功率至安全標準 (80% ~ 100%，直接寫數字，不加引號)',
+    '宣告 shieldActive (布林值)：啟動防護力場開關 (必須為 true，不加引號，加引號會變成字串)',
+    '確認三大變數型態各不同且寫法正確，點擊「執行通電自檢」喚醒探測船'
   ],
   controlType: 'variable-declaration',
   initialVariables: {

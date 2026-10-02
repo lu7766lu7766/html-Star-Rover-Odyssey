@@ -3,16 +3,13 @@
  * 核心概念：變數與參數 (Variables & Parameters)
  */
 
-export const LEVEL_2_STARTER_CODE = `// 能源補給站：把 ___ 補完，再按執行
-// 規則：次數 × 速度 必須 = 24，速度 <= 3，總消耗不可超過燃料
-// 型別：四個 ___ 全部填 @type {number} 數字（純數字，不加引號）
+export const LEVEL_2_STARTER_CODE = `// 能源補給站
+let initialFuel = ___;   // @type {number} 初始燃料
+const burnRate = ___;    // @type {number} 每次消耗
+const count = ___;       // @type {number} 推進次數
+const speed = ___;       // @type {number} 推力速度
 
-let initialFuel = ___;   // @type {number} 初始燃料，例如 300
-const burnRate = ___;    // @type {number} 每次消耗，例如 25
-const count = ___;       // @type {number} 推進次數，例如 8
-const speed = ___;       // @type {number} 推力速度，例如 3（不可 > 3）
-
-// 用 * 算出總消耗、剩餘燃料與總位移
+// 推進計算
 let totalBurn = burnRate * count;
 let remainingFuel = initialFuel - totalBurn;
 let distance = count * speed;
@@ -26,7 +23,7 @@ export default {
   subtitle: '變數與參數',
   conceptTitle: '變數保存資料，參數決定行為',
   concepts: ['變數宣告 (let/const)', '函式傳參', '數值運算'],
-  description: `探測船需要進行長途軌道轉移以抵達懸浮能源站。平台距離為 24 單位。請調整推進器的「初始燃料」、「每次消耗量」、「推進次數」與「推力速度」參數。注意：若推力速度過猛 (> 3) 會撞毀降落架，燃料不足則會半途熄火！`,
+  description: `探測船需要進行長途軌道轉移以抵達懸浮能源站。平台距離為 24 單位。請調整推進器的「初始燃料」、「每次消耗量」、「推進次數」與「推力速度」參數（四個參數皆為數值，直接寫數字，不加引號）。注意：若推力速度過猛 (> 3) 會撞毀降落架，燃料不足則會半途熄火！`,
   targetRequirements: [
     '設定充足的初始燃料 (建議 >= 300 單位)',
     '推進總位移 (推進次數 × 速度) 必須剛好等於 24 單位',

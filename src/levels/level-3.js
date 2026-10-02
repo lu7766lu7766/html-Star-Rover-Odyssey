@@ -3,12 +3,8 @@
  * 核心概念：條件判斷 (Conditionals - if / else if / else)
  */
 
-export const LEVEL_3_STARTER_CODE = `// 隕石避障：把下面 ___ 補完，再按執行
-// 規則：距離 < 5 → STOP，距離 < 15 → SLOW_DOWN，否則 → FULL_SPEED
-// 型別：兩個 ___ 都填 @type {number} 數字（距離門檻，不加引號）
-//   return 的三個單字是固定的英文字串（大寫、加引號），不是中文，不可改！
-
-function autoPilot(distance) {
+export const LEVEL_3_STARTER_CODE = `// 隕石避障：自動導航
+function autoPilot(distance) {   // @param {number} distance 即時距離
   if (distance < ___) {
     return 'STOP';
   } else if (distance < ___) {
@@ -29,9 +25,9 @@ export default {
   concepts: ['條件判斷', '邏輯比較 (<, <=, >)', '分支決策'],
   description: `前方進入密集小行星亂石流！雷達感測器會持續回傳與前方隕石的「即時距離」。請為探測船的自動導航系統設定條件邏輯，根據距離做出正確的安全決策：極度接近時緊急煞停、近距離時減速觀察、遠距離時全速巡航。`,
   targetRequirements: [
-    '設定條件 1：若距離 < 5，執行「停止 (STOP)」避免撞毀',
-    '設定條件 2：若距離 < 15，執行「減速巡航 (SLOW_DOWN)」謹慎通過',
-    '設定預設分支 (否則)：執行「全速前進 (FULL_SPEED)」維持前進動能'
+    '設定條件 1：若距離 < 5，執行「停止 (STOP)」避免撞毀（門檻填數字，不加引號）',
+    '設定條件 2：若距離 < 15，執行「減速巡航 (SLOW_DOWN)」謹慎通過（門檻填數字，不加引號）',
+    '設定預設分支 (否則)：執行「全速前進 (FULL_SPEED)」維持前進動能（回傳值為固定的英文大寫字串，要加引號，不可填中文或修改單字）'
   ],
   controlType: 'condition-builder',
   conditionRules: {
