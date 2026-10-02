@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, onBeforeUnmount } from 'vue';
 import HomePage from '../components/home/HomePage.vue';
 import GameWorkspace from '../components/layout/GameWorkspace.vue';
 import { useProgressStore } from '../stores/progressStore.js';
@@ -19,9 +19,21 @@ import { soundManager } from '../game/core/SoundManager.js';
 
 const progressStore = useProgressStore();
 
+function flushSaveOnUnload() {
+  try {
+    progressStore.persist();
+  } catch (e) {}
+}
+
 onMounted(() => {
   // Sync audio mute state with storage
   soundManager.setMuted(progressStore.isSoundMuted);
+  // Flush debounced operation cache so refresh keeps latest inputs
+  window.addEventListener('beforeunload', flushSaveOnUnload);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', flushSaveOnUnload);
 });
 </script>
 

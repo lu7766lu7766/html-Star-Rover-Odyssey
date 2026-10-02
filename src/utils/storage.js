@@ -8,6 +8,7 @@ const STORAGE_KEY = 'star_rover_odyssey_save_v2';
 
 export const DEFAULT_SAVE_DATA = {
   version: 2,
+  currentView: 'home',
   currentLevel: 1,
   unlockedLevels: [1],
   savedOperations: {},
@@ -42,6 +43,9 @@ export function validateSaveData(data) {
   let currentLevel = typeof data.currentLevel === 'number' ? data.currentLevel : 1;
   if (currentLevel < 1 || currentLevel > 8) currentLevel = 1;
 
+  // Persist current view so refresh stays in the same level ('home' | 'level')
+  let currentView = data.currentView === 'level' ? 'level' : 'home';
+
   // Sanitize savedOperations
   const savedOperations = (data.savedOperations && typeof data.savedOperations === 'object')
     ? data.savedOperations
@@ -51,6 +55,7 @@ export function validateSaveData(data) {
     valid: true,
     data: {
       version: 2,
+      currentView,
       currentLevel,
       unlockedLevels: Array.from(new Set(data.unlockedLevels.map(Number))).filter(n => n >= 1 && n <= 8),
       completedLevels: Array.from(new Set(data.completedLevels.map(Number))).filter(n => n >= 1 && n <= 8),

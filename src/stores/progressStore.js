@@ -13,8 +13,14 @@ let debounceSaveTimer = null;
 export const useProgressStore = defineStore('progress', {
   state: () => {
     const loaded = loadSaveData();
+    // Refresh should stay in the same level: restore view only if the saved
+    // level is still unlocked, otherwise fall back to home.
+    const unlocked = loaded.unlockedLevels || [1];
+    const restoredView = loaded.currentView === 'level' && unlocked.includes(loaded.currentLevel || 1)
+      ? 'level'
+      : 'home';
     return {
-      currentView: 'home', // 'home' | 'level'
+      currentView: restoredView, // 'home' | 'level' (persisted for refresh restore)
       currentLevelId: loaded.currentLevel || 1,
       unlockedLevels: loaded.unlockedLevels || [1],
       completedLevels: loaded.completedLevels || [],
@@ -46,6 +52,7 @@ export const useProgressStore = defineStore('progress', {
   actions: {
     setView(viewName) {
       this.currentView = viewName;
+      this.persist();
     },
 
     goToLevel(levelId) {
@@ -58,6 +65,7 @@ export const useProgressStore = defineStore('progress', {
 
     goToHome() {
       this.currentView = 'home';
+      this.persist();
     },
 
     saveOperation(levelId, data) {
@@ -118,6 +126,7 @@ export const useProgressStore = defineStore('progress', {
     persist() {
       saveSaveData({
         version: 2,
+        currentView: this.currentView,
         currentLevel: this.currentLevelId,
         unlockedLevels: this.unlockedLevels,
         completedLevels: this.completedLevels,
@@ -128,6 +137,7 @@ export const useProgressStore = defineStore('progress', {
     exportSave() {
       exportSaveFile({
         version: 2,
+        currentView: this.currentView,
         currentLevel: this.currentLevelId,
         unlockedLevels: this.unlockedLevels,
         completedLevels: this.completedLevels,
@@ -144,6 +154,10 @@ export const useProgressStore = defineStore('progress', {
       this.unlockedLevels = result.data.unlockedLevels;
       this.completedLevels = result.data.completedLevels;
       this.savedOperations = result.data.savedOperations || {};
+      // Imported save may carry a level view; only honor it when unlocked.
+      this.currentView = result.data.currentView === 'level' && this.unlockedLevels.includes(this.currentLevelId)
+        ? 'level'
+        : 'home';
       this.persist();
       return { success: true };
     }
