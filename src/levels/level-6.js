@@ -36,13 +36,12 @@ export default {
   subtitle: '2D 網頁修復任務 · 事件與 DOM',
   conceptTitle: '使用者與網頁的橋樑：事件驅動',
   concepts: ['DOM 元素選擇', '事件監聽器 (addEventListener)', 'textContent / style 即時改寫'],
-  description: `太空艙的控制「網頁」當機了！上方 2D 視窗就是一整個故障中的儀表板網頁：警報燈狂閃、氣閘門鎖死。2D 儀表板上有 4 個元素：解除警報按鈕、氣閘按鈕、狀態燈、氣閘艙門，每個元素的 id 都寫在該元素上方的 <code> 標籤裡，右側 DevTools 也有 DOM TREE 即時預覽。兩顆按鈕「#disarm-btn」與「#airlock-btn」的電線（addEventListener）被拔掉了。請在下方操作區幫它們接回正確的事件（click）與動作，然後親自到 2D 網頁上點擊按鈕，看著 textContent、顏色、艙門 class 即時被你的 JS 改寫！觀念：querySelector 用 CSS 選擇器選元素；addEventListener 接事件線；回呼裡用 textContent / style / classList 改寫畫面。正確字串都不用背，都藏在 2D 網頁裡：元素 id、含 NORMAL 的狀態文字、正常燈號顏色、艙門的 class 提示。系統會自動兩路點擊驗證：(1)先解除警報再開門→艙門必須滑開；(2)警報中直接開門→艙門必須保持關閉（守衛判斷）。`,
+  description: `太空艙的控制「網頁」當機了！上方 2D 視窗就是一整個故障中的儀表板網頁：警報燈狂閃、氣閘門鎖死。2D 儀表板上有 4 個元素：解除警報按鈕、氣閘按鈕、狀態燈、氣閘艙門，請照著任務需求將程式接起來。`,
   targetRequirements: [
     '用 querySelector 選取 4 個元素（順序不可調換：第 1 行解除警報按鈕、第 2 行氣閘按鈕、第 3 行狀態燈 #status-indicator、第 4 行艙門 #airlock-door，id 寫在 2D 網頁各元素上方，選擇器為字串加引號、id 前面加 #）',
-    '為兩顆按鈕接回 "click" 事件（日常按鈕最直覺的選擇，mouseover / dblclick 不算，事件名稱為字串，加引號且大小寫照抄）',
-    '解除警報回呼：把 isAlarmActive 改為 false，並改寫狀態燈文字與顏色（改成「正常」顯示：去 2D 網頁狀態燈找含 NORMAL 的那一行整行照抄含中文與括號，燈號顏色去 2D 網頁或 DevTools 找，字串加引號）',
-    '氣閘回呼：先用 if 守衛判斷「警報已解除」才放行（isAlarmActive 為 true 表示警報中、false 表示已解除，條件寫成 !isAlarmActive 才會在已解除時放行，括號內填變數名稱不加引號），再為艙門加上滑開用的 CSS class 並改寫門文字（class 名去 2D 艙門區找「classList 已加 …」提示或 DevTools DOM TREE，門文字去 2D 網頁找含 OPEN 的那一行整行照抄，字串加引號）',
-    '通過兩路驗證：正常順序（先解除再開門）艙門滑開；警報中直接開門，艙門必須保持關閉'
+    '為兩顆按鈕接回 "click" 事件',
+    '解除警報回呼：把 isAlarmActive 改為 false。並改寫狀態燈文字為：系統正常 (NORMAL)。顏色改為green。',
+    '氣閘回呼：先用 if 守衛判斷「警報已解除」才放行，把艙門加上滑開用的 CSS class：open。並改寫門文字：氣閘已開啟 (OPEN)。',
   ],
   controlType: 'dom-events',
   initialBindings: {

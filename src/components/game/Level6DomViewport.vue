@@ -33,21 +33,18 @@
             :class="dom.disarmed ? 'ok' : 'alarm'"
           >
             <div class="status-top">
-              <code>&lt;div id="status-indicator"&gt;</code>
               <span class="live-dot" :style="{ background: dom.statusColor }"></span>
             </div>
             <div class="status-main">
               <span class="status-lamp" :style="{ background: dom.statusColor }"></span>
               <strong>{{ dom.statusText }}</strong>
             </div>
-            <div class="status-meta">textContent · style.color 即時連動下方綁定</div>
           </div>
         </div>
 
         <!-- #airlock-door 2D -->
         <div class="door-section">
           <div class="door-label-row">
-            <code>&lt;div id="airlock-door"&gt;</code>
             <span class="door-state" :class="{ open: dom.airlockOpen }">
               {{ dom.airlockOpen ? 'OPEN · 已開啟' : dom.disarmed ? 'UNLOCKED · 待開啟' : 'LOCKED · 鎖定中' }}
             </span>
@@ -68,7 +65,6 @@
         <div class="btn-grid">
           <div class="btn-cell">
             <div class="btn-tag-row">
-              <code>&lt;button id="disarm-btn"&gt;</code>
               <span class="listener-badge" :class="dom.disarmEvent">{{ '👂 ' + dom.disarmEvent }}</span>
             </div>
             <button
@@ -90,7 +86,6 @@
 
           <div class="btn-cell">
             <div class="btn-tag-row">
-              <code>&lt;button id="airlock-btn"&gt;</code>
               <span class="listener-badge" :class="dom.airlockEvent">{{ '👂 ' + dom.airlockEvent }}</span>
             </div>
             <button
