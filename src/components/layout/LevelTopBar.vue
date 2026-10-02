@@ -34,12 +34,6 @@
         <span>任務提示 ({{ currentLevel.hints?.length || 0 }})</span>
       </button>
 
-      <!-- Reset Level -->
-      <button class="btn btn-outline btn-sm" @click="levelStore.resetCurrentLevel" title="還原場景與參數至最初狀態">
-        <RotateCcw :size="15" />
-        <span class="hide-mobile">還原</span>
-      </button>
-
       <!-- Sound Toggle -->
       <button class="btn btn-ghost btn-sm" @click="toggleSound" :title="progressStore.isSoundMuted ? '開啟音效' : '靜音'">
         <VolumeX v-if="progressStore.isSoundMuted" :size="17" class="text-muted" />
@@ -51,7 +45,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Map, HelpCircle, RotateCcw, Volume2, VolumeX } from 'lucide-vue-next';
+import { Map, HelpCircle, Volume2, VolumeX } from 'lucide-vue-next';
 import { ALL_LEVELS } from '../../levels/index.js';
 import { useProgressStore } from '../../stores/progressStore.js';
 import { useLevelStore } from '../../stores/levelStore.js';
